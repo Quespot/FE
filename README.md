@@ -1,32 +1,62 @@
-# React + TypeScript + Vite
+# Quespot FE
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Quespot은 사용자가 지역을 탐색하고, 관광지 기반 미션을 수행하며, 인증과 보상을 통해 여행 기록을 남길 수 있는 미션형 관광 서비스입니다.
 
-Currently, two official plugins are available:
+사용자는 현재 위치나 선택한 지역을 기준으로 추천 코스를 확인하고, 사진 인증/키워드 입력/감상 기록 등의 미션을 완료하며 지역 스탬프와 포인트를 획득할 수 있습니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 주요 기능
 
-## React Compiler
+- 지역 기반 관광지 탐색 및 코스 추천
+- 난이도/테마 기반 미션 코스 생성
+- 사진 인증, 키워드 입력, 감상 기록 미션
+- GPS 및 이미지 기반 미션 검증
+- 포인트, 배지, 지역 스탬프 보상
+- 여행 아카이브 및 공유 카드
+- 미션/보상/추천 장소 알림
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 기술 스택
 
-## Expanding the Oxlint configuration
+- React
+- TypeScript
+- Vite
+- React Router
+- TanStack Query
+- Axios
+- Zustand
+- Zod
+- Tailwind CSS
+- SVGR
+- pnpm
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## 시작하기
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+pnpm install
+pnpm dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+개발 서버 실행 후 브라우저에서 안내된 localhost 주소로 접속합니다.
+
+## 빌드
+
+```bash
+pnpm build
+```
+
+## 프로젝트 구조
+
+```text
+src/
+  App.tsx
+  main.tsx
+  index.css
+public/
+index.html
+vite.config.ts
+```
+
+## 저장소
+
+```text
+https://github.com/Quespot/FE.git
+```
