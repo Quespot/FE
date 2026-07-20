@@ -1,15 +1,14 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithChildren, ReactNode } from "react";
 import {
-  Gift,
-  Home,
   Landmark,
-  Map,
   MapPin,
   Search,
-  Target,
-  UserRound,
-  type LucideIcon,
 } from "lucide-react";
+import homeIcon from "../icons/Icon.svg";
+import missionIcon from "../icons/Icon (1).svg";
+import mapIcon from "../icons/Icon (2).svg";
+import rewardIcon from "../icons/Icon (3).svg";
+import myIcon from "../icons/Icon (4).svg";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "disabled";
@@ -54,12 +53,12 @@ export function WireImage({ label = "코스 이미지", tall = false }: { label?
 
 export type BottomNavKey = "home" | "mission" | "map" | "reward" | "my";
 
-const navItems: Array<{ key: BottomNavKey; label: string; Icon: LucideIcon }> = [
-  { key: "home", label: "홈", Icon: Home },
-  { key: "mission", label: "미션", Icon: Target },
-  { key: "map", label: "지도", Icon: Map },
-  { key: "reward", label: "보상", Icon: Gift },
-  { key: "my", label: "MY", Icon: UserRound },
+const navItems: Array<{ key: BottomNavKey; label: string; icon: string }> = [
+  { key: "home", label: "홈", icon: homeIcon },
+  { key: "mission", label: "미션", icon: missionIcon },
+  { key: "map", label: "지도", icon: mapIcon },
+  { key: "reward", label: "보상", icon: rewardIcon },
+  { key: "my", label: "MY", icon: myIcon },
 ];
 
 export function BottomNav({
@@ -72,9 +71,9 @@ export function BottomNav({
 
   return (
     <nav className="bottom-nav" aria-label="앱 하단 메뉴">
-      {navItems.map(({ Icon, key, label }) => (
+      {navItems.map(({ icon, key, label }) => (
         <button className={key === active ? "is-active" : ""} key={key} onClick={() => onSelect?.(key)} type="button">
-          <Icon size={20} strokeWidth={2.4} />
+          <img src={icon} alt="" />
           <strong>{label}</strong>
         </button>
       ))}

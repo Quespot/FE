@@ -4,11 +4,16 @@ import { LoginPage, SignupPage, TermsPage } from "./pages/AuthPages";
 import { MissionRecordPage, PhotoCertificationPage } from "./pages/MissionPages";
 import type { BottomNavKey } from "./components/UI";
 import { MapPage } from "./pages/MapPage";
+import { getMissionById } from "./data/quespot";
+import { MissionDetailPage } from "./pages/MissionDetailPage";
+import { MyPage } from "./pages/MyPage";
+import { QuestyCustomizePage } from "./pages/QuestyCustomizePage";
 
-type AppScreen = "login" | "signup" | "terms" | "home" | "map" | "photo" | "record";
+type AppScreen = "login" | "signup" | "terms" | "home" | "map" | "missionDetail" | "my" | "questy" | "photo" | "record";
 
 function App() {
   const [screenStack, setScreenStack] = useState<AppScreen[]>(["login"]);
+  const [selectedMissionId, setSelectedMissionId] = useState("tea-house");
   const activeScreen = screenStack[screenStack.length - 1];
 
   const navigate = (screen: AppScreen) => {
@@ -23,6 +28,11 @@ function App() {
     setScreenStack((stack) => (stack.length > 1 ? stack.slice(0, -1) : stack));
   };
 
+  const openMissionDetail = (missionId: string) => {
+    setSelectedMissionId(missionId);
+    navigate("missionDetail");
+  };
+
   const handleBottomNav = (key: BottomNavKey) => {
     if (key === "mission") {
       navigate("photo");
@@ -34,7 +44,12 @@ function App() {
       return;
     }
 
-    if (key === "reward" || key === "my") {
+    if (key === "my") {
+      navigate("my");
+      return;
+    }
+
+    if (key === "reward") {
       navigate("record");
       return;
     }
@@ -54,12 +69,19 @@ function App() {
         return (
           <HomePage
             onNavigate={handleBottomNav}
+            onOpenMission={openMissionDetail}
             onOpenRecord={() => navigate("record")}
             onStartMission={() => navigate("photo")}
           />
         );
       case "map":
         return <MapPage onBack={goBack} onNavigate={handleBottomNav} onStartMission={() => navigate("photo")} />;
+      case "missionDetail":
+        return <MissionDetailPage mission={getMissionById(selectedMissionId)} onBack={goBack} onStartMission={() => navigate("photo")} />;
+      case "my":
+        return <MyPage onNavigate={handleBottomNav} onOpenQuesty={() => navigate("questy")} />;
+      case "questy":
+        return <QuestyCustomizePage onBack={goBack} onNavigate={handleBottomNav} />;
       case "photo":
         return <PhotoCertificationPage onBack={goBack} />;
       case "record":

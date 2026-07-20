@@ -1,88 +1,202 @@
-import { Bell, ChevronRight, Menu, Sparkles, Target, Trophy } from "lucide-react";
-import { BottomNav, Button, LocationBadge, SearchInput, WireImage, type BottomNavKey } from "../components/UI";
+import { useState } from "react";
+import {
+  Bell,
+  Building2,
+  Camera,
+  ChevronRight,
+  ClipboardCheck,
+  Compass,
+  Heart,
+  Leaf,
+  MapPin,
+  Palette,
+  ShoppingBag,
+  Star,
+  Sunrise,
+  Utensils,
+  Waves,
+  type LucideIcon,
+} from "lucide-react";
+import { BottomNav, Button, SearchInput, type BottomNavKey } from "../components/UI";
 import { DeviceFrame } from "../components/DeviceFrame";
-import { courseCards, figmaAssets } from "../data/quespot";
+import { figmaAssets, homeCategories, nearbySpots, recommendedMissions } from "../data/quespot";
 
 type HomePageProps = {
   onNavigate?: (screen: BottomNavKey) => void;
+  onOpenMission?: (missionId: string) => void;
   onOpenRecord?: () => void;
   onStartMission?: () => void;
 };
 
-export function HomePage({ onNavigate, onOpenRecord, onStartMission }: HomePageProps) {
+const categoryIcons: Record<string, LucideIcon> = {
+  history: Building2,
+  nature: Leaf,
+  food: Utensils,
+  night: Sunrise,
+  photo: Camera,
+  activity: Waves,
+  shopping: ShoppingBag,
+  art: Palette,
+};
+
+export function HomePage({ onNavigate, onOpenMission, onOpenRecord, onStartMission }: HomePageProps) {
+  const [showAllMissions, setShowAllMissions] = useState(false);
+  const visibleMissions = showAllMissions ? recommendedMissions : recommendedMissions.slice(0, 2);
+
   return (
     <DeviceFrame className="app-device home-device">
       <section className="home-screen app-home-screen">
-        <header className="mobile-topbar">
+        <header className="mobile-topbar home-main-header">
           <div>
+            <img src={figmaAssets.mascot} alt="" />
             <strong>Quespot</strong>
-            <small>서울 종로구</small>
           </div>
-          <div className="topbar-actions">
-            <button type="button" aria-label="알림">
-              <Bell size={19} strokeWidth={2.4} />
-            </button>
-            <button type="button" aria-label="메뉴">
-              <Menu size={20} strokeWidth={2.4} />
-            </button>
-          </div>
+          <button className="notification-button" type="button" aria-label="알림">
+            <Bell size={19} strokeWidth={2.4} />
+            <span>3</span>
+          </button>
         </header>
 
-        <section className="home-hero-card">
+        <section className="home-hero-panel">
           <div>
-            <LocationBadge>이번 주 추천</LocationBadge>
+            <span className="hello-pill">꿀법님 안녕하세요!</span>
             <h1>
-              오늘은 어떤 미션을
+              미션으로 떠나는
               <br />
-              완료해볼까요?
+              특별한 여행
             </h1>
-            <p>주변의 숨은 장소를 발견하고 인증 기록을 남겨보세요.</p>
+            <p>
+              Quespot과 함께 일상을
+              <br />
+              여행으로 바꿔보세요
+            </p>
+            <Button className="hero-button" icon={<ChevronRight size={16} strokeWidth={2.6} />} onClick={onStartMission}>
+              미션 탐색
+            </Button>
           </div>
           <img src={figmaAssets.heroMascot} alt="Quespot 캐릭터" />
         </section>
 
-        <SearchInput placeholder="지역, 코스, 명소를 찾아보세요." />
+        <SearchInput placeholder="미션 · 장소 · 지역을 검색해보세요" />
 
-        <section className="summary-grid" aria-label="활동 요약">
+        <section className="home-stat-card" aria-label="활동 요약">
           <article>
-            <Sparkles size={18} strokeWidth={2.4} />
-            <span>진행 미션</span>
-            <strong>3개</strong>
+            <strong>2개</strong>
+            <span>완료 미션</span>
           </article>
           <article>
-            <Trophy size={18} strokeWidth={2.4} />
+            <strong>350P</strong>
             <span>누적 보상</span>
-            <strong>1,240P</strong>
+          </article>
+          <article>
+            <strong>2개</strong>
+            <span>획득 배지</span>
+          </article>
+          <article>
+            <strong>2개</strong>
+            <span>스탬프</span>
           </article>
         </section>
 
-        <section className="mission-list-section">
+        <section className="home-section category-section">
+          <h2>카테고리</h2>
+          <div className="category-grid">
+            {homeCategories.map((category) => {
+              const Icon = categoryIcons[category.id] ?? Compass;
+
+              return (
+                <button className={`category-card tone-${category.tone}`} key={category.id} type="button">
+                  <span>
+                    <Icon size={26} strokeWidth={2.3} />
+                  </span>
+                  <strong>{category.label}</strong>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="home-section recommended-section">
           <div className="section-title-row">
-            <h2>추천 미션 코스</h2>
-            <button onClick={onOpenRecord} type="button">
-              기록 보기
+            <h2>추천 미션</h2>
+            <button onClick={() => setShowAllMissions((value) => !value)} type="button">
+              {showAllMissions ? "접기" : "전체보기"} <ChevronRight size={15} strokeWidth={2.6} />
             </button>
           </div>
-          <div className="mobile-course-list">
-            {courseCards.slice(0, 3).map((course, index) => (
-              <article className="mobile-course-card" key={course}>
-                <WireImage label={index === 0 ? "인기 코스" : "코스 이미지"} />
-                <div>
-                  <LocationBadge>{index === 0 ? "전북 전주" : index === 1 ? "강원 강릉" : "제주"}</LocationBadge>
-                  <strong>{course}</strong>
-                  <p>{index === 0 ? "한옥길을 따라 3개의 인증 미션을 완료해요." : "사진 인증과 감상 기록을 남기는 코스예요."}</p>
+          <div className={`recommended-grid ${showAllMissions ? "is-expanded" : ""}`}>
+            {visibleMissions.map((mission) => (
+              <article className="mission-card" key={mission.id} onClick={() => onOpenMission?.(mission.id)}>
+                <div className={`mission-visual tone-${mission.tone}`}>
+                  <button onClick={(event) => event.stopPropagation()} type="button" aria-label={`${mission.title} 찜하기`}>
+                    <Heart size={15} strokeWidth={2.3} />
+                  </button>
+                  <span>{mission.visual}</span>
                 </div>
-                <button onClick={onStartMission} type="button" aria-label={`${course} 시작`}>
-                  <ChevronRight size={18} strokeWidth={2.6} />
+                <div className="mission-card-body">
+                  <span className="mission-chip">{mission.category}</span>
+                  <strong>{mission.title}</strong>
+                  <footer>
+                    <span>
+                      <MapPin size={12} strokeWidth={2.4} />
+                      {mission.distance}
+                    </span>
+                    <b>+{mission.points}P</b>
+                  </footer>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="home-section nearby-section">
+          <div className="section-title-row">
+            <h2>
+              <MapPin size={15} fill="#ef4444" strokeWidth={2.2} />
+              내 주변 스팟
+            </h2>
+            <button onClick={() => onNavigate?.("map")} type="button">
+              지도보기 <ChevronRight size={15} strokeWidth={2.6} />
+            </button>
+          </div>
+          <div className="spot-list">
+            {nearbySpots.map((spot) => (
+              <article className={spot.done ? "is-done" : ""} key={spot.id}>
+                <span className="spot-icon">
+                  <MapPin size={22} strokeWidth={2.4} />
+                  {spot.done ? <ClipboardCheck className="spot-check" size={15} strokeWidth={2.5} /> : null}
+                  {spot.badge ? <b>{spot.badge}</b> : null}
+                </span>
+                <div className="spot-info">
+                  <strong>{spot.name}</strong>
+                  <p>
+                    {spot.distance}
+                    <i />
+                    {spot.status === "완료" ? <em>완료</em> : `미션 ${spot.missionCount}개`}
+                  </p>
+                </div>
+                <span className="spot-rating">
+                  <Star size={12} fill="#f5b01a" strokeWidth={0} />
+                  {spot.rating}
+                </span>
+                <button
+                  onClick={spot.done ? onOpenRecord : () => onOpenMission?.(spot.missionId ?? "tea-house")}
+                  type="button"
+                  aria-label={`${spot.name} 열기`}
+                >
+                  <ChevronRight size={17} strokeWidth={2.6} />
                 </button>
               </article>
             ))}
           </div>
         </section>
 
-        <Button className="home-main-cta" icon={<Target size={18} strokeWidth={2.4} />} onClick={onStartMission}>
-          첫 미션 시작하기
-        </Button>
+        <section className="bonus-banner">
+          <img src={figmaAssets.mascot} alt="" />
+          <div>
+            <strong>소도시 미션에서 추가 보너스 포인트!</strong>
+            <p>인구감소지역 미션 완료 시 +20% 보너스</p>
+          </div>
+        </section>
       </section>
       <BottomNav active="home" onSelect={onNavigate} />
     </DeviceFrame>
