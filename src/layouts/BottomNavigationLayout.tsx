@@ -38,7 +38,7 @@ const NAV_ITEMS = [
 export default function BottomNavigationLayout() {
   return (
     <>
-      <main className="pb-[92px]">
+      <main className="pb-20">
         <Outlet />
       </main>
 
@@ -48,7 +48,7 @@ export default function BottomNavigationLayout() {
 }
 const BottomNavigation = () => {
   return (
-    <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 bg-white">
+    <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 bg-white shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
       <ul className="flex h-[80px] items-center">
         {NAV_ITEMS.map(({ label, path, icon: Icon }) => (
           <li key={path} className="flex-1">
