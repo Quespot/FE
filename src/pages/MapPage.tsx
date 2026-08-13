@@ -10,12 +10,7 @@ import {
   Target,
 } from "lucide-react";
 import { DeviceFrame, SubHeader } from "../components/DeviceFrame";
-import {
-  BottomNav,
-  Button,
-  LocationBadge,
-  type BottomNavKey,
-} from "../components/UI";
+import { Button, LocationBadge } from "../components/UI";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "@/routes/paths";
 
