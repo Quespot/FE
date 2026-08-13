@@ -1,6 +1,8 @@
 export const PATH = {
   LANDING: "/",
-  AUTH: "/auth",
+  LOGIN: "/login",
+  SIGNUP: "/signup",
+  SIGNUP_CHECK: "/signup/check",
 
   // HomePage
   HOME: "/home",
@@ -8,6 +10,8 @@ export const PATH = {
   //MissionPage
   MISSIONS: "/missions",
   MISSION_DETAIL: "/missions/:missionId",
+  MISSION_PHOTO: "/mission/photo",
+  MISSION_RECORD: "/mission/record",
 
   //MapPage
   MAP: "/map",
