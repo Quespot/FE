@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap");
+@import "tailwindcss";
 
 :root {
   --primary: #1673f8;
@@ -15,7 +16,13 @@
   --app-bg: #f4f8ff;
   --ink: #1c1c3a;
   color: var(--ink);
-  font-family: "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    "Noto Sans KR",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -234,14 +241,18 @@ a {
   overflow: hidden;
   border-radius: 44px;
   background: var(--app-bg);
-  box-shadow: 0 40px 100px rgba(43, 143, 219, 0.25), 0 8px 32px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 40px 100px rgba(43, 143, 219, 0.25),
+    0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 .compact-device {
   min-height: 412px;
   width: 190px;
   border-radius: 32px;
-  box-shadow: 0 8px 32px rgba(22, 115, 248, 0.13), 0 0 0 1px rgba(22, 115, 248, 0.08);
+  box-shadow:
+    0 8px 32px rgba(22, 115, 248, 0.13),
+    0 0 0 1px rgba(22, 115, 248, 0.08);
 }
 
 .status-bar {
@@ -798,7 +809,9 @@ textarea::placeholder {
   min-height: 52px;
   border-radius: 16px;
   font-size: 14px;
-  box-shadow: 0 4px 3px #dbeafe, 0 2px 2px #dbeafe;
+  box-shadow:
+    0 4px 3px #dbeafe,
+    0 2px 2px #dbeafe;
 }
 
 .visit-banner {
@@ -890,7 +903,11 @@ textarea::placeholder {
 }
 
 .photo-chip {
-  background: linear-gradient(135deg, rgba(253, 230, 138, 0.27), rgba(254, 243, 199, 0.27));
+  background: linear-gradient(
+    135deg,
+    rgba(253, 230, 138, 0.27),
+    rgba(254, 243, 199, 0.27)
+  );
   font-size: 30px;
 }
 
@@ -967,7 +984,11 @@ textarea::placeholder {
   place-items: center;
   padding: 28px 16px;
   background:
-    radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.82), transparent 28%),
+    radial-gradient(
+      circle at 20% 12%,
+      rgba(255, 255, 255, 0.82),
+      transparent 28%
+    ),
     linear-gradient(143deg, #c8e8ff 0%, #eaf5ff 52%, #d4ecff 100%);
 }
 
@@ -1475,9 +1496,15 @@ textarea::placeholder {
   border: 1px solid #cce8ff;
   border-radius: 26px;
   background:
-    linear-gradient(28deg, rgba(184, 216, 184, 0.52) 0 22%, transparent 22% 100%),
+    linear-gradient(
+      28deg,
+      rgba(184, 216, 184, 0.52) 0 22%,
+      transparent 22% 100%
+    ),
     linear-gradient(145deg, #dff3ff 0%, #f5fbff 55%, #d2edff 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.62), 0 8px 26px rgba(43, 143, 219, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.62),
+    0 8px 26px rgba(43, 143, 219, 0.14);
 }
 
 .map-grid-lines {
@@ -1487,7 +1514,11 @@ textarea::placeholder {
     linear-gradient(90deg, rgba(8, 37, 95, 0.06) 1px, transparent 1px),
     linear-gradient(0deg, rgba(8, 37, 95, 0.06) 1px, transparent 1px);
   background-size: 54px 54px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.08));
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.4),
+    rgba(0, 0, 0, 0.08)
+  );
 }
 
 .map-route {
@@ -1765,7 +1796,11 @@ textarea::placeholder {
 }
 
 .home-hero-panel h1 {
-  background: linear-gradient(180deg, var(--ink) 0 48%, var(--primary-soft) 48% 100%);
+  background: linear-gradient(
+    180deg,
+    var(--ink) 0 48%,
+    var(--primary-soft) 48% 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -2169,7 +2204,11 @@ textarea::placeholder {
   border-radius: 24px;
   padding: 18px 20px;
   background:
-    radial-gradient(circle at right 40%, rgba(255, 255, 255, 0.13) 0 62px, transparent 63px),
+    radial-gradient(
+      circle at right 40%,
+      rgba(255, 255, 255, 0.13) 0 62px,
+      transparent 63px
+    ),
     linear-gradient(135deg, #55b8fb 0%, #63bded 100%);
   color: #fff;
 }
@@ -2359,7 +2398,10 @@ textarea::placeholder {
     linear-gradient(90deg, rgba(8, 37, 95, 0.05) 1px, transparent 1px),
     linear-gradient(0deg, rgba(8, 37, 95, 0.05) 1px, transparent 1px),
     linear-gradient(145deg, #e5f6ff 0%, #f8fdff 100%);
-  background-size: 34px 34px, 34px 34px, auto;
+  background-size:
+    34px 34px,
+    34px 34px,
+    auto;
   color: var(--primary-soft);
 }
 
