@@ -1,7 +1,10 @@
 import { courseCards, figmaAssets } from "../data/quespot";
 import { Button, WireImage } from "../components/UI";
+import { useNavigate } from "react-router-dom";
+import { PATH } from "@/routes/paths";
 
-export function LandingPage() {
+export default function LandingPage() {
+  const navigate = useNavigate();
   return (
     <main className="landing-page">
       <header className="landing-header">
@@ -28,9 +31,13 @@ export function LandingPage() {
             <br />
             미션을 수행하며 보상을 받아보세요.
           </p>
-          <Button>지금 시작하기 →</Button>
+          <Button onClick={() => navigate(PATH.LOGIN)}>지금 시작하기 →</Button>
         </div>
-        <img className="hero-mascot" src={figmaAssets.heroMascot} alt="Quespot 캐릭터" />
+        <img
+          className="hero-mascot"
+          src={figmaAssets.heroMascot}
+          alt="Quespot 캐릭터"
+        />
       </section>
 
       <section className="course-section">

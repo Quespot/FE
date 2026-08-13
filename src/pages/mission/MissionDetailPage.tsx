@@ -14,22 +14,20 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
-import { DeviceFrame, SubHeader } from "../components/DeviceFrame";
-import { Button, LocationBadge } from "../components/UI";
-import type { MissionCard } from "../data/quespot";
+import { SubHeader } from "../../components/DeviceFrame";
+import { Button, LocationBadge } from "../../components/UI";
+import { recommendedMissions } from "../../data/quespot";
+import { useNavigate } from "react-router-dom";
+import { PATH } from "@/routes/paths";
 
-type MissionDetailPageProps = {
-  mission: MissionCard;
-  onBack?: () => void;
-  onStartMission?: () => void;
-};
-
-export function MissionDetailPage({ mission, onBack, onStartMission }: MissionDetailPageProps) {
+export default function MissionDetailPage() {
+  const navigate = useNavigate();
+  const mission = recommendedMissions[1];
   return (
-    <DeviceFrame className="app-device">
+    <>
       <SubHeader
         title="미션 상세"
-        onBack={onBack}
+        onBack={() => navigate(-1)}
         action={
           <div className="mission-detail-actions">
             <button type="button" aria-label="공유하기">
@@ -112,7 +110,9 @@ export function MissionDetailPage({ mission, onBack, onStartMission }: MissionDe
               <li key={step}>
                 <span>{index + 1}</span>
                 <p>{step}</p>
-                {index === mission.steps.length - 1 ? <CheckCircle2 size={18} strokeWidth={2.5} /> : null}
+                {index === mission.steps.length - 1 ? (
+                  <CheckCircle2 size={18} strokeWidth={2.5} />
+                ) : null}
               </li>
             ))}
           </ol>
@@ -127,10 +127,14 @@ export function MissionDetailPage({ mission, onBack, onStartMission }: MissionDe
           <p>“짧은 시간 안에 지역 분위기를 느낄 수 있어서 좋아요.”</p>
         </section>
 
-        <Button className="detail-start-button" icon={<ChevronRight size={18} strokeWidth={2.6} />} onClick={onStartMission}>
+        <Button
+          className="detail-start-button"
+          icon={<ChevronRight size={18} strokeWidth={2.6} />}
+          onClick={() => navigate(PATH.MISSION_PHOTO)}
+        >
           미션 시작하기
         </Button>
       </section>
-    </DeviceFrame>
+    </>
   );
 }

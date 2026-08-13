@@ -1,25 +1,37 @@
-import { Archive, Bell, ChevronRight, Heart, MapPin, Plane, Star, Trophy } from "lucide-react";
+import {
+  Archive,
+  Bell,
+  ChevronRight,
+  Heart,
+  MapPin,
+  Plane,
+  Star,
+  Trophy,
+} from "lucide-react";
 import { DeviceFrame } from "../components/DeviceFrame";
-import { BottomNav, type BottomNavKey } from "../components/UI";
 import { figmaAssets } from "../data/quespot";
-
-type MyPageProps = {
-  onNavigate?: (screen: BottomNavKey) => void;
-  onOpenQuesty?: () => void;
-};
+import { useNavigate } from "react-router-dom";
+import { PATH } from "@/routes/paths";
 
 const styleTags = ["🏯 역사·문화", "📸 사진 여행", "🍲 맛집 탐방", "🌿 자연"];
 
-export function MyPage({ onNavigate, onOpenQuesty }: MyPageProps) {
+export default function MyPage() {
+  const navigate = useNavigate();
+
   return (
-    <DeviceFrame className="app-device my-device">
+    <>
+      {" "}
       <section className="my-screen">
         <header className="mobile-topbar my-main-header">
           <div>
             <img src={figmaAssets.mascot} alt="" />
             <strong>Quespot</strong>
           </div>
-          <button className="notification-button" type="button" aria-label="알림">
+          <button
+            className="notification-button"
+            type="button"
+            aria-label="알림"
+          >
             <Bell size={19} strokeWidth={2.4} />
             <span>3</span>
           </button>
@@ -28,7 +40,9 @@ export function MyPage({ onNavigate, onOpenQuesty }: MyPageProps) {
         <section className="profile-hero">
           <div className="profile-avatar">
             <img src={figmaAssets.mascot} alt="퀘스티" />
-            <button type="button" aria-label="프로필 편집">✏️</button>
+            <button type="button" aria-label="프로필 편집">
+              ✏️
+            </button>
           </div>
           <h1>Quespot 탐험가</h1>
           <p>@quespotter_001</p>
@@ -49,7 +63,11 @@ export function MyPage({ onNavigate, onOpenQuesty }: MyPageProps) {
         </section>
 
         <section className="my-content-stack">
-          <button className="questy-promo-card" onClick={onOpenQuesty} type="button">
+          <button
+            className="questy-promo-card"
+            onClick={() => navigate(PATH.QUESTY_CUSTOMIZE)}
+            type="button"
+          >
             <img src={figmaAssets.mascot} alt="퀘스티" />
             <div>
               <strong>마스코트 꾸미기</strong>
@@ -79,8 +97,7 @@ export function MyPage({ onNavigate, onOpenQuesty }: MyPageProps) {
 
           <section className="my-panel">
             <h2>
-              <Plane size={17} strokeWidth={2.5} />
-              내 여행 스타일
+              <Plane size={17} strokeWidth={2.5} />내 여행 스타일
             </h2>
             <div className="style-tag-row">
               {styleTags.map((tag) => (
@@ -115,7 +132,6 @@ export function MyPage({ onNavigate, onOpenQuesty }: MyPageProps) {
           </section>
         </section>
       </section>
-      <BottomNav active="my" onSelect={onNavigate} />
-    </DeviceFrame>
+    </>
   );
 }
