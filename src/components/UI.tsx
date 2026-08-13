@@ -1,23 +1,29 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, PropsWithChildren, ReactNode } from "react";
-import {
-  Landmark,
-  MapPin,
-  Search,
-} from "lucide-react";
-import homeIcon from "../icons/Icon.svg";
-import missionIcon from "../icons/Icon (1).svg";
-import mapIcon from "../icons/Icon (2).svg";
-import rewardIcon from "../icons/Icon (3).svg";
-import myIcon from "../icons/Icon (4).svg";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  PropsWithChildren,
+  ReactNode,
+} from "react";
+import { Landmark, MapPin, Search } from "lucide-react";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost" | "disabled";
   icon?: ReactNode;
 };
 
-export function Button({ children, className = "", icon, variant = "primary", ...props }: ButtonProps) {
+export function Button({
+  children,
+  className = "",
+  icon,
+  variant = "primary",
+  ...props
+}: ButtonProps) {
   return (
-    <button className={`button button-${variant} ${className}`} type="button" {...props}>
+    <button
+      className={`button button-${variant} ${className}`}
+      type="button"
+      {...props}
+    >
       {icon ? <span className="button-icon">{icon}</span> : null}
       <span>{children}</span>
     </button>
@@ -37,47 +43,26 @@ export function TextField({ label, ...props }: TextFieldProps) {
   );
 }
 
-export function Panel({ children, className = "" }: PropsWithChildren<{ className?: string }>) {
+export function Panel({
+  children,
+  className = "",
+}: PropsWithChildren<{ className?: string }>) {
   return <section className={`panel ${className}`}>{children}</section>;
 }
 
-export function WireImage({ label = "코스 이미지", tall = false }: { label?: string; tall?: boolean }) {
+export function WireImage({
+  label = "코스 이미지",
+  tall = false,
+}: {
+  label?: string;
+  tall?: boolean;
+}) {
   return (
     <div className={`wire-image ${tall ? "wire-image-tall" : ""}`}>
       <Landmark className="wire-image-icon" size={20} strokeWidth={2.4} />
       <span>{label}</span>
       <i />
     </div>
-  );
-}
-
-export type BottomNavKey = "home" | "mission" | "map" | "reward" | "my";
-
-const navItems: Array<{ key: BottomNavKey; label: string; icon: string }> = [
-  { key: "home", label: "홈", icon: homeIcon },
-  { key: "mission", label: "미션", icon: missionIcon },
-  { key: "map", label: "지도", icon: mapIcon },
-  { key: "reward", label: "보상", icon: rewardIcon },
-  { key: "my", label: "MY", icon: myIcon },
-];
-
-export function BottomNav({
-  active = "home",
-  onSelect,
-}: {
-  active?: BottomNavKey;
-  onSelect?: (key: BottomNavKey) => void;
-}) {
-
-  return (
-    <nav className="bottom-nav" aria-label="앱 하단 메뉴">
-      {navItems.map(({ icon, key, label }) => (
-        <button className={key === active ? "is-active" : ""} key={key} onClick={() => onSelect?.(key)} type="button">
-          <img src={icon} alt="" />
-          <strong>{label}</strong>
-        </button>
-      ))}
-    </nav>
   );
 }
 

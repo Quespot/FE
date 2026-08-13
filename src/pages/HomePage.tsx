@@ -17,7 +17,7 @@ import {
   Waves,
   type LucideIcon,
 } from "lucide-react";
-import { Button, SearchInput, type BottomNavKey } from "../components/UI";
+import { Button, SearchInput } from "../components/UI";
 import {
   figmaAssets,
   homeCategories,
