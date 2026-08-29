@@ -1,125 +1,386 @@
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Bell,
-  Crosshair,
+  Check,
+  ChevronRight,
   LocateFixed,
   MapPin,
   Navigation,
-  Route,
+  Plus,
   Search,
-  Star,
-  Target,
+  Utensils,
+  Minus,
 } from "lucide-react";
-import { DeviceFrame, SubHeader } from "../components/DeviceFrame";
-import { Button, LocationBadge } from "../components/UI";
-import { useNavigate } from "react-router-dom";
-import { PATH } from "@/routes/paths";
+import {
+  APIProvider,
+  AdvancedMarker,
+  Map,
+  Pin,
+  useMap,
+} from "@vis.gl/react-google-maps";
 
-const mapSpots = [
+import HomeHeader from "@/components/home/HomeHeader";
+import { PATH } from "@/routes/paths";
+import QuestySvg from "@/assets/icons/Questy.svg";
+
+type SpotStatus = "completed" | "available" | "current";
+
+type MapSpot = {
+  id: number;
+  name: string;
+  shortName: string;
+  emoji: string;
+  lat: number;
+  lng: number;
+  status: SpotStatus;
+  missionCount?: number;
+};
+
+const SEOUL_JONGNO_CENTER = {
+  lat: 37.5759,
+  lng: 126.9768,
+};
+
+const MAP_SPOTS: MapSpot[] = [
   {
-    name: "인사동 전통찻집",
-    area: "종로구 인사동",
-    point: "240P",
-    className: "left-[58px] top-[78px]",
+    id: 1,
+    name: "경복궁",
+    shortName: "경복궁",
+    emoji: "🏯",
+    lat: 37.579617,
+    lng: 126.977041,
+    status: "completed",
   },
   {
-    name: "북촌 골목 산책",
-    area: "북촌 한옥마을",
-    point: "180P",
-    className: "right-[76px] top-[104px] bg-[#f5b01a] bg-[rgba(245,_176,_26,_0.16)] text-[#b77900]",
+    id: 2,
+    name: "북촌",
+    shortName: "북촌",
+    emoji: "🏡",
+    lat: 37.582604,
+    lng: 126.984874,
+    status: "completed",
   },
   {
-    name: "청계천 포토존",
-    area: "청계광장",
-    point: "160P",
-    className: "left-[172px] bottom-[72px] bg-[#22c55e] bg-[rgba(34,_197,_94,_0.14)] text-[#138a3d]",
+    id: 3,
+    name: "인사동",
+    shortName: "인사동",
+    emoji: "☕",
+    lat: 37.574331,
+    lng: 126.985944,
+    status: "available",
+    missionCount: 2,
+  },
+  {
+    id: 4,
+    name: "명동",
+    shortName: "명동",
+    emoji: "🛍️",
+    lat: 37.563692,
+    lng: 126.98221,
+    status: "available",
+    missionCount: 4,
+  },
+  {
+    id: 5,
+    name: "성수동",
+    shortName: "성수동",
+    emoji: "🎨",
+    lat: 37.544581,
+    lng: 127.055961,
+    status: "available",
+    missionCount: 3,
   },
 ];
 
+const CURRENT_LOCATION = {
+  lat: 37.5752,
+  lng: 126.9812,
+};
+
 export default function MapPage() {
   const navigate = useNavigate();
+  const [selectedSpotId, setSelectedSpotId] = useState<number>(1);
+
+  const selectedSpot = useMemo(() => {
+    return MAP_SPOTS.find((spot) => spot.id === selectedSpotId) ?? MAP_SPOTS[0];
+  }, [selectedSpotId]);
+
+  const completedCount = MAP_SPOTS.filter(
+    (spot) => spot.status === "completed",
+  ).length;
+
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+
   return (
-    <>
-      <SubHeader
-        title="미션 지도"
-        onBack={() => navigate(-1)}
-        action={
-          <button className="inline-flex items-center gap-1 bg-transparent text-[var(--primary-soft)] text-xs font-bold" type="button">
-            <LocateFixed size={14} strokeWidth={2.5} />
-            현재 위치
-          </button>
-        }
+    <section className="flex min-h-full flex-1 flex-col overflow-y-auto bg-[#F4F8FF] pb-[24px]">
+      <HomeHeader
+        mascotSrc={QuestySvg}
+        notificationCount={3}
+        onBellClick={() => {
+          // TODO: 알림함 연결
+        }}
       />
 
-      <section className="flex flex-1 flex-col gap-3.5 [overflow-y:auto] p-4">
-        <header className="grid [grid-template-columns:1fr_42px] gap-2.5">
-          <label className="flex items-center min-h-[46px] border-[1px_solid_var(--sky-100)] rounded-[18px] bg-white text-[var(--muted-2)] [box-shadow:0_1px_5px_rgba(8,_37,_95,_0.08)] gap-2 p-[0_14px]">
-            <Search size={16} strokeWidth={2.4} />
-            <input className="w-full border-0 bg-transparent text-[var(--navy)] text-[13px] outline-none" placeholder="지역, 명소, 미션 검색" />
-          </label>
-          <button className="flex items-center min-h-[46px] border-[1px_solid_var(--sky-100)] rounded-[18px] bg-white text-[var(--muted-2)] [box-shadow:0_1px_5px_rgba(8,_37,_95,_0.08)] justify-center text-[var(--navy)]" type="button" aria-label="알림">
-            <Bell size={18} strokeWidth={2.4} />
-          </button>
-        </header>
+      <section className="bg-white px-[16px] pb-[12px] pt-[24px]">
+        <div className="flex items-center justify-between">
+          <h1 className="m-0 text-[24px] font-black leading-[32px] text-[#1C1C3A]">
+            미션 지도
+          </h1>
 
-        <section className="relative min-h-[300px] overflow-hidden border-[1px_solid_#cce8ff] rounded-[26px] bg-[linear-gradient(_28deg,_rgba(184,_216,_184,_0.52)_0_22%,_transparent_22%_100%_),_linear-gradient(145deg,_#dff3ff_0%,_#f5fbff_55%,_#d2edff_100%)] [box-shadow:inset_0_0_0_1px_rgba(255,_255,_255,_0.62),_0_8px_26px_rgba(43,_143,_219,_0.14)]" aria-label="종로 주변 미션 지도">
-          <div className="absolute [inset:0] bg-[linear-gradient(90deg,_rgba(8,_37,_95,_0.06)_1px,_transparent_1px),_linear-gradient(0deg,_rgba(8,_37,_95,_0.06)_1px,_transparent_1px)] bg-size-[54px_54px] [mask-image:linear-gradient(_to_bottom,_rgba(0,_0,_0,_0.4),_rgba(0,_0,_0,_0.08)_)]" />
-          <div className="absolute h-[92px] border-[8px_solid_rgba(22,_115,_248,_0.2)] [border-right:0] [border-bottom:0] rounded-[36px_0_0_0] right-[34px] bottom-[82px] w-[230px] [transform:rotate(-12deg)]" />
-          <div className="absolute h-[92px] border-[8px_solid_rgba(22,_115,_248,_0.2)] [border-right:0] [border-bottom:0] rounded-[36px_0_0_0] left-[42px] top-[72px] w-[190px] border-[rgba(91,_181,_248,_0.34)] [transform:rotate(162deg)]" />
-          <span className="absolute grid place-items-center rounded-full [box-shadow:0_8px_18px_rgba(8,_37,_95,_0.16)] w-[42px] h-[42px] bg-[var(--primary)] text-white left-[58px] top-[78px]">
-            <MapPin size={18} fill="currentColor" strokeWidth={2.2} />
+          <span className="inline-flex h-[32px] items-center gap-[7px] rounded-full bg-[#E8FBF3] px-[14px] text-[12px] font-black text-[#008A3D]">
+            <i className="h-[8px] w-[8px] rounded-full bg-[#00C950]" />
+            서울 종로구
           </span>
-          <span className="absolute grid place-items-center rounded-full [box-shadow:0_8px_18px_rgba(8,_37,_95,_0.16)] w-[42px] h-[42px] bg-[var(--primary)] text-white right-[76px] top-[104px] bg-[#f5b01a] bg-[rgba(245,_176,_26,_0.16)] text-[#b77900]">
-            <Target size={17} strokeWidth={2.6} />
-          </span>
-          <span className="absolute grid place-items-center rounded-full [box-shadow:0_8px_18px_rgba(8,_37,_95,_0.16)] w-[42px] h-[42px] bg-[var(--primary)] text-white left-[172px] bottom-[72px] bg-[#22c55e] bg-[rgba(34,_197,_94,_0.14)] text-[#138a3d]">
-            <Star size={17} fill="currentColor" strokeWidth={2.2} />
-          </span>
-          <div className="absolute grid place-items-center rounded-full [box-shadow:0_8px_18px_rgba(8,_37,_95,_0.16)] right-[38px] bottom-[34px] w-12 h-12 border-[5px_solid_rgba(255,_255,_255,_0.86)] bg-[var(--sky-300)] text-[var(--primary)]">
-            <Crosshair size={18} strokeWidth={2.5} />
-          </div>
-          <article className="absolute left-[16px] right-[16px] bottom-[16px] border-[1px_solid_rgba(255,_255,_255,_0.76)] rounded-[20px] p-3.5 bg-[rgba(255,_255,_255,_0.9)] [backdrop-filter:blur(12px)] [box-shadow:0_8px_24px_rgba(8,_37,_95,_0.12)]">
-            <LocationBadge>가까운 미션</LocationBadge>
-            <strong className="block mt-2 text-[var(--navy)] text-[17px]">인사동 전통찻집</strong>
-            <p className="m-[4px_0_0] text-[var(--muted)] text-xs font-bold">현재 위치에서 도보 8분</p>
-          </article>
-        </section>
+        </div>
 
-        <section className="grid gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="m-0 text-[var(--navy)] text-lg inline-flex items-center gap-[5px]">근처 미션</h2>
-            <span className="text-[var(--primary)] text-xs font-black">3개 발견</span>
-          </div>
-          <div className="grid gap-2.5">
-            {mapSpots.map((spot, index) => (
-              <article className="grid [grid-template-columns:44px_minmax(0,_1fr)_auto] gap-3 items-center border-[1px_solid_var(--sky-100)] rounded-[18px] p-3 bg-white [box-shadow:0_1px_5px_rgba(8,_37,_95,_0.08)]" key={spot.name}>
-                <span className={`grid w-11 h-11 place-items-center rounded-2xl bg-[var(--sky-100)] text-[var(--primary)] ${spot.className}`}>
-                  {index === 0 ? (
-                    <MapPin size={18} strokeWidth={2.5} />
-                  ) : index === 1 ? (
-                    <Route size={18} strokeWidth={2.5} />
-                  ) : (
-                    <Navigation size={18} strokeWidth={2.5} />
-                  )}
-                </span>
-                <div>
-                  <strong className="block overflow-hidden text-[var(--navy)] text-sm [text-overflow:ellipsis] whitespace-nowrap">{spot.name}</strong>
-                  <small className="block mt-[3px] text-[var(--muted)] text-[11px]">{spot.area}</small>
-                </div>
-                <em className="rounded-full p-[5px_8px] bg-[var(--sky-100)] text-[var(--primary)] text-[11px] not-italic font-black">{spot.point}</em>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <Button
-          className="mt-0.5"
-          icon={<Navigation size={18} strokeWidth={2.4} />}
-          onClick={() => navigate(PATH.MISSION_PHOTO)}
-        >
-          선택한 미션 시작하기
-        </Button>
+        <label className="mt-[20px] flex h-[48px] w-full items-center gap-[8px] rounded-[16px] bg-[#EAF5FF] px-[20px] text-[#A2A9B2]">
+          <Search size={18} strokeWidth={2.2} />
+          <input
+            type="text"
+            placeholder="지역 · 장소 검색"
+            className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium leading-[20px] text-[#1C1C3A] outline-none placeholder:text-[#A2A9B2]"
+          />
+        </label>
       </section>
-    </>
+
+      <section className="relative h-[480px] w-full overflow-hidden bg-[#EDF4EC]">
+        {apiKey ? (
+          <APIProvider apiKey={apiKey} language="ko" region="KR">
+            <Map
+              defaultCenter={SEOUL_JONGNO_CENTER}
+              defaultZoom={14}
+              mapId="quespot-map"
+              disableDefaultUI
+              gestureHandling="greedy"
+              className="h-full w-full"
+            >
+              {MAP_SPOTS.map((spot) => (
+                <MissionMapMarker
+                  key={spot.id}
+                  spot={spot}
+                  isSelected={selectedSpot.id === spot.id}
+                  onClick={() => setSelectedSpotId(spot.id)}
+                />
+              ))}
+
+              <CurrentLocationMarker />
+
+              <MapControls />
+            </Map>
+          </APIProvider>
+        ) : (
+          <MapApiKeyFallback />
+        )}
+
+        <MapLegend />
+
+        <div className="absolute bottom-[58px] right-[18px] rounded-[16px] bg-white px-[16px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]">
+          <strong className="block text-[14px] font-black leading-[18px] text-[#1C1C3A]">
+            서울 미션
+          </strong>
+          <p className="m-0 mt-[4px] text-[14px] font-black leading-[18px]">
+            <span className="text-[#5BB5F8]">{MAP_SPOTS.length}개 스팟</span>
+            <span className="mx-[4px] text-[#A2A9B2]">·</span>
+            <span className="text-[#00C950]">{completedCount}완료</span>
+          </p>
+        </div>
+
+        <div className="absolute bottom-[10px] left-1/2 h-[6px] w-[48px] -translate-x-1/2 rounded-full bg-[#C8E8FF]" />
+      </section>
+
+      <section className="bg-white px-[16px] pb-[18px] pt-[16px]">
+        <div className="mb-[14px] flex items-center justify-between">
+          <h2 className="m-0 text-[20px] font-black leading-[28px] text-[#1C1C3A]">
+            주변 미션 스팟
+          </h2>
+
+          <button
+            type="button"
+            className="inline-flex items-center gap-[5px] bg-transparent text-[14px] font-bold text-[#5BB5F8]"
+          >
+            <Navigation size={15} strokeWidth={2.4} />
+            길찾기
+          </button>
+        </div>
+
+        <div className="flex gap-[10px] overflow-x-auto pb-[2px] scrollbar-hide">
+          {MAP_SPOTS.map((spot) => (
+            <SpotSummaryCard
+              key={spot.id}
+              spot={spot}
+              selected={selectedSpot.id === spot.id}
+              onClick={() => setSelectedSpotId(spot.id)}
+            />
+          ))}
+        </div>
+      </section>
+    </section>
   );
 }
 
+type MissionMapMarkerProps = {
+  spot: MapSpot;
+  isSelected: boolean;
+  onClick: () => void;
+};
+
+function MissionMapMarker({ spot, isSelected, onClick }: MissionMapMarkerProps) {
+  const isCompleted = spot.status === "completed";
+
+  return (
+    <AdvancedMarker position={{ lat: spot.lat, lng: spot.lng }} onClick={onClick}>
+      <div className="relative flex flex-col items-center">
+        <div
+          className={[
+            "grid h-[40px] w-[40px] place-items-center rounded-full border-[3px] border-white text-[20px] shadow-[0_10px_18px_rgba(8,37,95,0.25)]",
+            isCompleted ? "bg-[#22C983]" : "bg-[#5BB5F8]",
+            isSelected ? "scale-110" : "scale-100",
+          ].join(" ")}
+        >
+          {spot.emoji}
+        </div>
+
+        <span className="mt-[5px] rounded-full bg-white px-[10px] py-[4px] text-[11px] font-black leading-[14px] text-[#1C1C3A] shadow-[0_2px_6px_rgba(8,37,95,0.18)]">
+          {spot.shortName}
+        </span>
+      </div>
+    </AdvancedMarker>
+  );
+}
+
+function CurrentLocationMarker() {
+  return (
+    <AdvancedMarker position={CURRENT_LOCATION}>
+      <div className="relative flex flex-col items-center">
+        <div className="grid h-[34px] w-[34px] place-items-center rounded-full border-[5px] border-white bg-[#3BA7F7] shadow-[0_8px_16px_rgba(8,37,95,0.25)]">
+          <span className="h-[12px] w-[12px] rounded-full bg-white" />
+        </div>
+
+        <span className="mt-[5px] inline-flex items-center gap-[5px] rounded-full bg-white px-[10px] py-[4px] text-[11px] font-black leading-[14px] text-[#5D6A7D] shadow-[0_2px_6px_rgba(8,37,95,0.18)]">
+          <i className="h-[7px] w-[7px] rounded-full bg-[#3BA7F7]" />
+          현재 위치
+        </span>
+      </div>
+    </AdvancedMarker>
+  );
+}
+
+function MapControls() {
+  const map = useMap();
+
+  return (
+    <div className="absolute right-[12px] top-[48px] z-10 flex flex-col gap-[10px]">
+      <button
+        type="button"
+        onClick={() => {
+          map?.panTo(CURRENT_LOCATION);
+          map?.setZoom(15);
+        }}
+        className="grid h-[44px] w-[44px] place-items-center rounded-[16px] bg-white text-[#5BB5F8] shadow-[0_3px_8px_rgba(8,37,95,0.18)]"
+        aria-label="현재 위치로 이동"
+      >
+        <Navigation size={20} strokeWidth={2.4} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => map?.setZoom((map.getZoom() ?? 14) + 1)}
+        className="grid h-[44px] w-[44px] place-items-center rounded-[16px] bg-white text-[#5BB5F8] shadow-[0_3px_8px_rgba(8,37,95,0.18)]"
+        aria-label="지도 확대"
+      >
+        <Plus size={22} strokeWidth={2.5} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => map?.setZoom((map.getZoom() ?? 14) - 1)}
+        className="grid h-[44px] w-[44px] place-items-center rounded-[16px] bg-white text-[#5BB5F8] shadow-[0_3px_8px_rgba(8,37,95,0.18)]"
+        aria-label="지도 축소"
+      >
+        <Minus size={22} strokeWidth={2.5} />
+      </button>
+    </div>
+  );
+}
+
+function MapLegend() {
+  return (
+    <div className="absolute left-[12px] top-[48px] z-10 rounded-[16px] bg-white px-[14px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]">
+      <LegendItem color="bg-[#5BB5F8]" label="미완료" />
+      <LegendItem color="bg-[#22C983]" label="완료" />
+      <LegendItem color="bg-[#3BA7F7]" label="내 위치" />
+    </div>
+  );
+}
+
+type LegendItemProps = {
+  color: string;
+  label: string;
+};
+
+function LegendItem({ color, label }: LegendItemProps) {
+  return (
+    <div className="flex items-center gap-[8px] py-[3px]">
+      <span className={`h-[10px] w-[10px] rounded-full ${color}`} />
+      <span className="text-[11px] font-black leading-[15px] text-[#5D6A7D]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+type SpotSummaryCardProps = {
+  spot: MapSpot;
+  selected: boolean;
+  onClick: () => void;
+};
+
+function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
+  const isCompleted = spot.status === "completed";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "flex min-w-[68px] flex-col items-center rounded-[16px] border px-[12px] py-[10px]",
+        selected
+          ? "border-[#BBF7D0] bg-[#F0FDF9]"
+          : "border-[#C8E8FF] bg-[#EAF5FF]",
+      ].join(" ")}
+    >
+      <span className="text-[22px] leading-none">{spot.emoji}</span>
+
+      <strong className="mt-[8px] text-[13px] font-black leading-[17px] text-[#1C1C3A]">
+        {spot.shortName}
+      </strong>
+
+      <span
+        className={[
+          "mt-[3px] text-[11px] font-bold leading-[15px]",
+          isCompleted ? "text-[#00C950]" : "text-[#A2A9B2]",
+        ].join(" ")}
+      >
+        {isCompleted ? "완료" : `${spot.missionCount ?? 0}개`}
+      </span>
+    </button>
+  );
+}
+
+function MapApiKeyFallback() {
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center bg-[#EDF4EC] px-[24px] text-center">
+      <MapPin size={42} className="text-[#5BB5F8]" strokeWidth={2.2} />
+
+      <strong className="mt-[14px] text-[16px] font-black text-[#1C1C3A]">
+        Google Maps API Key가 필요해요
+      </strong>
+
+      <p className="mt-[8px] text-[12px] font-medium leading-[18px] text-[#A2A9B2]">
+        프로젝트 루트의 .env 파일에
+        <br />
+        VITE_GOOGLE_MAPS_API_KEY를 추가해주세요.
+      </p>
+    </div>
+  );
+}
