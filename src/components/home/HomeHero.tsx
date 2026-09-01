@@ -12,7 +12,7 @@ export default function HomeHero({
   onExploreClick,
 }: HomeHeroProps) {
   return (
-    <section className="relative flex min-h-[172px] w-full items-center overflow-hidden">
+    <section className="relative flex min-h-[190px] w-full items-center overflow-hidden">
       <div className="z-10 min-w-0 flex-1 py-[10px]">
         <span className="inline-flex h-[28px] items-center rounded-full bg-white px-[14px] text-[12px] font-black leading-none text-[#5BB5F8] shadow-[0_2px_6px_rgba(91,181,248,0.12)]">
           안녕 {nickname}님!
@@ -40,11 +40,11 @@ export default function HomeHero({
         </button>
       </div>
 
-      <div className="pointer-events-none absolute bottom-[8px] right-[-2px] top-[10px] flex w-[178px] items-center justify-end">
+      <div className="pointer-events-none absolute bottom-[4px] right-[-10px] top-[4px] flex w-[205px] items-center justify-end">
         <img
           src={mascotSrc}
           alt="퀘스티"
-          className="animate-questy-float h-[172px] w-[139px] object-contain drop-shadow-[0_10px_18px_rgba(8,37,95,0.12)]"
+          className="animate-questy-tumble h-[198px] w-[160px] object-contain drop-shadow-[0_12px_20px_rgba(8,37,95,0.14)]"
         />
       </div>
     </section>

@@ -25,3 +25,45 @@
 .animate-questy-float {
   animation: questy-float 3s ease-in-out infinite;
 }
+@keyframes questy-tumble {
+  0% {
+    transform: translateY(0) rotate(-1deg) scale(1);
+  }
+
+  18% {
+    transform: translateY(-7px) rotate(2deg) scale(1.02);
+  }
+
+  36% {
+    transform: translateY(0) rotate(-1deg) scale(1);
+  }
+
+  48% {
+    transform: translateY(-10px) rotate(8deg) scale(1.04);
+  }
+
+  56% {
+    transform: translateY(-12px) rotate(180deg) scale(1.05);
+  }
+
+  64% {
+    transform: translateY(-8px) rotate(360deg) scale(1.04);
+  }
+
+  72% {
+    transform: translateY(0) rotate(2deg) scale(1);
+  }
+
+  86% {
+    transform: translateY(-6px) rotate(-2deg) scale(1.02);
+  }
+
+  100% {
+    transform: translateY(0) rotate(-1deg) scale(1);
+  }
+}
+
+.animate-questy-tumble {
+  transform-origin: center center;
+  animation: questy-tumble 5.6s ease-in-out infinite;
+}
