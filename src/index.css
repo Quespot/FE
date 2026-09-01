@@ -3,3 +3,11 @@
 @theme {
   --color-primary: #5bb5f8;
 }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

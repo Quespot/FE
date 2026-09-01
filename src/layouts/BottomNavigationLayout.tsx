@@ -38,7 +38,7 @@ const NAV_ITEMS = [
 export default function BottomNavigationLayout() {
   return (
     <>
-      <main className="min-h-full pb-[96px]">
+      <main className="flex h-full min-h-0 w-full flex-1 flex-col bg-[#F4F8FF] pb-[80px]">
         <Outlet />
       </main>
 
@@ -49,38 +49,29 @@ export default function BottomNavigationLayout() {
 
 const BottomNavigation = () => {
   return (
-    <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 rounded-t-[28px] bg-white shadow-[0_-4px_12px_rgba(8,37,95,0.08)]">
-      <ul className="flex h-[93px] items-start justify-between px-[15px] pt-[10px]">
+    <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 bg-white shadow-[0_-4px_8px_rgba(0,0,0,0.08)]">
+      <ul className="flex h-[80px] items-center">
         {NAV_ITEMS.map(({ label, path, icon: Icon }) => (
-          <li key={path} className="flex flex-1 justify-center">
+          <li key={path} className="flex-1">
             <NavLink
               to={path}
               className={({ isActive }) =>
-                [
-                  "relative flex h-[58px] w-[78px] flex-col items-center justify-start gap-[4px] pt-[10px]",
-                  "transition-colors duration-150",
-                  isActive ? "text-primary" : "text-[#C8E8FF]",
-                ].join(" ")
+                `relative flex h-[64px] flex-col items-center justify-center gap-[4px] ${
+                  isActive ? "text-primary" : "text-[#C8E8FF]"
+                }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <span className="flex h-[26px] w-[26px] items-center justify-center">
-                    <Icon className="block h-[24px] w-[24px] shrink-0" />
-                  </span>
+                  <Icon className="h-[24px] w-[24px] shrink-0" />
 
-                  <span
-                    className={[
-                      "block h-[14px] text-center text-[11px] font-black leading-[14px]",
-                      isActive ? "text-primary" : "text-[#A8B9CC]",
-                    ].join(" ")}
-                  >
+                  <span className="text-[9px] font-bold leading-none">
                     {label}
                   </span>
 
-                  {isActive ? (
-                    <span className="absolute bottom-0 left-1/2 h-[3px] w-[24px] -translate-x-1/2 rounded-full bg-primary" />
-                  ) : null}
+                  {isActive && (
+                    <span className="absolute bottom-[2px] h-[2px] w-[16px] rounded-full bg-primary" />
+                  )}
                 </>
               )}
             </NavLink>

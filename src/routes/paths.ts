@@ -12,6 +12,8 @@ export const PATH = {
   MISSION_DETAIL: "/missions/:missionId",
   MISSION_PHOTO: "/mission/photo",
   MISSION_RECORD: "/mission/record",
+  MISSION_LOCAL_RECOMMEND: "/mission/local-recommend",
+  MISSION_BONUS_REGION: "/mission/bonus-region",
 
   //MapPage
   MAP: "/map",
