@@ -25,6 +25,7 @@ import { PATH } from "@/routes/paths";
 
 import QuestySvg from "@/assets/icons/Questy.svg";
 import QuestyMainSvg from "@/assets/icons/QuestyMain.svg";
+import QuestyAirplaneSvg from "@/assets/icons/QuestyAirplane.svg";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -50,7 +51,8 @@ export default function HomePage() {
         <section className="shrink-0 bg-[#DFF3FF] px-[18px] pb-[20px] pt-[10px]">
           <HomeHero
             nickname="꿀법"
-            mascotSrc={QuestyMainSvg}
+            questySrc={QuestyMainSvg}
+            airplaneSrc={QuestyAirplaneSvg}
             onExploreClick={() => navigate(PATH.MISSIONS)}
           />
 

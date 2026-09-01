@@ -2,17 +2,19 @@ import { ChevronRight } from "lucide-react";
 
 type HomeHeroProps = {
   nickname: string;
-  mascotSrc: string;
+  questySrc: string;
+  airplaneSrc: string;
   onExploreClick: () => void;
 };
 
 export default function HomeHero({
   nickname,
-  mascotSrc,
+  questySrc,
+  airplaneSrc,
   onExploreClick,
 }: HomeHeroProps) {
   return (
-    <section className="relative flex min-h-[190px] w-full items-center overflow-hidden">
+    <section className="relative flex min-h-[198px] w-full items-center overflow-hidden">
       <div className="z-10 min-w-0 flex-1 py-[10px]">
         <span className="inline-flex h-[28px] items-center rounded-full bg-white px-[14px] text-[12px] font-black leading-none text-[#5BB5F8] shadow-[0_2px_6px_rgba(91,181,248,0.12)]">
           안녕 {nickname}님!
@@ -40,12 +42,32 @@ export default function HomeHero({
         </button>
       </div>
 
-      <div className="pointer-events-none absolute bottom-[4px] right-[-10px] top-[4px] flex w-[205px] items-center justify-end">
+      <div className="pointer-events-none absolute bottom-[4px] right-[-16px] top-[0px] z-0 w-[248px] overflow-visible">
+        {/* 1) 처음 가만히 떠 있는 퀘스티 */}
         <img
-          src={mascotSrc}
+          src={questySrc}
           alt="퀘스티"
-          className="animate-questy-tumble h-[198px] w-[160px] object-contain drop-shadow-[0_12px_20px_rgba(8,37,95,0.14)]"
+          className="absolute bottom-[8px] right-[48px] z-[2] h-[132px] w-[132px] object-contain animate-questy-wait"
         />
+
+        {/* 2) 1~2초 뒤 들어오는 비행기 + 탑승 퀘스티 */}
+        <div className="absolute bottom-[2px] right-[-170px] z-[3] h-[150px] w-[240px] animate-plane-enter-and-fly">
+          <img
+            src={airplaneSrc}
+            alt="퀘스티 비행기"
+            className="absolute inset-0 h-full w-full object-contain"
+          />
+
+          <img
+            src={questySrc}
+            alt="비행기를 타는 퀘스티"
+            className="absolute left-[84px] top-[22px] h-[58px] w-[58px] object-contain animate-questy-on-plane"
+          />
+
+          <span className="absolute left-[28px] top-[74px] h-[4px] w-[26px] rounded-full bg-white/80 animate-air-trail-1" />
+          <span className="absolute left-[8px] top-[92px] h-[3px] w-[20px] rounded-full bg-white/65 animate-air-trail-2" />
+          <span className="absolute left-[20px] top-[108px] h-[3px] w-[16px] rounded-full bg-white/55 animate-air-trail-3" />
+        </div>
       </div>
     </section>
   );
