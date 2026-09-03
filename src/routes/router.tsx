@@ -20,6 +20,7 @@ import LoginPage from "@/pages/Auth/LoginPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
 import MissionRoutePage from "@/pages/mission/MissionRoutePage";
+import LocalCouponPage from "@/pages/LocalCouponPage";
 
 export const router = createBrowserRouter([
   {
@@ -99,6 +100,8 @@ export const router = createBrowserRouter([
             path: PATH.QUESTY_CUSTOMIZE,
             element: <QuestyCustomizePage />,
           },
+          { path: PATH.REWARD_COUPONS, 
+            element: <LocalCouponPage /> },
         ],
       },
     ],

@@ -2,9 +2,10 @@ import type { CouponItem } from "@/data/reward";
 
 type CouponCardProps = {
   coupon: CouponItem;
+  onUse?: () => void;
 };
 
-export default function CouponCard({ coupon }: CouponCardProps) {
+export default function CouponCard({ coupon, onUse }: CouponCardProps) {
   const isUsed = coupon.status === "used";
   const canUse = coupon.status === "available" && coupon.usable;
 
@@ -37,6 +38,7 @@ export default function CouponCard({ coupon }: CouponCardProps) {
         <button
           type="button"
           disabled={!canUse}
+          onClick={onUse}
           className={[
             "h-[34px] shrink-0 rounded-full px-[14px] text-[12px] font-black leading-none transition",
             canUse

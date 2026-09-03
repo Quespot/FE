@@ -21,11 +21,12 @@ export const PATH = {
 
   //RewardsPage
   REWARDS: "/rewards",
+  REWARD_COUPONS: "/rewards/coupons",
 
   // MyPage
   MY: "/my",
   QUESTY_CUSTOMIZE: "/my/customize",
-
+  
   // Error
   NOT_FOUND: "*",
 } as const;

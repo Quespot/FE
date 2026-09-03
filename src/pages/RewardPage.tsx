@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Ticket } from "lucide-react";
 
 import HomeHeader from "@/components/home/HomeHeader";
@@ -8,21 +9,28 @@ import PointSummaryCard from "@/components/reward/PointSummaryCard";
 import RewardTabs from "@/components/reward/RewardTabs";
 import StampCard from "@/components/reward/StampCard";
 import StampRegionCard from "@/components/reward/StampRegionCard";
+
 import QuespotPageLayout, {
   QuespotDivider,
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
+
 import {
   rewardBadges,
   rewardHistoryItems,
   rewardStampRegions,
   rewardStamps,
   type RewardTab,
+  type StampItem,
   type StampRegion,
 } from "@/data/reward";
+
+import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
 
 export default function RewardPage() {
+  const navigate = useNavigate();
+
   const [selectedTab, setSelectedTab] = useState<RewardTab>("badges");
   const [selectedStampRegion, setSelectedStampRegion] =
     useState<StampRegion | null>(null);
@@ -110,6 +118,7 @@ export default function RewardPage() {
 
           <button
             type="button"
+            onClick={() => navigate(PATH.REWARD_COUPONS)}
             className="mt-[28px] flex h-[50px] w-full shrink-0 items-center justify-center gap-[8px] rounded-[16px] bg-[#EAF5FF] text-[14px] font-black leading-none text-[#5BB5F8] transition active:scale-[0.99]"
           >
             <Ticket size={16} strokeWidth={2.4} />
@@ -177,7 +186,7 @@ function StampRegionSection({
 
 type StampDetailSectionProps = {
   region: StampRegion;
-  stamps: typeof rewardStamps;
+  stamps: StampItem[];
   onBack: () => void;
 };
 
@@ -194,7 +203,7 @@ function StampDetailSection({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-[32px] items-center gap-[4px] rounded-full bg-[#EAF5FF] px-[12px] text-[12px] font-black text-[#5BB5F8]"
+          className="flex h-[32px] items-center gap-[4px] rounded-full bg-[#EAF5FF] px-[12px] text-[12px] font-black text-[#5BB5F8] transition active:scale-[0.98]"
         >
           <ArrowLeft size={14} strokeWidth={2.6} />
           지역 목록
@@ -209,11 +218,29 @@ function StampDetailSection({
         {region.name} 스탬프
       </h2>
 
-      <div className="mt-[16px] grid grid-cols-2 gap-[12px]">
-        {stamps.map((stamp) => (
-          <StampCard key={stamp.id} stamp={stamp} />
-        ))}
-      </div>
+      {stamps.length > 0 ? (
+        <div className="mt-[16px] grid grid-cols-2 gap-[12px]">
+          {stamps.map((stamp) => (
+            <StampCard key={stamp.id} stamp={stamp} />
+          ))}
+        </div>
+      ) : (
+        <section className="mt-[60px] flex flex-col items-center text-center">
+          <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-[#EAF5FF] text-[30px]">
+            ✉️
+          </div>
+
+          <h3 className="m-0 mt-[18px] text-[17px] font-black leading-[24px] text-[#1C1C3A]">
+            아직 등록된 스탬프가 없어요
+          </h3>
+
+          <p className="m-0 mt-[8px] text-[13px] font-medium leading-[20px] text-[#A2A9B2]">
+            해당 지역 미션이 추가되면
+            <br />
+            스탬프를 수집할 수 있어요.
+          </p>
+        </section>
+      )}
     </>
   );
 }
