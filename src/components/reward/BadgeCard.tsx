@@ -18,12 +18,6 @@ export default function BadgeCard({ badge }: BadgeCardProps) {
         {badge.emoji}
       </div>
 
-      {badge.highlighted ? (
-        <span className="absolute left-1/2 top-[48px] grid h-[26px] min-w-[26px] -translate-x-1/2 place-items-center rounded-full bg-[#8B5CF6] px-[7px] text-[10px] font-black text-white shadow-[0_3px_8px_rgba(28,28,58,0.24)]">
-          꿀
-        </span>
-      ) : null}
-
       <strong
         className={[
           "mt-[12px] text-center text-[12px] font-black leading-[17px]",

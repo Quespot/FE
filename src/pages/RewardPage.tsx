@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Ticket } from "lucide-react";
+import { ArrowLeft, Ticket } from "lucide-react";
 
 import HomeHeader from "@/components/home/HomeHeader";
 import BadgeCard from "@/components/reward/BadgeCard";
@@ -7,6 +7,7 @@ import HistoryCard from "@/components/reward/HistoryCard";
 import PointSummaryCard from "@/components/reward/PointSummaryCard";
 import RewardTabs from "@/components/reward/RewardTabs";
 import StampCard from "@/components/reward/StampCard";
+import StampRegionCard from "@/components/reward/StampRegionCard";
 import QuespotPageLayout, {
   QuespotDivider,
   QuespotPageContent,
@@ -14,21 +15,41 @@ import QuespotPageLayout, {
 import {
   rewardBadges,
   rewardHistoryItems,
+  rewardStampRegions,
   rewardStamps,
   type RewardTab,
+  type StampRegion,
 } from "@/data/reward";
 import QuestySvg from "@/assets/icons/Questy.svg";
 
 export default function RewardPage() {
   const [selectedTab, setSelectedTab] = useState<RewardTab>("badges");
+  const [selectedStampRegion, setSelectedStampRegion] =
+    useState<StampRegion | null>(null);
 
   const acquiredBadgeCount = useMemo(() => {
     return rewardBadges.filter((badge) => badge.acquired).length;
   }, []);
 
-  const acquiredStampCount = useMemo(() => {
-    return rewardStamps.filter((stamp) => stamp.acquired).length;
+  const acquiredStampRegionCount = useMemo(() => {
+    return rewardStampRegions.filter((region) => region.acquired).length;
   }, []);
+
+  const selectedRegionStamps = useMemo(() => {
+    if (!selectedStampRegion) return [];
+
+    return rewardStamps.filter(
+      (stamp) => stamp.regionId === selectedStampRegion.id,
+    );
+  }, [selectedStampRegion]);
+
+  const handleChangeTab = (tab: RewardTab) => {
+    setSelectedTab(tab);
+
+    if (tab !== "stamps") {
+      setSelectedStampRegion(null);
+    }
+  };
 
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
@@ -59,7 +80,7 @@ export default function RewardPage() {
           />
         </section>
 
-        <RewardTabs selectedTab={selectedTab} onChangeTab={setSelectedTab} />
+        <RewardTabs selectedTab={selectedTab} onChangeTab={handleChangeTab} />
 
         <section className="flex flex-1 flex-col px-[16px] pb-[24px] pt-[20px]">
           {selectedTab === "badges" ? (
@@ -70,10 +91,19 @@ export default function RewardPage() {
           ) : null}
 
           {selectedTab === "stamps" ? (
-            <StampSection
-              acquiredCount={acquiredStampCount}
-              totalCount={rewardStamps.length}
-            />
+            selectedStampRegion ? (
+              <StampDetailSection
+                region={selectedStampRegion}
+                stamps={selectedRegionStamps}
+                onBack={() => setSelectedStampRegion(null)}
+              />
+            ) : (
+              <StampRegionSection
+                acquiredCount={acquiredStampRegionCount}
+                totalCount={rewardStampRegions.length}
+                onSelectRegion={setSelectedStampRegion}
+              />
+            )
           ) : null}
 
           {selectedTab === "history" ? <HistorySection /> : null}
@@ -115,18 +145,72 @@ function BadgeSection({
   );
 }
 
-function StampSection({
+type StampRegionSectionProps = {
+  acquiredCount: number;
+  totalCount: number;
+  onSelectRegion: (region: StampRegion) => void;
+};
+
+function StampRegionSection({
   acquiredCount,
   totalCount,
-}: RewardSectionCountProps) {
+  onSelectRegion,
+}: StampRegionSectionProps) {
   return (
     <>
       <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
-        {acquiredCount} / {totalCount} 획득
+        {acquiredCount} / {totalCount} 스탬프 수집
       </p>
 
-      <div className="mt-[20px] grid grid-cols-2 gap-[12px]">
-        {rewardStamps.map((stamp) => (
+      <div className="mt-[20px] grid grid-cols-4 gap-x-[22px] gap-y-[22px]">
+        {rewardStampRegions.map((region) => (
+          <StampRegionCard
+            key={region.id}
+            region={region}
+            onClick={() => onSelectRegion(region)}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+type StampDetailSectionProps = {
+  region: StampRegion;
+  stamps: typeof rewardStamps;
+  onBack: () => void;
+};
+
+function StampDetailSection({
+  region,
+  stamps,
+  onBack,
+}: StampDetailSectionProps) {
+  const acquiredCount = stamps.filter((stamp) => stamp.acquired).length;
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-[32px] items-center gap-[4px] rounded-full bg-[#EAF5FF] px-[12px] text-[12px] font-black text-[#5BB5F8]"
+        >
+          <ArrowLeft size={14} strokeWidth={2.6} />
+          지역 목록
+        </button>
+
+        <span className="text-[12px] font-bold leading-[16px] text-[#A2A9B2]">
+          {acquiredCount} / {stamps.length} 획득
+        </span>
+      </div>
+
+      <h2 className="m-0 mt-[16px] text-[18px] font-black leading-[25px] text-[#1C1C3A]">
+        {region.name} 스탬프
+      </h2>
+
+      <div className="mt-[16px] grid grid-cols-2 gap-[12px]">
+        {stamps.map((stamp) => (
           <StampCard key={stamp.id} stamp={stamp} />
         ))}
       </div>
