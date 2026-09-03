@@ -19,6 +19,7 @@ import QuestyCustomizePage from "@/pages/QuestyCustomizePage";
 import LoginPage from "@/pages/Auth/LoginPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
+import MissionRoutePage from "@/pages/mission/MissionRoutePage";
 
 export const router = createBrowserRouter([
   {
@@ -92,6 +93,8 @@ export const router = createBrowserRouter([
             path: PATH.MISSION_BONUS_REGION,
             element: <BonusRegionPage />,
           },
+          { path: PATH.MISSION_ROUTE, 
+            element: <MissionRoutePage /> },
           {
             path: PATH.QUESTY_CUSTOMIZE,
             element: <QuestyCustomizePage />,

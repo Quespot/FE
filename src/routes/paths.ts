@@ -14,6 +14,7 @@ export const PATH = {
   MISSION_RECORD: "/mission/record",
   MISSION_LOCAL_RECOMMEND: "/mission/local-recommend",
   MISSION_BONUS_REGION: "/mission/bonus-region",
+  MISSION_ROUTE: "/mission/route",
 
   //MapPage
   MAP: "/map",
