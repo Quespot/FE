@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,7 +6,6 @@ import {
   Minus,
   Navigation,
   Plus,
-  Route,
   Search,
 } from "lucide-react";
 import {
@@ -313,6 +311,7 @@ export default function MapPage() {
 
         <label className="mt-[20px] flex h-[48px] w-full items-center gap-[8px] rounded-[16px] bg-[#EAF5FF] px-[20px] text-[#A2A9B2]">
           <Search size={18} strokeWidth={2.2} />
+
           <input
             type="text"
             placeholder="지역 · 장소 검색"
@@ -489,6 +488,7 @@ function MissionMapMarker({
 }: MissionMapMarkerProps) {
   const isCompleted = spot.status === "completed";
   const firstPlace = spot.places[0];
+
   const routeInfo = firstPlace
     ? getRouteInfo(currentLocation, firstPlace)
     : {
@@ -500,22 +500,12 @@ function MissionMapMarker({
   const bubbleSide = spot.lng > SEOUL_JONGNO_CENTER.lng ? "left" : "right";
 
   return (
-    <AdvancedMarker position={{ lat: spot.lat, lng: spot.lng }} onClick={onClick}>
+    <AdvancedMarker
+      position={{ lat: spot.lat, lng: spot.lng }}
+      onClick={onClick}
+      zIndex={isSelected ? 9999 : isCompleted ? 20 : 10}
+    >
       <div className="relative flex flex-col items-center">
-        <div
-          className={[
-            "grid h-[40px] w-[40px] place-items-center rounded-full border-[3px] border-white text-[20px] shadow-[0_10px_18px_rgba(8,37,95,0.25)] transition",
-            isCompleted ? "bg-[#22C983]" : "bg-[#5BB5F8]",
-            isSelected ? "scale-110" : "scale-100",
-          ].join(" ")}
-        >
-          {spot.emoji}
-        </div>
-
-        <span className="mt-[5px] rounded-full bg-white px-[10px] py-[4px] text-[11px] font-black leading-[14px] text-[#1C1C3A] shadow-[0_2px_6px_rgba(8,37,95,0.18)]">
-          {spot.shortName}
-        </span>
-
         {isSelected ? (
           <SelectedSpotBubble
             spot={spot}
@@ -524,6 +514,20 @@ function MissionMapMarker({
             onRouteClick={onRouteClick}
           />
         ) : null}
+
+        <div
+          className={[
+            "relative z-10 grid h-[40px] w-[40px] place-items-center rounded-full border-[3px] border-white text-[20px] shadow-[0_10px_18px_rgba(8,37,95,0.25)] transition",
+            isCompleted ? "bg-[#22C983]" : "bg-[#5BB5F8]",
+            isSelected ? "scale-110" : "scale-100",
+          ].join(" ")}
+        >
+          {spot.emoji}
+        </div>
+
+        <span className="relative z-10 mt-[5px] rounded-full bg-white px-[10px] py-[4px] text-[11px] font-black leading-[14px] text-[#1C1C3A] shadow-[0_2px_6px_rgba(8,37,95,0.18)]">
+          {spot.shortName}
+        </span>
       </div>
     </AdvancedMarker>
   );
@@ -551,7 +555,7 @@ function SelectedSpotBubble({
   return (
     <div
       className={[
-        "pointer-events-auto absolute top-[-10px] z-20 w-[132px] rounded-[18px] bg-white px-[16px] py-[14px] text-center shadow-[0_4px_14px_rgba(8,37,95,0.2)]",
+        "pointer-events-auto absolute top-[-28px] z-[999] w-[132px] rounded-[18px] bg-white px-[16px] py-[14px] text-center shadow-[0_8px_20px_rgba(8,37,95,0.24)]",
         side === "left" ? "right-[52px]" : "left-[52px]",
       ].join(" ")}
     >
@@ -587,7 +591,7 @@ type CurrentLocationMarkerProps = {
 
 function CurrentLocationMarker({ currentLocation }: CurrentLocationMarkerProps) {
   return (
-    <AdvancedMarker position={currentLocation}>
+    <AdvancedMarker position={currentLocation} zIndex={30}>
       <div className="relative flex flex-col items-center">
         <div className="grid h-[34px] w-[34px] place-items-center rounded-full border-[5px] border-white bg-[#3BA7F7] shadow-[0_8px_16px_rgba(8,37,95,0.25)]">
           <span className="h-[12px] w-[12px] rounded-full bg-white" />
