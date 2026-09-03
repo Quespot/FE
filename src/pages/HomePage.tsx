@@ -10,13 +10,22 @@ import RecommendedMissionSection from "@/components/home/RecommendedMissionSecti
 import NearbySpotSection from "@/components/home/NearbySpotSection";
 import BonusBanner from "@/components/home/BonusBanner";
 
+import QuespotPageLayout, {
+  QuespotDivider,
+  QuespotPageContent,
+} from "@/layouts/QuespotPageLayout";
+
 import {
-  figmaAssets,
   homeCategories,
   nearbySpots,
   recommendedMissions,
 } from "@/data/quespot";
+
 import { PATH } from "@/routes/paths";
+
+import QuestySvg from "@/assets/icons/Questy.svg";
+import QuestyMainSvg from "@/assets/icons/QuestyMain.svg";
+import QuestyAirplaneSvg from "@/assets/icons/QuestyAirplane.svg";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -27,70 +36,74 @@ export default function HomePage() {
     : recommendedMissions.slice(0, 2);
 
   return (
-    <section className="flex min-h-full flex-1 flex-col overflow-y-auto bg-[#f2f7ff] px-[18px] pb-[22px]">
+    <QuespotPageLayout className="bg-[#F2F7FF]">
       <HomeHeader
-        mascotSrc={figmaAssets.mascot}
+        mascotSrc={QuestySvg}
         notificationCount={3}
         onBellClick={() => {
           // TODO: 알림함 페이지 연결
         }}
       />
 
-      <HomeHero
-        nickname="꿀법"
-        mascotSrc={figmaAssets.heroMascot}
-        onExploreClick={() => navigate(PATH.MISSIONS)}
-      />
+      <QuespotDivider />
 
-      <div className="mt-[18px]">
-        <SearchInput placeholder="미션 · 장소 · 지역을 검색해보세요" />
-      </div>
+      <QuespotPageContent className="bg-[#F2F7FF] pb-[22px]">
+        <section className="shrink-0 bg-[#DFF3FF] px-[18px] pb-[20px] pt-[10px]">
+          <HomeHero
+            nickname="꿀법"
+            questySrc={QuestyMainSvg}
+            airplaneSrc={QuestyAirplaneSvg}
+            onExploreClick={() => navigate(PATH.MISSIONS)}
+          />
 
-      <div className="mt-[28px]">
-        <ActivitySummary
-          items={[
-            { value: "2개", label: "완료 미션" },
-            { value: "350P", label: "보유 포인트" },
-            { value: "2개", label: "획득 배지" },
-            { value: "2개", label: "스탬프" },
-          ]}
-        />
-      </div>
+          <div className="mt-[18px]">
+            <SearchInput placeholder="미션 · 장소 · 지역을 검색해보세요" />
+          </div>
+        </section>
 
-      <div className="mt-[26px]">
-        <CategoryGrid categories={homeCategories} />
-      </div>
+        <section className="px-[18px] pt-[28px]">
+          <ActivitySummary
+            items={[
+              { value: "2개", label: "완료 미션" },
+              { value: "350P", label: "보유 포인트" },
+              { value: "2개", label: "획득 배지" },
+              { value: "2개", label: "스탬프" },
+            ]}
+          />
 
-      <div className="mt-[28px]">
-        <RecommendedMissionSection
-          missions={visibleMissions}
-          showAll={showAllMissions}
-          onToggleShowAll={() => setShowAllMissions((value) => !value)}
-          onMissionClick={() => navigate(PATH.MISSION_DETAIL)}
-        />
-      </div>
+          <div className="mt-[26px]">
+            <CategoryGrid categories={homeCategories} />
+          </div>
 
-      <div className="mt-[30px]">
-        <NearbySpotSection
-          spots={nearbySpots.map((spot) => ({
-            ...spot,
-            done: spot.done ?? false,
-          }))}
-          onMapClick={() => navigate(PATH.MAP)}
-          onSpotClick={(spot) => {
-            if (spot.done) {
-              navigate(PATH.MISSION_RECORD);
-              return;
-            }
+          <div className="mt-[28px]">
+            <RecommendedMissionSection
+              missions={visibleMissions}
+              showAll={showAllMissions}
+              onToggleShowAll={() => setShowAllMissions((value) => !value)}
+              onMissionClick={() => navigate(PATH.MISSION_DETAIL)}
+            />
+          </div>
 
-            navigate(PATH.MISSION_DETAIL);
-          }}
-        />
-      </div>
+          <div className="mt-[30px]">
+            <NearbySpotSection
+              spots={nearbySpots}
+              onMapClick={() => navigate(PATH.MAP)}
+              onSpotClick={(spot) => {
+                if (spot.done) {
+                  navigate(PATH.MISSION_RECORD);
+                  return;
+                }
 
-      <div className="mt-[28px] mb-[16px]">
-        <BonusBanner mascotSrc={figmaAssets.mascot} />
-      </div>
-    </section>
+                navigate(PATH.MISSION_DETAIL);
+              }}
+            />
+          </div>
+
+          <div className="mb-[16px] mt-[28px]">
+            <BonusBanner mascotSrc={QuestySvg} />
+          </div>
+        </section>
+      </QuespotPageContent>
+    </QuespotPageLayout>
   );
 }
