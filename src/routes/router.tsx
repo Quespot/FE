@@ -10,6 +10,8 @@ import MissionsPage from "@/pages/mission/MissionPage";
 import MissionDetailPage from "@/pages/mission/MissionDetailPage";
 import MissionPhotoPage from "@/pages/mission/MissionPhotoPage";
 import MissionRecordPage from "@/pages/mission/MissionRecordPage";
+import LocalRecommendPage from "@/pages/mission/LocalRecommendPage";
+import BonusRegionPage from "@/pages/mission/BonusRegionPage";
 import MapPage from "@/pages/MapPage";
 import RewardPage from "@/pages/RewardPage";
 import MyPage from "@/pages/MyPage";
@@ -30,8 +32,14 @@ export const router = createBrowserRouter([
         path: PATH.LOGIN,
         element: <LoginPage />,
       },
-      { path: PATH.SIGNUP, element: <SignupPage /> },
-      { path: PATH.SIGNUP_CHECK, element: <SignupCheckPage /> },
+      {
+        path: PATH.SIGNUP,
+        element: <SignupPage />,
+      },
+      {
+        path: PATH.SIGNUP_CHECK,
+        element: <SignupCheckPage />,
+      },
 
       {
         element: <ProtectedRoute />,
@@ -75,6 +83,14 @@ export const router = createBrowserRouter([
           {
             path: PATH.MISSION_RECORD,
             element: <MissionRecordPage />,
+          },
+          {
+            path: PATH.MISSION_LOCAL_RECOMMEND,
+            element: <LocalRecommendPage />,
+          },
+          {
+            path: PATH.MISSION_BONUS_REGION,
+            element: <BonusRegionPage />,
           },
           {
             path: PATH.QUESTY_CUSTOMIZE,

@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 
 import HomeHeader from "@/components/home/HomeHeader";
+import QuespotPageLayout, {
+  QuespotDivider,
+  QuespotPageContent,
+} from "@/layouts/QuespotPageLayout";
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
 
@@ -166,7 +170,7 @@ export default function MissionPage() {
   }, [selectedCategory]);
 
   return (
-    <section className="flex min-h-full flex-1 flex-col overflow-y-auto bg-[#F4F8FF] pb-[24px]">
+    <QuespotPageLayout>
       <HomeHeader
         mascotSrc={QuestySvg}
         notificationCount={3}
@@ -175,7 +179,9 @@ export default function MissionPage() {
         }}
       />
 
-      <div className="border-b border-[#EAF5FF] bg-white px-[16px] pb-[16px] pt-[24px]">
+      <QuespotDivider />
+
+      <section className="shrink-0 border-b border-[#EAF5FF] bg-white px-[16px] pb-[16px] pt-[24px]">
         <h1 className="m-0 text-[24px] font-black leading-[32px] text-[#1C1C3A]">
           미션 탐색
         </h1>
@@ -189,7 +195,7 @@ export default function MissionPage() {
           />
         </label>
 
-        <div className="mt-[16px] flex gap-[12px] overflow-x-auto pb-[2px] scrollbar-hide">
+        <div className="no-scrollbar mt-[16px] flex max-w-full gap-[12px] overflow-x-auto overflow-y-hidden pb-[2px]">
           {CATEGORY_TABS.map((tab) => {
             const isActive = selectedCategory === tab.id;
             const Icon = tab.icon;
@@ -212,9 +218,9 @@ export default function MissionPage() {
             );
           })}
         </div>
-      </div>
+      </section>
 
-      <div className="flex flex-col gap-[12px] px-[16px] py-[16px]">
+      <QuespotPageContent className="gap-[12px] px-[16px] py-[16px]">
         {filteredMissions.map((mission) => (
           <MissionListCard
             key={mission.id}
@@ -230,8 +236,8 @@ export default function MissionPage() {
             }}
           />
         ))}
-      </div>
-    </section>
+      </QuespotPageContent>
+    </QuespotPageLayout>
   );
 }
 
@@ -250,7 +256,7 @@ function MissionListCard({ mission, onClick }: MissionListCardProps) {
     <article
       onClick={onClick}
       className={[
-        "relative flex h-[112px] w-full overflow-hidden rounded-[16px] border border-[#EAF5FF] bg-white shadow-[0_2px_8px_rgba(8,37,95,0.08)]",
+        "relative flex h-[112px] w-full shrink-0 overflow-hidden rounded-[16px] border border-[#EAF5FF] bg-white shadow-[0_2px_8px_rgba(8,37,95,0.08)]",
         isLocked
           ? "cursor-default opacity-60"
           : "cursor-pointer transition active:scale-[0.995]",
@@ -337,17 +343,13 @@ function MissionListCard({ mission, onClick }: MissionListCardProps) {
 
           if (mission.status === "locked") return;
 
-          navigateToDetailFallback();
+          onClick();
         }}
       >
         <ChevronRight size={20} strokeWidth={2.6} />
       </button>
     </article>
   );
-
-  function navigateToDetailFallback() {
-    onClick();
-  }
 }
 
 type CategoryMiniIconProps = {
