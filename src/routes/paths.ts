@@ -2,7 +2,8 @@ export const PATH = {
   LANDING: "/",
   LOGIN: "/login",
   SIGNUP: "/signup",
-  SIGNUP_CHECK: "/signup/check",
+  SIGNUP_CHECK: "/profile/check",
+  PROFILE_SETUP: "/profile/setup",
 
   // HomePage
   HOME: "/home",

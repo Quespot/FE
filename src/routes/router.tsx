@@ -19,6 +19,7 @@ import QuestyCustomizePage from "@/pages/QuestyCustomizePage";
 import LoginPage from "@/pages/Auth/LoginPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
+import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
 import MissionRoutePage from "@/pages/mission/MissionRoutePage";
 
 export const router = createBrowserRouter([
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
       {
         path: PATH.SIGNUP_CHECK,
         element: <SignupCheckPage />,
+      },
+      {
+        path: PATH.PROFILE_SETUP,
+        element: <ProfileSetupPage />,
       },
 
       {
