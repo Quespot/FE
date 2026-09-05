@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import SectionHeader from "@/components/common/SectionHeader";
 
-const categoryToneClasses: Record<string, string> = {
+export const categoryToneClasses: Record<string, string> = {
   violet: "bg-[#eee1ff] text-[#8b5cf6]",
   green: "bg-[#e1faef] text-green-600",
   amber: "bg-[#fff1c9] text-amber-600",
@@ -23,7 +23,7 @@ const categoryToneClasses: Record<string, string> = {
   purple: "bg-[#f0e3ff] text-purple-600",
 };
 
-const categoryIcons: Record<string, LucideIcon> = {
+export const categoryIcons: Record<string, LucideIcon> = {
   history: Building2,
   nature: Leaf,
   food: Utensils,

@@ -2,6 +2,9 @@
 
 @theme {
   --color-primary: #5bb5f8;
+  --font-sans:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, sans-serif;
 }
 .no-scrollbar {
   -ms-overflow-style: none;

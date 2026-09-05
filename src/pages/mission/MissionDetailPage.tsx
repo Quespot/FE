@@ -371,7 +371,7 @@ export default function MissionDetailPage() {
             <button
               type="button"
               onClick={() => navigate(PATH.MISSION_RECORD)}
-              className="flex h-[32px] min-w-[76px] shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[#00D664] px-[12px] font-['Noto_Sans_KR'] text-[10px] font-black leading-none text-white"
+              className="flex h-[32px] min-w-[76px] shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-[#00D664] px-[12px] font-sans text-[10px] font-black leading-none text-white"
             >
               기록 남기기
             </button>
@@ -456,11 +456,11 @@ function SmallFeatureCard({
       </span>
 
       <div className="min-w-0">
-        <strong className="block font-['Noto_Sans_KR'] text-[13px] font-black leading-[18px] text-[#1C1C3A]">
+        <strong className="block font-sans text-[13px] font-black leading-[18px] text-[#1C1C3A]">
           {title}
         </strong>
 
-        <p className="m-0 mt-[2px] font-['Noto_Sans_KR'] text-[10px] font-medium leading-[14px] text-[#A2A9B2]">
+        <p className="m-0 mt-[2px] font-sans text-[10px] font-medium leading-[14px] text-[#A2A9B2]">
           {description}
         </p>
       </div>
