@@ -1,6 +1,7 @@
 import {
   Building2,
   Camera,
+  Coffee,
   Compass,
   Leaf,
   Palette,
@@ -12,10 +13,11 @@ import {
 } from "lucide-react";
 import SectionHeader from "@/components/common/SectionHeader";
 
-const categoryToneClasses: Record<string, string> = {
+export const categoryToneClasses: Record<string, string> = {
   violet: "bg-[#eee1ff] text-[#8b5cf6]",
   green: "bg-[#e1faef] text-green-600",
   amber: "bg-[#fff1c9] text-amber-600",
+  brown: "bg-[#f3e6da] text-[#a96c3d]",
   blue: "bg-[#dcecff] text-[#2577ff]",
   pink: "bg-[#ffe1f0] text-pink-500",
   cyan: "bg-[#cff9fb] text-cyan-600",
@@ -23,10 +25,11 @@ const categoryToneClasses: Record<string, string> = {
   purple: "bg-[#f0e3ff] text-purple-600",
 };
 
-const categoryIcons: Record<string, LucideIcon> = {
+export const categoryIcons: Record<string, LucideIcon> = {
   history: Building2,
   nature: Leaf,
   food: Utensils,
+  cafe: Coffee,
   night: Sunrise,
   photo: Camera,
   activity: Waves,

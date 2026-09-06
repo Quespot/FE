@@ -3,7 +3,6 @@ import { PATH } from "@/routes/paths";
 import MobileLayout from "@/layouts/MobileLayout";
 import BottomNavigationLayout from "@/layouts/BottomNavigationLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
-
 import LandingPage from "@/pages/LandingPage";
 import HomePage from "@/pages/HomePage";
 import MissionsPage from "@/pages/mission/MissionPage";
@@ -15,10 +14,14 @@ import BonusRegionPage from "@/pages/mission/BonusRegionPage";
 import MapPage from "@/pages/MapPage";
 import RewardPage from "@/pages/RewardPage";
 import MyPage from "@/pages/MyPage";
+import LikesPage from "@/pages/LikesPage";
+import SavedPlacesPage from "@/pages/SavedPlacesPage";
+import ArchivePage from "@/pages/ArchivePage";
 import QuestyCustomizePage from "@/pages/QuestyCustomizePage";
 import LoginPage from "@/pages/Auth/LoginPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
+import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
 import MissionRoutePage from "@/pages/mission/MissionRoutePage";
 import LocalCouponPage from "@/pages/LocalCouponPage";
 
@@ -41,6 +44,10 @@ export const router = createBrowserRouter([
       {
         path: PATH.SIGNUP_CHECK,
         element: <SignupCheckPage />,
+      },
+      {
+        path: PATH.PROFILE_SETUP,
+        element: <ProfileSetupPage />,
       },
 
       {
@@ -100,7 +107,19 @@ export const router = createBrowserRouter([
             path: PATH.QUESTY_CUSTOMIZE,
             element: <QuestyCustomizePage />,
           },
-          { path: PATH.REWARD_COUPONS, 
+          {
+            path: PATH.LIKES,
+            element: <LikesPage />,
+          },
+          {
+            path: PATH.SAVED_PLACES,
+            element: <SavedPlacesPage />,
+          },
+          {
+            path: PATH.ARCHIVE,
+            element: <ArchivePage />,
+          },
+           { path: PATH.REWARD_COUPONS, 
             element: <LocalCouponPage /> },
         ],
       },
