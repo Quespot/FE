@@ -15,6 +15,9 @@ import BonusRegionPage from "@/pages/mission/BonusRegionPage";
 import MapPage from "@/pages/MapPage";
 import RewardPage from "@/pages/RewardPage";
 import MyPage from "@/pages/MyPage";
+import LikesPage from "@/pages/LikesPage";
+import SavedPlacesPage from "@/pages/SavedPlacesPage";
+import ArchivePage from "@/pages/ArchivePage";
 import QuestyCustomizePage from "@/pages/QuestyCustomizePage";
 import LoginPage from "@/pages/Auth/LoginPage";
 import SignupPage from "@/pages/Auth/SignupPage";
@@ -103,6 +106,18 @@ export const router = createBrowserRouter([
           {
             path: PATH.QUESTY_CUSTOMIZE,
             element: <QuestyCustomizePage />,
+          },
+          {
+            path: PATH.LIKES,
+            element: <LikesPage />,
+          },
+          {
+            path: PATH.SAVED_PLACES,
+            element: <SavedPlacesPage />,
+          },
+          {
+            path: PATH.ARCHIVE,
+            element: <ArchivePage />,
           },
         ],
       },
