@@ -30,15 +30,15 @@ export const courseCards = [
 export type HomeCategory = {
   id: string;
   label: string;
-  tone: "violet" | "green" | "amber" | "blue" | "pink" | "cyan" | "rose" | "purple";
+  tone: "violet" | "green" | "amber" | "brown" | "blue" | "pink" | "cyan" | "rose" | "purple";
 };
 
 export const homeCategories: HomeCategory[] = [
   { id: "history", label: "역사·문화", tone: "violet" },
   { id: "nature", label: "자연·힐링", tone: "green" },
-  { id: "food", label: "음식·카페", tone: "amber" },
+  { id: "food", label: "음식", tone: "amber" },
+  { id: "cafe", label: "카페", tone: "brown" },
   { id: "night", label: "야경·뷰", tone: "blue" },
-  { id: "photo", label: "인증·포토", tone: "pink" },
   { id: "activity", label: "액티비티", tone: "cyan" },
   { id: "shopping", label: "쇼핑", tone: "rose" },
   { id: "art", label: "예술·체험", tone: "purple" },

@@ -25,6 +25,9 @@ export const PATH = {
 
   // MyPage
   MY: "/my",
+  LIKES: "/my/likes",
+  SAVED_PLACES: "/my/saved-places",
+  ARCHIVE: "/my/archive",
   QUESTY_CUSTOMIZE: "/my/customize",
 
   // Error
