@@ -67,9 +67,7 @@ export default function MissionRoutePage() {
     state?.origin ?? DEFAULT_CURRENT_LOCATION,
   );
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as
-    | string
-    | undefined;
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
 
   const destination = useMemo<LatLng>(() => {
     return {
@@ -205,7 +203,7 @@ export default function MissionRoutePage() {
 
         <button
           type="button"
-          onClick={() => navigate(PATH.MISSION_PHOTO)}
+          onClick={() => navigate(PATH.MISSION_VERIFY)}
           className="h-[56px] shrink-0 rounded-[16px] bg-[#5BB5F8] text-[17px] font-black leading-none text-white shadow-[0_8px_18px_rgba(91,181,248,0.24)] transition active:scale-[0.99]"
         >
           📍 도착! 미션 시작하기
@@ -360,7 +358,9 @@ type CurrentLocationMarkerProps = {
   currentLocation: LatLng;
 };
 
-function CurrentLocationMarker({ currentLocation }: CurrentLocationMarkerProps) {
+function CurrentLocationMarker({
+  currentLocation,
+}: CurrentLocationMarkerProps) {
   return (
     <AdvancedMarker position={currentLocation}>
       <div className="grid h-[22px] w-[22px] place-items-center rounded-full border-[3px] border-white bg-[#3BA7F7] shadow-[0_3px_8px_rgba(8,37,95,0.28)]">
