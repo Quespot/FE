@@ -18,6 +18,7 @@ import SavedPlacesPage from "@/pages/My/SavedPlacesPage";
 import ArchivePage from "@/pages/My/ArchivePage";
 import QuestyCustomizePage from "@/pages/My/QuestyCustomizePage";
 import LoginPage from "@/pages/Auth/LoginPage";
+import OAuthCallbackPage from "@/pages/Auth/OAuthCallbackPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
 import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
@@ -40,21 +41,24 @@ export const router = createBrowserRouter([
         element: <LoginPage />,
       },
       {
+        path: PATH.OAUTH_CALLBACK,
+        element: <OAuthCallbackPage />,
+      },
+      {
         path: PATH.SIGNUP,
         element: <SignupPage />,
       },
       {
-        path: PATH.SIGNUP_CHECK,
-        element: <SignupCheckPage />,
-      },
-      {
-        path: PATH.PROFILE_SETUP,
-        element: <ProfileSetupPage />,
-      },
-
-      {
         element: <ProtectedRoute />,
         children: [
+          {
+            path: PATH.SIGNUP_CHECK,
+            element: <SignupCheckPage />,
+          },
+          {
+            path: PATH.PROFILE_SETUP,
+            element: <ProfileSetupPage />,
+          },
           // 하단 내비게이션이 필요한 페이지
           {
             element: <BottomNavigationLayout />,
@@ -115,6 +119,10 @@ export const router = createBrowserRouter([
           {
             path: PATH.QUESTY_CUSTOMIZE,
             element: <QuestyCustomizePage />,
+          },
+          {
+            path: PATH.PROFILE_DETAILS,
+            element: <ProfileSetupPage />,
           },
           {
             path: PATH.LIKES,
