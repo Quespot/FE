@@ -3,7 +3,6 @@ import { PATH } from "@/routes/paths";
 import MobileLayout from "@/layouts/MobileLayout";
 import BottomNavigationLayout from "@/layouts/BottomNavigationLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
-
 import LandingPage from "@/pages/LandingPage";
 import HomePage from "@/pages/HomePage";
 import MissionsPage from "@/pages/mission/MissionPage";
@@ -13,11 +12,11 @@ import LocalRecommendPage from "@/pages/mission/LocalRecommendPage";
 import BonusRegionPage from "@/pages/mission/BonusRegionPage";
 import MapPage from "@/pages/MapPage";
 import RewardPage from "@/pages/RewardPage";
-import MyPage from "@/pages/MyPage";
-import LikesPage from "@/pages/LikesPage";
-import SavedPlacesPage from "@/pages/SavedPlacesPage";
-import ArchivePage from "@/pages/ArchivePage";
-import QuestyCustomizePage from "@/pages/QuestyCustomizePage";
+import MyPage from "@/pages/My/MyPage";
+import LikesPage from "@/pages/My/LikesPage";
+import SavedPlacesPage from "@/pages/My/SavedPlacesPage";
+import ArchivePage from "@/pages/My/ArchivePage";
+import QuestyCustomizePage from "@/pages/My/QuestyCustomizePage";
 import LoginPage from "@/pages/Auth/LoginPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
@@ -26,6 +25,7 @@ import MissionRoutePage from "@/pages/mission/MissionRoutePage";
 import VerifyPage from "@/pages/mission/verify/VerifyPage";
 import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
 import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
+import LocalCouponPage from "@/pages/LocalCouponPage";
 
 export const router = createBrowserRouter([
   {
@@ -128,6 +128,7 @@ export const router = createBrowserRouter([
             path: PATH.ARCHIVE,
             element: <ArchivePage />,
           },
+          { path: PATH.REWARD_COUPONS, element: <LocalCouponPage /> },
         ],
       },
     ],
