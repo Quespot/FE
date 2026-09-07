@@ -2,6 +2,9 @@
 
 @theme {
   --color-primary: #5bb5f8;
+  --color-red: #e7000b;
+  --color-red2: #ef4444;
+  --color-red3: #fee2e2;
   --font-sans:
     "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, sans-serif;

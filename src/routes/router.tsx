@@ -8,7 +8,6 @@ import LandingPage from "@/pages/LandingPage";
 import HomePage from "@/pages/HomePage";
 import MissionsPage from "@/pages/mission/MissionPage";
 import MissionDetailPage from "@/pages/mission/MissionDetailPage";
-import MissionPhotoPage from "@/pages/mission/MissionPhotoPage";
 import MissionRecordPage from "@/pages/mission/MissionRecordPage";
 import LocalRecommendPage from "@/pages/mission/LocalRecommendPage";
 import BonusRegionPage from "@/pages/mission/BonusRegionPage";
@@ -24,6 +23,9 @@ import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
 import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
 import MissionRoutePage from "@/pages/mission/MissionRoutePage";
+import VerifyPage from "@/pages/mission/verify/VerifyPage";
+import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
+import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
 
 export const router = createBrowserRouter([
   {
@@ -86,8 +88,16 @@ export const router = createBrowserRouter([
             element: <MissionDetailPage />,
           },
           {
-            path: PATH.MISSION_PHOTO,
-            element: <MissionPhotoPage />,
+            path: PATH.MISSION_VERIFY,
+            element: <VerifyPage />,
+          },
+          {
+            path: PATH.MISSION_VERIFY_LOADING,
+            element: <VerifyLoadingPage />,
+          },
+          {
+            path: PATH.MISSION_VERIFY_RESULT,
+            element: <VerifyResultPage />,
           },
           {
             path: PATH.MISSION_RECORD,
@@ -101,8 +111,7 @@ export const router = createBrowserRouter([
             path: PATH.MISSION_BONUS_REGION,
             element: <BonusRegionPage />,
           },
-          { path: PATH.MISSION_ROUTE, 
-            element: <MissionRoutePage /> },
+          { path: PATH.MISSION_ROUTE, element: <MissionRoutePage /> },
           {
             path: PATH.QUESTY_CUSTOMIZE,
             element: <QuestyCustomizePage />,

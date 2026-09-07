@@ -11,11 +11,14 @@ export const PATH = {
   //MissionPage
   MISSIONS: "/missions",
   MISSION_DETAIL: "/missions/:missionId",
-  MISSION_PHOTO: "/mission/photo",
   MISSION_RECORD: "/mission/record",
   MISSION_LOCAL_RECOMMEND: "/mission/local-recommend",
   MISSION_BONUS_REGION: "/mission/bonus-region",
   MISSION_ROUTE: "/mission/route",
+
+  MISSION_VERIFY: "/mission/verify",
+  MISSION_VERIFY_LOADING: "/mission/verify/loading",
+  MISSION_VERIFY_RESULT: "/mission/verify/result",
 
   //MapPage
   MAP: "/map",
