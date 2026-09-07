@@ -7,23 +7,25 @@ import LandingPage from "@/pages/LandingPage";
 import HomePage from "@/pages/HomePage";
 import MissionsPage from "@/pages/mission/MissionPage";
 import MissionDetailPage from "@/pages/mission/MissionDetailPage";
-import MissionPhotoPage from "@/pages/mission/MissionPhotoPage";
 import MissionRecordPage from "@/pages/mission/MissionRecordPage";
 import LocalRecommendPage from "@/pages/mission/LocalRecommendPage";
 import BonusRegionPage from "@/pages/mission/BonusRegionPage";
 import MapPage from "@/pages/MapPage";
 import RewardPage from "@/pages/RewardPage";
-import MyPage from "@/pages/MyPage";
-import LikesPage from "@/pages/LikesPage";
-import SavedPlacesPage from "@/pages/SavedPlacesPage";
-import ArchivePage from "@/pages/ArchivePage";
-import QuestyCustomizePage from "@/pages/QuestyCustomizePage";
+import MyPage from "@/pages/My/MyPage";
+import LikesPage from "@/pages/My/LikesPage";
+import SavedPlacesPage from "@/pages/My/SavedPlacesPage";
+import ArchivePage from "@/pages/My/ArchivePage";
+import QuestyCustomizePage from "@/pages/My/QuestyCustomizePage";
 import LoginPage from "@/pages/Auth/LoginPage";
 import OAuthCallbackPage from "@/pages/Auth/OAuthCallbackPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
 import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
 import MissionRoutePage from "@/pages/mission/MissionRoutePage";
+import VerifyPage from "@/pages/mission/verify/VerifyPage";
+import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
+import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
 import LocalCouponPage from "@/pages/LocalCouponPage";
 
 export const router = createBrowserRouter([
@@ -90,8 +92,16 @@ export const router = createBrowserRouter([
             element: <MissionDetailPage />,
           },
           {
-            path: PATH.MISSION_PHOTO,
-            element: <MissionPhotoPage />,
+            path: PATH.MISSION_VERIFY,
+            element: <VerifyPage />,
+          },
+          {
+            path: PATH.MISSION_VERIFY_LOADING,
+            element: <VerifyLoadingPage />,
+          },
+          {
+            path: PATH.MISSION_VERIFY_RESULT,
+            element: <VerifyResultPage />,
           },
           {
             path: PATH.MISSION_RECORD,
@@ -105,8 +115,7 @@ export const router = createBrowserRouter([
             path: PATH.MISSION_BONUS_REGION,
             element: <BonusRegionPage />,
           },
-          { path: PATH.MISSION_ROUTE, 
-            element: <MissionRoutePage /> },
+          { path: PATH.MISSION_ROUTE, element: <MissionRoutePage /> },
           {
             path: PATH.QUESTY_CUSTOMIZE,
             element: <QuestyCustomizePage />,
@@ -127,8 +136,7 @@ export const router = createBrowserRouter([
             path: PATH.ARCHIVE,
             element: <ArchivePage />,
           },
-           { path: PATH.REWARD_COUPONS, 
-            element: <LocalCouponPage /> },
+          { path: PATH.REWARD_COUPONS, element: <LocalCouponPage /> },
         ],
       },
     ],

@@ -2,6 +2,9 @@
 
 @theme {
   --color-primary: #5bb5f8;
+  --color-red: #e7000b;
+  --color-red2: #ef4444;
+  --color-red3: #fee2e2;
   --font-sans:
     "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, sans-serif;
@@ -27,6 +30,26 @@
 
 .animate-questy-float {
   animation: questy-float 3s ease-in-out infinite;
+}
+
+@keyframes questy-dressup {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+
+  45% {
+    transform: translateY(-5px) scaleY(1.01);
+  }
+
+  55% {
+    transform: translateY(-5px) scaleY(1.01);
+  }
+}
+
+.animate-questy-dressup {
+  transform-origin: center bottom;
+  animation: questy-dressup 2.4s ease-in-out infinite;
 }
 @keyframes questy-tumble {
   0% {

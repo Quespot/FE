@@ -139,7 +139,7 @@ const missionSteps: MissionStep[] = [
   },
   {
     label: "사진 촬영 & 제출",
-    targetPath: PATH.MISSION_PHOTO,
+    targetPath: PATH.MISSION_VERIFY,
   },
   {
     label: "AI 자동 검증",
@@ -379,7 +379,7 @@ export default function MissionDetailPage() {
 
           <button
             type="button"
-            onClick={() => navigate(PATH.MISSION_PHOTO)}
+            onClick={() => navigate(PATH.MISSION_VERIFY)}
             className="mt-[4px] h-[52px] rounded-[16px] bg-[#5BB5F8] text-[15px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)]"
           >
             미션 다시 인증하기
