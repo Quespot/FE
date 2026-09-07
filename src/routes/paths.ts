@@ -22,6 +22,7 @@ export const PATH = {
 
   //RewardsPage
   REWARDS: "/rewards",
+  REWARD_COUPONS: "/rewards/coupons",
 
   // MyPage
   MY: "/my",
@@ -29,7 +30,7 @@ export const PATH = {
   SAVED_PLACES: "/my/saved-places",
   ARCHIVE: "/my/archive",
   QUESTY_CUSTOMIZE: "/my/customize",
-
+  
   // Error
   NOT_FOUND: "*",
 } as const;

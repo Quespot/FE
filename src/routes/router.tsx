@@ -3,7 +3,6 @@ import { PATH } from "@/routes/paths";
 import MobileLayout from "@/layouts/MobileLayout";
 import BottomNavigationLayout from "@/layouts/BottomNavigationLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
-
 import LandingPage from "@/pages/LandingPage";
 import HomePage from "@/pages/HomePage";
 import MissionsPage from "@/pages/mission/MissionPage";
@@ -24,6 +23,7 @@ import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
 import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
 import MissionRoutePage from "@/pages/mission/MissionRoutePage";
+import LocalCouponPage from "@/pages/LocalCouponPage";
 
 export const router = createBrowserRouter([
   {
@@ -119,6 +119,8 @@ export const router = createBrowserRouter([
             path: PATH.ARCHIVE,
             element: <ArchivePage />,
           },
+           { path: PATH.REWARD_COUPONS, 
+            element: <LocalCouponPage /> },
         ],
       },
     ],
