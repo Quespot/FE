@@ -94,7 +94,7 @@ export default function BonusRegionPage() {
 
         <button
           type="button"
-          onClick={() => navigate(PATH.MISSION_PHOTO)}
+          onClick={() => navigate(PATH.MISSION_VERIFY)}
           className="mt-[12px] h-[56px] shrink-0 rounded-[16px] bg-[#5BB5F8] text-[16px] font-black leading-none text-white shadow-[0_8px_18px_rgba(91,181,248,0.24)]"
         >
           이 미션 시작하기
