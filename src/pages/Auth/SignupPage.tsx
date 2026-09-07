@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, Check, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "@/routes/paths";
+import { confirmEmailVerification, requestEmailVerification, signup } from "@/api/auth";
 
 type VerificationState = "idle" | "sent" | "verified";
 
@@ -15,21 +16,76 @@ export default function SignupPage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationState, setVerificationState] = useState<VerificationState>("idle");
+  const [expiresInSeconds, setExpiresInSeconds] = useState(0);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const passwordsMatch = password.length >= 8 && password === passwordConfirm;
   const canContinue = verificationState === "verified" && passwordsMatch;
 
-  const requestVerification = () => {
-    if (!isEmailValid) return;
+  useEffect(() => {
+    if (verificationState !== "sent" || expiresInSeconds <= 0) return;
+    const timer = window.setInterval(() => setExpiresInSeconds((current) => Math.max(0, current - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [verificationState, expiresInSeconds]);
+
+  useEffect(() => {
+    if (verificationState === "sent" && expiresInSeconds === 0) {
+      setError("인증번호가 만료됐습니다. 인증번호를 다시 요청해주세요.");
+    }
+  }, [expiresInSeconds, verificationState]);
+
+  const requestVerification = async () => {
+    if (!isEmailValid || isRequesting) return;
+    setError("");
+    setIsRequesting(true);
     setVerificationCode("");
-    setVerificationState("sent");
+    try {
+      const result = await requestEmailVerification(email.trim());
+      setExpiresInSeconds((result.expiresInMinutes || 10) * 60);
+      setVerificationState("sent");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "인증번호 발송에 실패했습니다.");
+    } finally {
+      setIsRequesting(false);
+    }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (canContinue) navigate(PATH.LOGIN, { replace: true });
+  const verifyCode = async () => {
+    if (verificationCode.length !== 6 || expiresInSeconds === 0 || isVerifying) return;
+    setError("");
+    setIsVerifying(true);
+    try {
+      const result = await confirmEmailVerification(email.trim(), verificationCode);
+      if (!result.verified) throw new Error("이메일 인증을 완료하지 못했습니다.");
+      setVerificationState("verified");
+    } catch (verificationError) {
+      setError(verificationError instanceof Error ? verificationError.message : "인증번호 확인에 실패했습니다.");
+    } finally {
+      setIsVerifying(false);
+    }
   };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canContinue || isSubmitting) return;
+    setError("");
+    setIsSubmitting(true);
+    try {
+      await signup(email.trim(), password, passwordConfirm);
+      navigate(PATH.LOGIN, { replace: true, state: { signupComplete: true, email: email.trim() } });
+    } catch (signupError) {
+      setError(signupError instanceof Error ? signupError.message : "회원가입에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const minutes = String(Math.floor(expiresInSeconds / 60)).padStart(2, "0");
+  const seconds = String(expiresInSeconds % 60).padStart(2, "0");
 
   return (
     <main className="min-h-dvh overflow-x-hidden bg-[#f4f7fd] text-[#20223d]">
@@ -45,8 +101,8 @@ export default function SignupPage() {
           <label className="type-caption3 text-[#566171]" htmlFor="signup-email">이메일 주소</label>
           <div className="grid grid-cols-[minmax(0,1fr)_82px] gap-2">
             <input className={fieldClass} aria-describedby="email-verification-status" autoComplete="email" id="signup-email" inputMode="email" onChange={(event) => { setEmail(event.target.value); setVerificationState("idle"); }} placeholder="이메일 주소" required type="email" value={email} />
-            <button className={actionClass} disabled={!isEmailValid || verificationState === "verified"} onClick={requestVerification} type="button">
-              {verificationState === "verified" ? <Check className="mx-auto" aria-hidden="true" size={16} /> : "인증 요청"}
+            <button className={actionClass} disabled={!isEmailValid || verificationState === "verified" || isRequesting} onClick={requestVerification} type="button">
+              {verificationState === "verified" ? <Check className="mx-auto" aria-hidden="true" size={16} /> : isRequesting ? "발송 중" : "인증 요청"}
             </button>
           </div>
         </div>
@@ -59,9 +115,9 @@ export default function SignupPage() {
                 <div className="grid grid-cols-[minmax(0,1fr)_62px] gap-2">
                   <div className="relative">
                     <input className={`${fieldClass} pr-[54px]`} aria-label="이메일 인증번호" autoComplete="one-time-code" inputMode="numeric" maxLength={6} onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, ""))} placeholder="인증번호 6자리" value={verificationCode} />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-[#e67c7c]">03:00</span>
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-[#e67c7c]">{minutes}:{seconds}</span>
                   </div>
-                  <button className={actionClass} disabled={verificationCode.length !== 6} onClick={() => setVerificationState("verified")} type="button">확인</button>
+                  <button className={actionClass} disabled={verificationCode.length !== 6 || expiresInSeconds === 0 || isVerifying} onClick={verifyCode} type="button">{isVerifying ? "확인 중" : "확인"}</button>
                 </div>
                 <button className="ml-auto mt-2 flex items-center gap-1 bg-transparent p-0 text-[10px] text-[#8c96a4]" onClick={requestVerification} type="button"><RefreshCw aria-hidden="true" size={12} /> 인증번호 재전송</button>
               </>
@@ -82,7 +138,8 @@ export default function SignupPage() {
           {passwordConfirm.length > 0 && !passwordsMatch ? <small className="ml-1 text-[10px] text-[#e46f6f]">비밀번호가 일치하지 않아요.</small> : null}
         </div>
 
-        <button className="type-body6 mt-0.5 flex h-12 w-full items-center justify-center rounded-[15px] bg-[#5bb5f8] text-white shadow-[0_6px_14px_rgba(91,181,248,0.23)] transition active:translate-y-px disabled:cursor-default disabled:opacity-50 disabled:shadow-none" disabled={!canContinue} type="submit">회원가입 완료</button>
+        {error ? <p className="px-1 text-[11px] leading-4 text-[#e46f6f]" role="alert">{error}</p> : null}
+        <button className="type-body6 mt-0.5 flex h-12 w-full items-center justify-center rounded-[15px] bg-[#5bb5f8] text-white shadow-[0_6px_14px_rgba(91,181,248,0.23)] transition active:translate-y-px disabled:cursor-default disabled:opacity-50 disabled:shadow-none" disabled={!canContinue || isSubmitting} type="submit">{isSubmitting ? "가입 중..." : "회원가입 완료"}</button>
       </form>
     </main>
   );

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import {
   Archive, Bell, Check, ChevronRight, Heart, Link2, MapPinned, Pencil,
-  Plane, ShieldCheck, Sparkles, Trophy, X,
+  Plane, Settings2, ShieldCheck, Sparkles, Trophy, X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { categoryIcons, categoryToneClasses } from "@/components/home/CategoryGrid";
-import { homeCategories } from "@/data/quespot";
+import { getProfile, updateBasicProfile } from "@/api/profile";
+import { categoryIdsToTravelStyles, profileTravelCategories, travelStylesToCategoryIds } from "@/constants/profile";
 import { PATH } from "@/routes/paths";
+import { clearAuth } from "@/utils/auth";
 import questyProfile from "@/assets/questy.svg";
 
 const PROFILE_KEY = "quespot-profile";
@@ -14,7 +16,7 @@ const SOCIAL_KEY = "quespot-social-connections";
 const DEFAULT_INTEREST_IDS = ["history", "food", "cafe", "nature"];
 type SocialProvider = "google" | "kakao" | "naver";
 type SocialConnections = Record<SocialProvider, boolean>;
-type StoredProfile = { nickname?: string; interests?: string[] };
+type StoredProfile = { nickname?: string; profileImageUrl?: string | null; interests?: string[] };
 
 const defaultConnections: SocialConnections = { google: true, kakao: false, naver: false };
 const activityLinks = [
@@ -57,14 +59,33 @@ export default function MyPage() {
   const [editing, setEditing] = useState(false);
   const [editingTravel, setEditingTravel] = useState(false);
   const [draftNickname, setDraftNickname] = useState(profile.nickname || "Quespot 탐험가");
-  const [draftInterests, setDraftInterests] = useState<string[]>(profile.interests?.filter((id) => id !== "photo").length ? profile.interests.filter((id) => id !== "photo") : DEFAULT_INTEREST_IDS);
+  const [draftInterests, setDraftInterests] = useState<string[]>(profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS);
   const [statusMessage, setStatusMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const selectedCategories = useMemo(() => {
     const selectedIds = profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS;
-    return selectedIds.map((id) => homeCategories.find((category) => category.id === id))
-      .filter((category): category is (typeof homeCategories)[number] => Boolean(category));
+    return selectedIds.map((id) => profileTravelCategories.find((category) => category.id === id))
+      .filter((category): category is (typeof profileTravelCategories)[number] => Boolean(category));
   }, [profile.interests]);
+
+  useEffect(() => {
+    let active = true;
+    getProfile().then((remoteProfile) => {
+      if (!active) return;
+      const next = {
+        nickname: remoteProfile.nickname,
+        profileImageUrl: remoteProfile.profileImageUrl,
+        interests: travelStylesToCategoryIds(remoteProfile.travelStyles || []),
+      };
+      setProfile(next);
+      setDraftNickname(remoteProfile.nickname);
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...readProfile(), ...next }));
+    }).catch((profileError) => {
+      if (active) setStatusMessage(profileError instanceof Error ? profileError.message : "프로필을 불러오지 못했습니다.");
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!statusMessage) return;
@@ -84,18 +105,26 @@ export default function MyPage() {
     setStatusMessage(`${providerName} 계정이 연결되었어요.`);
   };
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     const nickname = draftNickname.trim();
-    if (nickname.length < 2) return;
+    if (nickname.length < 2 || isSaving) return;
+    setIsSaving(true);
     const next = { ...profile, nickname };
-    setProfile(next);
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
-    setEditing(false);
-    setStatusMessage("프로필을 수정했어요.");
+    try {
+      await updateBasicProfile({ nickname, profileImageUrl: profile.profileImageUrl, travelStyles: categoryIdsToTravelStyles(profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS) });
+      setProfile(next);
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...readProfile(), ...next }));
+      setEditing(false);
+      setStatusMessage("프로필을 수정했어요.");
+    } catch (profileError) {
+      setStatusMessage(profileError instanceof Error ? profileError.message : "프로필을 수정하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const openTravelEditor = () => {
-    const availableInterests = profile.interests?.filter((id) => id !== "photo") ?? [];
+    const availableInterests = profile.interests ?? [];
     setDraftInterests(availableInterests.length ? availableInterests : DEFAULT_INTEREST_IDS);
     setEditingTravel(true);
   };
@@ -104,13 +133,26 @@ export default function MyPage() {
     setDraftInterests((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   };
 
-  const saveTravelStyles = () => {
-    if (!draftInterests.length) return;
+  const saveTravelStyles = async () => {
+    if (!draftInterests.length || isSaving) return;
+    setIsSaving(true);
     const next = { ...profile, interests: draftInterests };
-    setProfile(next);
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
-    setEditingTravel(false);
-    setStatusMessage("여행 스타일을 수정했어요.");
+    try {
+      await updateBasicProfile({ nickname: profile.nickname || "Quespot 탐험가", profileImageUrl: profile.profileImageUrl, travelStyles: categoryIdsToTravelStyles(draftInterests) });
+      setProfile(next);
+      localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...readProfile(), ...next }));
+      setEditingTravel(false);
+      setStatusMessage("여행 스타일을 수정했어요.");
+    } catch (profileError) {
+      setStatusMessage(profileError instanceof Error ? profileError.message : "여행 스타일을 수정하지 못했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    clearAuth();
+    navigate(PATH.LOGIN, { replace: true });
   };
 
   return (
@@ -120,16 +162,16 @@ export default function MyPage() {
           <img className="h-8 w-8 object-contain" src={questyProfile} alt="" />
           <strong className="text-[21px] font-black tracking-[-0.6px] text-[#54b4f6]">Quespot</strong>
         </div>
-        <button className="relative grid h-10 w-10 place-items-center bg-transparent text-[#8290a2] transition active:scale-95" type="button" aria-label="알림 3개">
-          <Bell size={19} strokeWidth={2.2} />
-          <span className="absolute right-[1px] top-[1px] grid h-[16px] min-w-[16px] place-items-center rounded-full border-2 border-white bg-[#f26464] px-0.5 text-[8px] font-black leading-none text-white">3</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button className="grid h-10 w-10 place-items-center rounded-full bg-[#f1f8fd] text-[#66798b] transition active:scale-95" onClick={() => navigate(PATH.PROFILE_DETAILS)} type="button" aria-label="상세 프로필 설정"><Settings2 size={19} strokeWidth={2.2} /></button>
+          <button className="relative grid h-10 w-10 place-items-center bg-transparent text-[#8290a2] transition active:scale-95" type="button" aria-label="알림 3개"><Bell size={19} strokeWidth={2.2} /><span className="absolute right-[1px] top-[1px] grid h-[16px] min-w-[16px] place-items-center rounded-full border-2 border-white bg-[#f26464] px-0.5 text-[8px] font-black leading-none text-white">3</span></button>
+        </div>
       </header>
 
       <section className="relative overflow-hidden bg-[linear-gradient(155deg,#c9ebff_0%,#dff3ff_72%,#eef7ff_100%)] px-[22px] pb-[30px] pt-[25px] text-center">
         <div className="relative mx-auto w-fit">
           <span className="grid h-[100px] w-[100px] place-items-center rounded-full border-4 border-white bg-white/80 shadow-[0_10px_28px_rgba(48,132,189,0.16)]">
-            <img className="h-[78px] w-[78px] object-contain" src={questyProfile} alt="Quespot 프로필" />
+            <img className="h-[78px] w-[78px] rounded-full object-contain" src={profile.profileImageUrl || questyProfile} onError={(event) => { event.currentTarget.src = questyProfile; }} alt="Quespot 프로필" />
           </span>
           <button className="absolute -bottom-1 -right-1 grid h-[34px] w-[34px] place-items-center rounded-full border-[3px] border-white bg-[#50ace9] text-white shadow-[0_5px_12px_rgba(54,144,205,0.28)] transition active:scale-90" onClick={() => setEditing(true)} type="button" aria-label="프로필 수정">
             <Pencil size={14} strokeWidth={2.6} />
@@ -193,11 +235,11 @@ export default function MyPage() {
           </div>
           <p className="mt-2 flex items-start gap-1.5 rounded-[12px] bg-[#f7f9fb] px-3 py-2.5 text-[8.5px] leading-[1.5] text-[#8e9aa7]"><ShieldCheck className="mt-px shrink-0 text-[#6dbb9f]" size={13} />연결 전 소셜 계정의 인증 이메일이 현재 계정과 같은지 확인해요.</p>
         </section>
-        <button className="h-[48px] rounded-[16px] border-2 border-[#f08b8f] bg-white text-[12px] font-extrabold text-[#e4545a] shadow-[0_5px_14px_rgba(224,84,90,0.08)] transition active:scale-[0.99]" type="button">로그아웃</button>
+        <button className="h-[48px] rounded-[16px] border-2 border-[#f08b8f] bg-white text-[12px] font-extrabold text-[#e4545a] shadow-[0_5px_14px_rgba(224,84,90,0.08)] transition active:scale-[0.99]" onClick={handleLogout} type="button">로그아웃</button>
       </div>
 
       {statusMessage ? <div className="fixed bottom-[92px] left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-[#25334a] px-4 py-2.5 text-[11px] font-bold text-white shadow-xl" role="status"><Check size={14} className="text-[#6ed4ad]" />{statusMessage}</div> : null}
-      {editing ? <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#132036]/35 p-0 backdrop-blur-[2px]" role="presentation" onMouseDown={() => setEditing(false)}><section className="w-full max-w-[430px] rounded-t-[28px] bg-white px-[22px] pb-[max(28px,env(safe-area-inset-bottom))] pt-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title" onMouseDown={(event) => event.stopPropagation()}><div className="mb-5 flex items-center justify-between"><div><p className="mb-1 text-[9px] font-bold uppercase tracking-[1.1px] text-[#50abe8]">My profile</p><h2 className="text-[17px] font-extrabold" id="edit-profile-title">프로필 수정</h2></div><button className="grid h-9 w-9 place-items-center rounded-full bg-[#f3f6f9] text-[#748193]" onClick={() => setEditing(false)} type="button" aria-label="닫기"><X size={18} /></button></div><label className="grid gap-2 text-[11px] font-bold text-[#536071]">닉네임<input className="h-12 rounded-[15px] border border-[#e0e9f1] bg-[#f7faff] px-4 text-[13px] outline-none focus:border-[#62b7ed] focus:ring-4 focus:ring-[#5bb5f8]/10" autoFocus maxLength={10} minLength={2} onChange={(event) => setDraftNickname(event.target.value)} value={draftNickname} /></label><button className="mt-4 h-12 w-full rounded-[15px] bg-[#53afea] text-[13px] font-extrabold text-white disabled:opacity-40" disabled={draftNickname.trim().length < 2} onClick={saveProfile} type="button">저장하기</button></section></div> : null}
+      {editing ? <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#132036]/35 p-0 backdrop-blur-[2px]" role="presentation" onMouseDown={() => setEditing(false)}><section className="w-full max-w-[430px] rounded-t-[28px] bg-white px-[22px] pb-[max(28px,env(safe-area-inset-bottom))] pt-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title" onMouseDown={(event) => event.stopPropagation()}><div className="mb-5 flex items-center justify-between"><div><p className="mb-1 text-[9px] font-bold uppercase tracking-[1.1px] text-[#50abe8]">My profile</p><h2 className="text-[17px] font-extrabold" id="edit-profile-title">닉네임 수정</h2></div><button className="grid h-9 w-9 place-items-center rounded-full bg-[#f3f6f9] text-[#748193]" onClick={() => setEditing(false)} type="button" aria-label="닫기"><X size={18} /></button></div><label className="grid gap-2 text-[11px] font-bold text-[#536071]">닉네임<input className="h-12 rounded-[15px] border border-[#e0e9f1] bg-[#f7faff] px-4 text-[13px] outline-none focus:border-[#62b7ed] focus:ring-4 focus:ring-[#5bb5f8]/10" autoFocus maxLength={10} minLength={2} onChange={(event) => setDraftNickname(event.target.value)} value={draftNickname} /></label><button className="mt-4 h-12 w-full rounded-[15px] bg-[#53afea] text-[13px] font-extrabold text-white disabled:opacity-40" disabled={draftNickname.trim().length < 2 || isSaving} onClick={saveProfile} type="button">{isSaving ? "저장 중..." : "저장하기"}</button></section></div> : null}
       {editingTravel ? (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#132036]/35 backdrop-blur-[2px]" role="presentation" onMouseDown={() => setEditingTravel(false)}>
           <section className="w-full max-w-[430px] rounded-t-[28px] bg-white px-[20px] pb-[max(26px,env(safe-area-inset-bottom))] pt-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="edit-travel-title" onMouseDown={(event) => event.stopPropagation()}>
@@ -206,7 +248,7 @@ export default function MyPage() {
               <button className="grid h-9 w-9 place-items-center rounded-full bg-[#f3f6f9] text-[#748193]" onClick={() => setEditingTravel(false)} type="button" aria-label="닫기"><X size={18} /></button>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
-              {homeCategories.map((category) => {
+              {profileTravelCategories.map((category) => {
                 const Icon = categoryIcons[category.id];
                 const selected = draftInterests.includes(category.id);
                 return (
@@ -218,7 +260,7 @@ export default function MyPage() {
                 );
               })}
             </div>
-            <button className="mt-4 h-12 w-full rounded-[15px] bg-[#53afea] text-[13px] font-extrabold text-white shadow-[0_7px_18px_rgba(65,165,231,0.22)] disabled:bg-[#cad9e4] disabled:shadow-none" disabled={!draftInterests.length} onClick={saveTravelStyles} type="button">선택 완료 · {draftInterests.length}개</button>
+            <button className="mt-4 h-12 w-full rounded-[15px] bg-[#53afea] text-[13px] font-extrabold text-white shadow-[0_7px_18px_rgba(65,165,231,0.22)] disabled:bg-[#cad9e4] disabled:shadow-none" disabled={!draftInterests.length || isSaving} onClick={saveTravelStyles} type="button">{isSaving ? "저장 중..." : `선택 완료 · ${draftInterests.length}개`}</button>
           </section>
         </div>
       ) : null}

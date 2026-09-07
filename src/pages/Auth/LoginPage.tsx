@@ -1,26 +1,44 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import questyLogin from "../../assets/questy.svg";
 import googleLogin from "../../assets/google_login.svg";
 import kakaoLogin from "../../assets/kakao_login.svg";
 import { PATH } from "@/routes/paths";
-import { PROFILE_SETUP_KEY } from "@/constants/onboarding";
+import { getSocialLoginUrl, login, type SocialProvider } from "@/api/auth";
+import { saveAuth, saveLoginRedirect } from "@/utils/auth";
+import { resolvePostLoginPath } from "@/utils/profile";
 
 const inputClass = "type-body2 h-11 w-full rounded-2xl border border-transparent bg-[#eaf5ff] px-4 text-[#252743] outline-none transition placeholder:text-[#8b939e] focus:border-[#5bb5f8]/70 focus:bg-[#f7fbff] focus:ring-3 focus:ring-[#5bb5f8]/15";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const routeState = location.state as { email?: string; from?: string; signupComplete?: boolean } | null;
+  const [email, setEmail] = useState(routeState?.email ?? "");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const moveAfterLogin = () => {
-    const hasProfile = localStorage.getItem(PROFILE_SETUP_KEY) === "true";
-    navigate(hasProfile ? PATH.HOME : PATH.SIGNUP_CHECK);
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+
+    setError("");
+    setIsSubmitting(true);
+    try {
+      const result = await login(email.trim(), password);
+      saveAuth(result.accessToken, result.userId);
+      navigate(await resolvePostLoginPath(routeState?.from || PATH.HOME), { replace: true });
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "로그인에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    moveAfterLogin();
+  const handleSocialLogin = (provider: SocialProvider) => {
+    saveLoginRedirect(routeState?.from || PATH.HOME);
+    window.location.assign(getSocialLoginUrl(provider));
   };
 
   return (
@@ -35,11 +53,13 @@ export default function LoginPage() {
 
       <section className="flex flex-col bg-[#f4f7fd] px-5 pb-[max(32px,env(safe-area-inset-bottom))] pt-5" aria-label="로그인">
         <form className="grid gap-2.5" onSubmit={handleLogin}>
+          {routeState?.signupComplete ? <p className="px-1 text-[11px] leading-4 text-[#2ca777]" role="status">회원가입이 완료됐어요. 로그인해주세요.</p> : null}
           <label className="sr-only" htmlFor="login-email">이메일 주소</label>
-          <input className={inputClass} autoComplete="email" id="login-email" inputMode="email" onChange={(event) => setEmail(event.target.value)} placeholder="이메일 주소" type="email" value={email} />
+          <input className={inputClass} autoComplete="email" id="login-email" inputMode="email" onChange={(event) => setEmail(event.target.value)} placeholder="이메일 주소" required type="email" value={email} />
           <label className="sr-only" htmlFor="login-password">비밀번호</label>
-          <input className={inputClass} autoComplete="current-password" id="login-password" onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" type="password" value={password} />
-          <button className="type-body6 mt-0.5 h-11 w-full rounded-xl bg-[#5bb5f8] text-white shadow-[0_5px_14px_rgba(91,181,248,0.18)] transition active:translate-y-px focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#5bb5f8]/30" type="submit">로그인</button>
+          <input className={inputClass} autoComplete="current-password" id="login-password" onChange={(event) => setPassword(event.target.value)} placeholder="비밀번호" required type="password" value={password} />
+          {error ? <p className="px-1 text-[11px] leading-4 text-[#e46f6f]" role="alert">{error}</p> : null}
+          <button className="type-body6 mt-0.5 h-11 w-full rounded-xl bg-[#5bb5f8] text-white shadow-[0_5px_14px_rgba(91,181,248,0.18)] transition active:translate-y-px disabled:cursor-wait disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#5bb5f8]/30" disabled={isSubmitting} type="submit">{isSubmitting ? "로그인 중..." : "로그인"}</button>
         </form>
 
         <div className="my-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3" aria-hidden="true">
@@ -47,10 +67,10 @@ export default function LoginPage() {
         </div>
 
         <div className="flex items-center justify-center gap-4" aria-label="소셜 로그인">
-          <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="구글 계정으로 로그인" onClick={moveAfterLogin} type="button">
+          <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="구글 계정으로 로그인" onClick={() => handleSocialLogin("google")} type="button">
             <img className="h-11 w-11" src={googleLogin} alt="" />
           </button>
-          <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="카카오 계정으로 로그인" onClick={moveAfterLogin} type="button">
+          <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="카카오 계정으로 로그인" onClick={() => handleSocialLogin("kakao")} type="button">
             <img className="h-11 w-11" src={kakaoLogin} alt="" />
           </button>
         </div>
