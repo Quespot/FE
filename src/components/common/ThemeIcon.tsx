@@ -12,6 +12,7 @@ export type ThemeKey =
   | "activity"
   | "shopping"
   | "art"
+  | "etc"
   | "course";
 
 type ThemeConfig = {
@@ -29,7 +30,7 @@ const fallbackTheme: ThemeConfig = {
 // 최초 여행 스타일 설정에서 사용하는 아이콘과 색상을 그대로 공유한다.
 export const themeConfig: Record<ThemeKey, ThemeConfig> = {
   history: { icon: categoryIcons.history, label: "역사", tone: categoryToneClasses.violet },
-  culture: { icon: categoryIcons.art, label: "문화", tone: categoryToneClasses.purple },
+  culture: { icon: categoryIcons.culture, label: "문화", tone: categoryToneClasses.pink },
   food: { icon: categoryIcons.food, label: "음식", tone: categoryToneClasses.amber },
   cafe: { icon: categoryIcons.cafe, label: "카페", tone: categoryToneClasses.brown },
   nature: { icon: categoryIcons.nature, label: "자연", tone: categoryToneClasses.green },
@@ -38,6 +39,7 @@ export const themeConfig: Record<ThemeKey, ThemeConfig> = {
   activity: { icon: categoryIcons.activity, label: "액티비티", tone: categoryToneClasses.cyan },
   shopping: { icon: categoryIcons.shopping, label: "쇼핑", tone: categoryToneClasses.rose },
   art: { icon: categoryIcons.art, label: "예술", tone: categoryToneClasses.purple },
+  etc: { icon: categoryIcons.etc, label: "기타", tone: categoryToneClasses.cyan },
   course: { icon: Route, label: "코스", tone: categoryToneClasses.blue },
 };
 

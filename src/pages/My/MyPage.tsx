@@ -6,14 +6,14 @@ import {
 import { useNavigate } from "react-router-dom";
 import { categoryIcons, categoryToneClasses } from "@/components/home/CategoryGrid";
 import { getProfile, updateBasicProfile } from "@/api/profile";
-import { categoryIdsToTravelStyles, profileTravelCategories, travelStylesToCategoryIds } from "@/constants/profile";
+import { categoryIdsToTravelStyles, normalizeTravelCategoryIds, profileTravelCategories, travelStylesToCategoryIds } from "@/constants/profile";
 import { PATH } from "@/routes/paths";
 import { clearAuth } from "@/utils/auth";
 import questyProfile from "@/assets/questy.svg";
 
 const PROFILE_KEY = "quespot-profile";
 const SOCIAL_KEY = "quespot-social-connections";
-const DEFAULT_INTEREST_IDS = ["history", "food", "cafe", "nature"];
+const DEFAULT_INTEREST_IDS = ["history", "culture", "nature", "food"];
 type SocialProvider = "google" | "kakao" | "naver";
 type SocialConnections = Record<SocialProvider, boolean>;
 type StoredProfile = { nickname?: string; profileImageUrl?: string | null; interests?: string[] };
@@ -43,7 +43,10 @@ const travelToneClasses: Record<string, string> = {
 };
 
 function readProfile(): StoredProfile {
-  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) ?? "{}") as StoredProfile; }
+  try {
+    const stored = JSON.parse(localStorage.getItem(PROFILE_KEY) ?? "{}") as StoredProfile;
+    return { ...stored, interests: stored.interests ? normalizeTravelCategoryIds(stored.interests) : undefined };
+  }
   catch { return {}; }
 }
 
@@ -215,7 +218,7 @@ export default function MyPage() {
           <div className="grid grid-cols-2 gap-[9px]">
             {selectedCategories.map((category) => {
               const Icon = categoryIcons[category.id];
-              return <div className={`flex min-w-0 items-center gap-2.5 rounded-[16px] border p-2.5 ${travelToneClasses[category.tone]}`} key={category.id}><span className={`grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[13px] bg-white/75 shadow-sm ${categoryToneClasses[category.tone]}`}><Icon aria-hidden="true" size={20} strokeWidth={2.4} /></span><span className="truncate text-[11px] font-extrabold">{category.label}</span></div>;
+              return <div className={`flex min-w-0 items-center gap-2.5 rounded-[16px] border p-2.5 ${travelToneClasses[category.tone]}`} key={category.id}><span className={`grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[13px] bg-white/75 shadow-sm ${categoryToneClasses[category.tone]}`}><Icon aria-hidden="true" size={20} strokeWidth={2.4} /></span><span className="text-[10px] font-extrabold leading-tight">{category.label}</span></div>;
             })}
           </div>
         </section>
@@ -252,9 +255,9 @@ export default function MyPage() {
                 const Icon = categoryIcons[category.id];
                 const selected = draftInterests.includes(category.id);
                 return (
-                  <button aria-pressed={selected} className={`relative flex h-[58px] items-center gap-2.5 rounded-[16px] border px-2.5 text-left transition active:scale-[0.98] ${selected ? travelToneClasses[category.tone] : "border-[#e5edf4] bg-[#fbfdff] text-[#687587]"}`} key={category.id} onClick={() => toggleTravelStyle(category.id)} type="button">
+                  <button aria-pressed={selected} className={`relative flex h-[64px] items-center gap-2.5 rounded-[16px] border px-2.5 text-left transition active:scale-[0.98] ${selected ? travelToneClasses[category.tone] : "border-[#e5edf4] bg-[#fbfdff] text-[#687587]"}`} key={category.id} onClick={() => toggleTravelStyle(category.id)} type="button">
                     <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[12px] ${categoryToneClasses[category.tone]}`}><Icon aria-hidden="true" size={18} strokeWidth={2.3} /></span>
-                    <strong className="text-[10.5px] font-extrabold">{category.label}</strong>
+                    <strong className="pr-3 text-[9.5px] font-extrabold leading-tight">{category.label}</strong>
                     {selected ? <span className="absolute right-2 top-2 grid h-4 w-4 place-items-center rounded-full bg-white/80"><Check size={10} strokeWidth={3} /></span> : null}
                   </button>
                 );

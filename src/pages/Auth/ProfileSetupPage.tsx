@@ -149,7 +149,7 @@ export default function ProfileSetupPage() {
             <ProfileChoiceSelect groups={regionGroups} isOpen={openPicker === "region"} label="거주 지역" layout="grid" onChange={setRegion} onOpenChange={(open) => setOpenPicker(open ? "region" : null)} placeholder="지역 선택" required title="거주 지역을 선택해주세요" value={region} />
           </div>
 
-          <fieldset className="mt-4 min-w-0 border-0 p-0"><legend className="text-[12px] font-bold text-[#556171]">성별 <span className="font-medium text-[#9ba4af]">(선택)</span></legend><div className="mt-2 grid grid-cols-3 gap-1 rounded-[15px] bg-[#f2f6fa] p-1">
+          <fieldset className="mt-4 min-w-0 border-0 p-0"><legend className="text-[12px] font-bold text-[#556171]">성별 <span className="font-medium text-[#9ba4af]">(필수)</span></legend><div className="mt-2 grid grid-cols-3 gap-1 rounded-[15px] bg-[#f2f6fa] p-1">
             {genderOptions.map((option) => <label className="cursor-pointer" key={option}><input className="peer sr-only" checked={gender === option} name="gender" onChange={() => setGender(option)} type="radio" /><span className="grid h-[40px] place-items-center rounded-[11px] text-[12px] font-medium text-[#7a8693] transition peer-checked:bg-white peer-checked:font-bold peer-checked:text-[#329ee8] peer-checked:shadow-[0_2px_8px_rgba(65,94,122,0.1)]">{option}</span></label>)}
           </div></fieldset>
 
@@ -165,7 +165,7 @@ export default function ProfileSetupPage() {
               return (
                 <button aria-pressed={selected} className={`relative flex h-[64px] min-w-0 items-center gap-[10px] rounded-[17px] border px-[11px] py-[9px] text-left transition active:scale-[0.98] ${selected ? "border-[#69bdf4] bg-[#eff9ff] text-[#218fd8] shadow-[0_4px_12px_rgba(76,167,225,0.1)]" : "border-[#e5edf4] bg-[#fbfdff] text-[#566171]"}`} key={category.id} onClick={() => toggleInterest(category.id)} type="button">
                   <span className={`grid h-[40px] w-[40px] shrink-0 place-items-center rounded-[14px] ${categoryToneClasses[category.tone]}`}><Icon aria-hidden="true" size={21} strokeWidth={2.3} /></span>
-                  <strong className="truncate text-[11.5px] font-bold">{category.label}</strong>
+                  <strong className="pr-3 text-[10px] font-bold leading-tight">{category.label}</strong>
                   {selected ? <i className="absolute right-2 top-2 grid h-[18px] w-[18px] place-items-center rounded-full bg-[#50adeb] text-white shadow-sm"><Check aria-hidden="true" size={11} strokeWidth={3} /></i> : null}
                 </button>
               );

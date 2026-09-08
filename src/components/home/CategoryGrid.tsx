@@ -29,6 +29,8 @@ export const categoryIcons: Record<string, LucideIcon> = {
   history: Building2,
   nature: Leaf,
   food: Utensils,
+  culture: Palette,
+  etc: Compass,
   cafe: Coffee,
   night: Sunrise,
   photo: Camera,
@@ -52,7 +54,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
     <section className="grid gap-[14px]">
       <SectionHeader title="카테고리" />
 
-      <div className="grid grid-cols-4 gap-2.5 max-[380px]:gap-2">
+      <div className="grid grid-cols-3 gap-2.5 max-[380px]:gap-2">
         {categories.map((category) => {
           const Icon = categoryIcons[category.id] ?? Compass;
           const toneClass =
