@@ -100,22 +100,6 @@ export default function MissionRoutePage() {
     window.open(url.toString(), "_blank", "noopener,noreferrer");
   };
 
-  const handleOpenNaverMaps = () => {
-    const appName = window.location.hostname || "quespot";
-
-    const params = new URLSearchParams({
-      slat: String(currentLocation.lat),
-      slng: String(currentLocation.lng),
-      sname: "현재 위치",
-      dlat: String(place.lat),
-      dlng: String(place.lng),
-      dname: place.name,
-      appname: appName,
-    });
-
-    window.location.href = `nmap://route/walk?${params.toString()}`;
-  };
-
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
       <header className="shrink-0 bg-white">
@@ -171,33 +155,20 @@ export default function MissionRoutePage() {
             지도 앱으로 길찾기
           </h2>
 
-          <div className="mt-[16px] grid grid-cols-2 gap-[12px]">
-            <button
-              type="button"
-              onClick={handleOpenNaverMaps}
-              className="flex h-[56px] items-center justify-center gap-[8px] rounded-[16px] bg-[#25D08A] text-[15px] font-black leading-none text-white shadow-[0_4px_10px_rgba(37,208,138,0.2)] transition active:scale-[0.99]"
-            >
-              <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#00A843] shadow-[inset_0_2px_3px_rgba(255,255,255,0.35)]">
-                <span className="h-[8px] w-[8px] rounded-full bg-[#4EE88D]" />
-              </span>
-              네이버 지도
-            </button>
-
-            <button
-              type="button"
-              onClick={handleOpenGoogleMaps}
-              className="flex h-[56px] items-center justify-center gap-[8px] rounded-[16px] bg-[#7EC3F6] text-[15px] font-black leading-none text-white shadow-[0_4px_10px_rgba(91,181,248,0.18)] transition active:scale-[0.99]"
-            >
-              <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#1565D8] shadow-[inset_0_2px_3px_rgba(255,255,255,0.35)]">
-                <span className="h-[8px] w-[8px] rounded-full bg-[#5BB5F8]" />
-              </span>
-              구글 지도
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleOpenGoogleMaps}
+            className="mt-[16px] flex h-[56px] w-full items-center justify-center gap-[8px] rounded-[16px] bg-[#7EC3F6] text-[15px] font-black leading-none text-white shadow-[0_4px_10px_rgba(91,181,248,0.18)] transition active:scale-[0.99]"
+          >
+            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#1565D8] shadow-[inset_0_2px_3px_rgba(255,255,255,0.35)]">
+              <span className="h-[8px] w-[8px] rounded-full bg-[#5BB5F8]" />
+            </span>
+            구글 지도
+          </button>
 
           <p className="m-0 mt-[12px] break-keep text-[11px] font-medium leading-[17px] text-[#A2A9B2]">
-            구글 지도는 국내 도보 길찾기가 환경에 따라 계산되지 않을 수 있어요.
-            이 경우 네이버 지도를 사용하면 됩니다.
+            구글 지도를 통해 현재 위치에서 다음 목적지까지의 길찾기를
+            확인할 수 있어요.
           </p>
         </section>
 
