@@ -2,36 +2,51 @@ import type { HomeCategory } from "@/data/quespot";
 
 export const profileTravelCategories: HomeCategory[] = [
   { id: "history", label: "역사·문화", tone: "violet" },
+  { id: "culture", label: "문화시설·전시·체험", tone: "pink" },
   { id: "nature", label: "자연·힐링", tone: "green" },
   { id: "food", label: "음식", tone: "amber" },
-  { id: "cafe", label: "카페", tone: "brown" },
-  { id: "night", label: "야경·뷰", tone: "blue" },
-  { id: "activity", label: "액티비티", tone: "cyan" },
-  { id: "shopping", label: "쇼핑", tone: "rose" },
-  { id: "art", label: "예술·체험", tone: "purple" },
+  { id: "night", label: "야경·전망", tone: "blue" },
+  { id: "etc", label: "기타", tone: "cyan" },
 ];
 
 export const travelStyleByCategoryId = {
-  history: "HISTORY_CULTURE",
-  nature: "NATURE_HEALING",
+  history: "HISTORY",
+  culture: "CULTURE",
+  nature: "NATURE",
   food: "FOOD",
-  cafe: "CAFE",
   night: "NIGHT_VIEW",
-  activity: "ACTIVITY",
-  shopping: "SHOPPING",
-  art: "ART_EXPERIENCE",
+  etc: "ETC",
 } as const;
 
 export type TravelStyle = (typeof travelStyleByCategoryId)[keyof typeof travelStyleByCategoryId];
 
-export const categoryIdsToTravelStyles = (ids: string[]) =>
-  ids.flatMap((id) => id in travelStyleByCategoryId ? [travelStyleByCategoryId[id as keyof typeof travelStyleByCategoryId]] : []);
+const legacyCategoryIdMap: Record<string, keyof typeof travelStyleByCategoryId> = {
+  cafe: "food",
+  activity: "culture",
+  art: "culture",
+  shopping: "etc",
+};
 
-export const travelStylesToCategoryIds = (styles: TravelStyle[]) =>
-  styles.flatMap((style) => {
+export const normalizeTravelCategoryIds = (ids: string[]) =>
+  [...new Set(ids.map((id) => legacyCategoryIdMap[id] ?? id).filter((id): id is keyof typeof travelStyleByCategoryId => id in travelStyleByCategoryId))];
+
+export const categoryIdsToTravelStyles = (ids: string[]) =>
+  normalizeTravelCategoryIds(ids).map((id) => travelStyleByCategoryId[id]);
+
+const legacyTravelStyleMap: Record<string, keyof typeof travelStyleByCategoryId> = {
+  HISTORY_CULTURE: "history",
+  NATURE_HEALING: "nature",
+  CAFE: "food",
+  ACTIVITY: "culture",
+  ART_EXPERIENCE: "culture",
+  SHOPPING: "etc",
+};
+
+export const travelStylesToCategoryIds = (styles: readonly string[]) =>
+  normalizeTravelCategoryIds(styles.flatMap((style) => {
     const entry = Object.entries(travelStyleByCategoryId).find(([, value]) => value === style);
-    return entry ? [entry[0]] : [];
-  });
+    return entry ? [entry[0]] : legacyTravelStyleMap[style] ? [legacyTravelStyleMap[style]] : [];
+  }));
 
 export const genderToApi = { 여성: "FEMALE", 남성: "MALE" } as const;
 export const genderFromApi: Record<string, string> = { FEMALE: "여성", MALE: "남성" };

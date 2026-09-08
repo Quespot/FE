@@ -51,6 +51,76 @@
   transform-origin: center bottom;
   animation: questy-dressup 2.4s ease-in-out infinite;
 }
+
+@keyframes questy-cloud-drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(13px);
+  }
+}
+
+.animate-questy-cloud {
+  animation: questy-cloud-drift 8s ease-in-out infinite;
+}
+
+.animate-questy-cloud-delayed {
+  animation: questy-cloud-drift 10s ease-in-out infinite reverse;
+}
+
+@keyframes questy-sparkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.72) rotate(-8deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08) rotate(8deg);
+  }
+}
+
+.animate-questy-sparkle {
+  transform-origin: center;
+  animation: questy-sparkle 2.8s ease-in-out infinite;
+}
+
+.animate-questy-sparkle-delayed {
+  transform-origin: center;
+  animation: questy-sparkle 3.4s ease-in-out 0.8s infinite;
+}
+
+@keyframes questy-shadow-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translateX(-50%) scaleX(1);
+  }
+
+  50% {
+    opacity: 0.42;
+    transform: translateX(-50%) scaleX(0.82);
+  }
+}
+
+.animate-questy-shadow {
+  animation: questy-shadow-breathe 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-questy-cloud,
+  .animate-questy-cloud-delayed,
+  .animate-questy-sparkle,
+  .animate-questy-sparkle-delayed,
+  .animate-questy-shadow {
+    animation: none;
+  }
+}
+
 @keyframes questy-tumble {
   0% {
     transform: translateY(0) rotate(-1deg) scale(1);

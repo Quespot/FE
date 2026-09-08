@@ -35,13 +35,11 @@ export type HomeCategory = {
 
 export const homeCategories: HomeCategory[] = [
   { id: "history", label: "역사·문화", tone: "violet" },
+  { id: "culture", label: "문화시설·전시·체험", tone: "pink" },
   { id: "nature", label: "자연·힐링", tone: "green" },
   { id: "food", label: "음식", tone: "amber" },
-  { id: "cafe", label: "카페", tone: "brown" },
-  { id: "night", label: "야경·뷰", tone: "blue" },
-  { id: "activity", label: "액티비티", tone: "cyan" },
-  { id: "shopping", label: "쇼핑", tone: "rose" },
-  { id: "art", label: "예술·체험", tone: "purple" },
+  { id: "night", label: "야경·전망", tone: "blue" },
+  { id: "etc", label: "기타", tone: "cyan" },
 ];
 
 export type MissionCard = {
