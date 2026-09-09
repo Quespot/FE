@@ -5,8 +5,8 @@ import googleLogin from "../../assets/google_login.svg";
 import kakaoLogin from "../../assets/kakao_login.svg";
 import naverLogin from "../../assets/naver_login.svg";
 import { PATH } from "@/routes/paths";
-import { getSocialLoginUrl, login, type SocialProvider } from "@/api/auth";
-import { beginSocialLogin, saveAuth, saveLoginRedirect } from "@/utils/auth";
+import { getSocialLoginUrl, login, type SocialProvider } from "@/apis/auth";
+import { saveAuth, saveLoginRedirect } from "@/utils/auth";
 import { resolvePostLoginPath } from "@/utils/profile";
 
 const inputClass = "type-body2 h-11 w-full rounded-2xl border border-transparent bg-[#eaf5ff] px-4 text-[#252743] outline-none transition placeholder:text-[#8b939e] focus:border-[#5bb5f8]/70 focus:bg-[#f7fbff] focus:ring-3 focus:ring-[#5bb5f8]/15";
@@ -39,7 +39,6 @@ export default function LoginPage() {
 
   const handleSocialLogin = (provider: SocialProvider) => {
     saveLoginRedirect(routeState?.from || PATH.HOME);
-    beginSocialLogin(provider);
     window.location.assign(getSocialLoginUrl(provider));
   };
 

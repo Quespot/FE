@@ -9,23 +9,28 @@ import MissionDetailPage from "@/pages/mission/MissionDetailPage";
 import MissionRecordPage from "@/pages/mission/MissionRecordPage";
 import LocalRecommendPage from "@/pages/mission/LocalRecommendPage";
 import BonusRegionPage from "@/pages/mission/BonusRegionPage";
+import MissionRoutePage from "@/pages/mission/MissionRoutePage";
+import VerifyPage from "@/pages/mission/verify/VerifyPage";
+import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
+import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
+
 import MapPage from "@/pages/MapPage";
+import MapSearchPage from "@/pages/map/MapSearchPage";
+
 import RewardPage from "@/pages/RewardPage";
+import LocalCouponPage from "@/pages/LocalCouponPage";
+
 import MyPage from "@/pages/My/MyPage";
 import LikesPage from "@/pages/My/LikesPage";
 import SavedPlacesPage from "@/pages/My/SavedPlacesPage";
 import ArchivePage from "@/pages/My/ArchivePage";
 import QuestyCustomizePage from "@/pages/My/QuestyCustomizePage";
+
 import LoginPage from "@/pages/Auth/LoginPage";
 import OAuthCallbackPage from "@/pages/Auth/OAuthCallbackPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
 import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
-import MissionRoutePage from "@/pages/mission/MissionRoutePage";
-import VerifyPage from "@/pages/mission/verify/VerifyPage";
-import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
-import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
-import LocalCouponPage from "@/pages/LocalCouponPage";
 
 export const router = createBrowserRouter([
   {
@@ -58,6 +63,7 @@ export const router = createBrowserRouter([
             path: PATH.PROFILE_SETUP,
             element: <ProfileSetupPage />,
           },
+
           // 하단 내비게이션이 필요한 페이지
           {
             element: <BottomNavigationLayout />,
@@ -87,6 +93,10 @@ export const router = createBrowserRouter([
 
           // 하단 내비게이션이 필요 없는 페이지
           {
+            path: PATH.MAP_SEARCH,
+            element: <MapSearchPage />,
+          },
+          {
             path: PATH.MISSION_DETAIL,
             element: <MissionDetailPage />,
           },
@@ -114,7 +124,10 @@ export const router = createBrowserRouter([
             path: PATH.MISSION_BONUS_REGION,
             element: <BonusRegionPage />,
           },
-          { path: PATH.MISSION_ROUTE, element: <MissionRoutePage /> },
+          {
+            path: PATH.MISSION_ROUTE,
+            element: <MissionRoutePage />,
+          },
           {
             path: PATH.QUESTY_CUSTOMIZE,
             element: <QuestyCustomizePage />,
@@ -135,7 +148,10 @@ export const router = createBrowserRouter([
             path: PATH.ARCHIVE,
             element: <ArchivePage />,
           },
-          { path: PATH.REWARD_COUPONS, element: <LocalCouponPage /> },
+          {
+            path: PATH.REWARD_COUPONS,
+            element: <LocalCouponPage />,
+          },
         ],
       },
     ],

@@ -9,22 +9,22 @@ export const PATH = {
   // HomePage
   HOME: "/home",
 
-  //MissionPage
+  // MissionPage
   MISSIONS: "/missions",
   MISSION_DETAIL: "/missions/:missionId",
   MISSION_RECORD: "/mission/record",
   MISSION_LOCAL_RECOMMEND: "/mission/local-recommend",
   MISSION_BONUS_REGION: "/mission/bonus-region",
   MISSION_ROUTE: "/mission/route",
-
   MISSION_VERIFY: "/mission/verify",
   MISSION_VERIFY_LOADING: "/mission/verify/loading",
   MISSION_VERIFY_RESULT: "/mission/verify/result",
 
-  //MapPage
+  // MapPage
   MAP: "/map",
+  MAP_SEARCH: "/map/search",
 
-  //RewardsPage
+  // RewardsPage
   REWARDS: "/rewards",
   REWARD_COUPONS: "/rewards/coupons",
 
@@ -34,7 +34,7 @@ export const PATH = {
   SAVED_PLACES: "/my/saved-places",
   ARCHIVE: "/my/archive",
   QUESTY_CUSTOMIZE: "/my/customize",
-  
+
   // Error
   NOT_FOUND: "*",
 } as const;

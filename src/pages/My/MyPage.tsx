@@ -5,9 +5,9 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { categoryIcons, categoryToneClasses } from "@/components/home/CategoryGrid";
-import { getProfile, updateBasicProfile } from "@/api/profile";
+import { getProfile, updateBasicProfile } from "@/apis/profile";
 import { categoryIdsToTravelStyles, normalizeTravelCategoryIds, profileTravelCategories, travelStylesToCategoryIds } from "@/constants/profile";
-import { connectLoginMethod, getLoginMethods, logout, unlinkLoginMethod, withdraw, type LoginMethod, type SocialLoginMethodProvider, type SocialProvider } from "@/api/auth";
+import { connectLoginMethod, getLoginMethods, logout, unlinkLoginMethod, withdraw, type LoginMethod, type SocialLoginMethodProvider, type SocialProvider } from "@/apis/auth";
 import { PATH } from "@/routes/paths";
 import { beginSocialLogin, clearAuth, clearSocialConnections, saveLoginRedirect } from "@/utils/auth";
 import questyProfile from "@/assets/questy.svg";

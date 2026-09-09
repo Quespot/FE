@@ -1,15 +1,25 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
-  MapPin,
-  Image,
-  Search,
   BadgeCheck,
   CheckCircle2,
+  Image,
   LoaderCircle,
+  MapPin,
+  Search,
 } from "lucide-react";
+
 import { PATH } from "@/routes/paths";
 import Questy from "@/assets/questy.svg";
+import type { MissionDetail } from "@/types/mission";
+
+type VerifyLoadingPageState = {
+  missionId?: number;
+  attemptId?: number | null;
+  mission?: MissionDetail;
+  missionTitle?: string;
+  isDemoMode?: boolean;
+};
 
 const steps = [
   {
@@ -32,26 +42,34 @@ const steps = [
 
 export default function VerifyLoadingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as VerifyLoadingPageState | null;
 
-  // 현재 진행 중인 단계
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     if (currentStep >= steps.length) {
       navigate(PATH.MISSION_VERIFY_RESULT, {
         replace: true,
+        state: {
+          missionId: state?.missionId,
+          attemptId: state?.attemptId,
+          mission: state?.mission,
+          missionTitle: state?.missionTitle,
+          isDemoMode: state?.isDemoMode,
+          isSuccess: true,
+        },
       });
 
       return;
     }
 
-    // 임시로 3초마다 다음 단계
     const timer = setTimeout(() => {
       setCurrentStep((prev) => prev + 1);
-    }, 3000);
+    }, 1200);
 
     return () => clearTimeout(timer);
-  }, [currentStep, navigate]);
+  }, [currentStep, navigate, state]);
 
   return (
     <div className="min-h-screen bg-[#DDF1FF] flex flex-col items-center px-5 pt-32">
@@ -60,7 +78,10 @@ export default function VerifyLoadingPage() {
       </div>
 
       <h1 className="type-label1">인증 중이에요</h1>
-      <p className="mt-1 type-body3 text-[#A2A9B2]">잠시만 기다려주세요</p>
+
+      <p className="mt-1 type-body3 text-[#A2A9B2]">
+        잠시만 기다려주세요
+      </p>
 
       <div className="w-full mt-8 flex flex-col gap-3">
         {steps.map((step, index) => {
@@ -74,7 +95,7 @@ export default function VerifyLoadingPage() {
             <div
               key={step.label}
               className={`
-                w-full  rounded-xl flex items-center gap-3 px-4 py-3 border bg-white transition-all
+                w-full rounded-xl flex items-center gap-3 px-4 py-3 border bg-white transition-all
                 ${isActive ? "border-primary" : "border-transparent"}
                 ${isPending ? "opacity-40" : "opacity-100"}
               `}
@@ -86,6 +107,7 @@ export default function VerifyLoadingPage() {
               ) : (
                 <Icon size={22} className="text-[#B8C2CC]" />
               )}
+
               <span
                 className={`
                   type-caption3
