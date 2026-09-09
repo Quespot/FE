@@ -163,4 +163,5 @@ export function quitMissionAttempt(attemptId: number) {
       method: "POST",
     },
   );
+  
 }
