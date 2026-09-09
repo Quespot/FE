@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { exchangeSocialLoginCode, type LoginResult } from "@/api/auth";
+import { exchangeSocialLoginCode, type LoginResult } from "@/apis/auth";
 import { PATH } from "@/routes/paths";
 import { saveAuth, takeLoginRedirect } from "@/utils/auth";
 import { resolvePostLoginPath } from "@/utils/profile";

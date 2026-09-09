@@ -4,7 +4,7 @@ import questyLogin from "../../assets/questy.svg";
 import googleLogin from "../../assets/google_login.svg";
 import kakaoLogin from "../../assets/kakao_login.svg";
 import { PATH } from "@/routes/paths";
-import { getSocialLoginUrl, login, type SocialProvider } from "@/api/auth";
+import { getSocialLoginUrl, login, type SocialProvider } from "@/apis/auth";
 import { saveAuth, saveLoginRedirect } from "@/utils/auth";
 import { resolvePostLoginPath } from "@/utils/profile";
 

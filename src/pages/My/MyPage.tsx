@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { categoryIcons, categoryToneClasses } from "@/components/home/CategoryGrid";
-import { getProfile, updateBasicProfile } from "@/api/profile";
+import { getProfile, updateBasicProfile } from "@/apis/profile";
 import { categoryIdsToTravelStyles, normalizeTravelCategoryIds, profileTravelCategories, travelStylesToCategoryIds } from "@/constants/profile";
 import { PATH } from "@/routes/paths";
 import { clearAuth } from "@/utils/auth";
