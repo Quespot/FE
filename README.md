@@ -55,6 +55,14 @@ index.html
 vite.config.ts
 ```
 
+## 프론트엔드 팀원
+
+| 이름 | GitHub |
+| --- | --- |
+| 김재범 | [kinjaebeom](https://github.com/kinjaebeom) |
+| 강민서 | [shooukie](https://github.com/shooukie) |
+| 최효비 | [Hyobee02](https://github.com/Hyobee02) |
+
 ## 저장소
 
 ```text
