@@ -3,6 +3,26 @@ import { getAccessToken } from "@/utils/auth";
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://api.quespot.site").replace(/\/$/, "");
 
 export type SocialProvider = "google" | "kakao" | "naver";
+export type LoginMethodProvider = "EMAIL" | "GOOGLE" | "NAVER" | "KAKAO";
+export type SocialLoginMethodProvider = Exclude<LoginMethodProvider, "EMAIL">;
+
+export interface LoginMethod {
+  provider: LoginMethodProvider;
+  linked: boolean;
+  maskedEmail: string | null;
+  linkedAt: string | null;
+  canUnlink: boolean;
+}
+
+export interface LoginMethodsResult {
+  loginMethods: LoginMethod[];
+}
+
+type LoginMethodConnectionResult = {
+  authorizationUrl?: string;
+  redirectUrl?: string;
+  url?: string;
+};
 
 interface ApiEnvelope<T> {
   isSuccess: boolean;
@@ -90,6 +110,43 @@ export const getSocialLoginUrl = (provider: SocialProvider) =>
 
 export const exchangeSocialLoginCode = (code: string) =>
   post<LoginResult>("/api/auth/login/oauth2/exchange", { code });
+
+const requestLoginMethods = async <T,>(method: "GET" | "POST" | "PATCH", path = ""): Promise<T> => {
+  const accessToken = getAccessToken();
+  if (!accessToken) throw new ApiError("로그인이 필요합니다.", 401);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/users/me/login-methods${path}`, {
+      method,
+      credentials: "include",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    throw new ApiError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.", 0);
+  }
+
+  const payload = await response.json().catch(() => null) as ApiEnvelope<T> | null;
+  if (!response.ok || !payload?.isSuccess) {
+    throw new ApiError(
+      payload?.message || "로그인 수단 요청을 처리하지 못했습니다.",
+      response.status,
+      payload?.code,
+    );
+  }
+  return payload.result;
+};
+
+export const getLoginMethods = () => requestLoginMethods<LoginMethodsResult>("GET");
+
+export const connectLoginMethod = async (provider: SocialLoginMethodProvider): Promise<string | null> => {
+  const result = await requestLoginMethods<LoginMethodConnectionResult | string | null>("POST", `/${provider}`);
+  if (typeof result === "string") return result;
+  return result?.authorizationUrl || result?.redirectUrl || result?.url || null;
+};
+
+export const unlinkLoginMethod = (provider: SocialLoginMethodProvider) =>
+  requestLoginMethods<null>("PATCH", `/${provider}`);
 
 export const logout = async (): Promise<void> => {
   const accessToken = getAccessToken();
