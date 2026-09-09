@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import questyLogin from "../../assets/questy.svg";
 import googleLogin from "../../assets/google_login.svg";
 import kakaoLogin from "../../assets/kakao_login.svg";
+import naverLogin from "../../assets/naver_login.svg";
 import { PATH } from "@/routes/paths";
 import { getSocialLoginUrl, login, type SocialProvider } from "@/api/auth";
-import { saveAuth, saveLoginRedirect } from "@/utils/auth";
+import { beginSocialLogin, saveAuth, saveLoginRedirect } from "@/utils/auth";
 import { resolvePostLoginPath } from "@/utils/profile";
 
 const inputClass = "type-body2 h-11 w-full rounded-2xl border border-transparent bg-[#eaf5ff] px-4 text-[#252743] outline-none transition placeholder:text-[#8b939e] focus:border-[#5bb5f8]/70 focus:bg-[#f7fbff] focus:ring-3 focus:ring-[#5bb5f8]/15";
@@ -38,6 +39,7 @@ export default function LoginPage() {
 
   const handleSocialLogin = (provider: SocialProvider) => {
     saveLoginRedirect(routeState?.from || PATH.HOME);
+    beginSocialLogin(provider);
     window.location.assign(getSocialLoginUrl(provider));
   };
 
@@ -66,12 +68,18 @@ export default function LoginPage() {
           <span className="h-px bg-[#e1edf7]" /><em className="text-[11px] not-italic leading-4 text-[#a2a9b2]">또는</em><span className="h-px bg-[#e1edf7]" />
         </div>
 
-        <div className="flex items-center justify-center gap-4" aria-label="소셜 로그인">
-          <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="구글 계정으로 로그인" onClick={() => handleSocialLogin("google")} type="button">
-            <img className="h-11 w-11" src={googleLogin} alt="" />
+        <div className="grid grid-cols-3 gap-2" aria-label="소셜 로그인">
+          <button className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-[#e1e6ec] bg-white px-2 text-[10px] font-bold text-[#6f7782] transition hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#5bb5f8]/30" aria-label="구글 계정으로 로그인" onClick={() => handleSocialLogin("google")} type="button">
+            <img className="h-7 w-7" src={googleLogin} alt="" />
+            구글
           </button>
-          <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="카카오 계정으로 로그인" onClick={() => handleSocialLogin("kakao")} type="button">
-            <img className="h-11 w-11" src={kakaoLogin} alt="" />
+          <button className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#fee500] px-2 text-[10px] font-bold text-[#3c3321] transition hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#5bb5f8]/30" aria-label="카카오 계정으로 로그인" onClick={() => handleSocialLogin("kakao")} type="button">
+            <img className="h-7 w-7" src={kakaoLogin} alt="" />
+            카카오
+          </button>
+          <button className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#03c75a] px-2 text-[10px] font-extrabold text-white shadow-[0_4px_12px_rgba(3,199,90,0.18)] transition hover:-translate-y-0.5 active:scale-[0.98] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#03c75a]/30" aria-label="네이버 계정으로 로그인" onClick={() => handleSocialLogin("naver")} type="button">
+            <img className="h-7 w-7" src={naverLogin} alt="" />
+            네이버
           </button>
         </div>
 
