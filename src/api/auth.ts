@@ -1,6 +1,6 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://api.quespot.site").replace(/\/$/, "");
 
-export type SocialProvider = "google" | "kakao";
+export type SocialProvider = "google" | "kakao" | "naver";
 
 interface ApiEnvelope<T> {
   isSuccess: boolean;
