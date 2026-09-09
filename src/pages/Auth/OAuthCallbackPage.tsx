@@ -3,7 +3,7 @@ import { LoaderCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { exchangeSocialLoginCode, type LoginResult } from "@/apis/auth";
 import { PATH } from "@/routes/paths";
-import { saveAuth, takeLoginRedirect } from "@/utils/auth";
+import { cancelSocialLogin, completeSocialLogin, saveAuth, takeLoginRedirect } from "@/utils/auth";
 import { resolvePostLoginPath } from "@/utils/profile";
 
 const pendingExchanges = new Map<string, Promise<LoginResult>>();
@@ -27,6 +27,7 @@ export default function OAuthCallbackPage() {
     const code = searchParams.get("code");
 
     if (oauthError) {
+      cancelSocialLogin();
       setError(oauthError);
       return;
     }
@@ -40,6 +41,7 @@ export default function OAuthCallbackPage() {
       .then(async (result) => {
         if (!active) return;
         saveAuth(result.accessToken, result.userId);
+        completeSocialLogin(result.accessToken);
         const redirectPath = takeLoginRedirect();
         navigate(await resolvePostLoginPath(redirectPath || PATH.HOME), { replace: true });
       })
