@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import questyLogin from "../../assets/questy.svg";
 import googleLogin from "../../assets/google_login.svg";
 import kakaoLogin from "../../assets/kakao_login.svg";
+import naverLogin from "../../assets/naver_login.svg";
 import { PATH } from "@/routes/paths";
 import { getSocialLoginUrl, login, type SocialProvider } from "@/api/auth";
-import { saveAuth, saveLoginRedirect } from "@/utils/auth";
+import { beginSocialLogin, saveAuth, saveLoginRedirect } from "@/utils/auth";
 import { resolvePostLoginPath } from "@/utils/profile";
 
 const inputClass = "type-body2 h-11 w-full rounded-2xl border border-transparent bg-[#eaf5ff] px-4 text-[#252743] outline-none transition placeholder:text-[#8b939e] focus:border-[#5bb5f8]/70 focus:bg-[#f7fbff] focus:ring-3 focus:ring-[#5bb5f8]/15";
@@ -38,6 +39,7 @@ export default function LoginPage() {
 
   const handleSocialLogin = (provider: SocialProvider) => {
     saveLoginRedirect(routeState?.from || PATH.HOME);
+    beginSocialLogin(provider);
     window.location.assign(getSocialLoginUrl(provider));
   };
 
@@ -73,12 +75,8 @@ export default function LoginPage() {
           <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="카카오 계정으로 로그인" onClick={() => handleSocialLogin("kakao")} type="button">
             <img className="h-11 w-11" src={kakaoLogin} alt="" />
           </button>
-          <button className="grid h-11 w-11 place-items-center rounded-full bg-[#03c75a] p-0 text-white transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#03c75a]/30" aria-label="네이버 계정으로 로그인" onClick={() => handleSocialLogin("naver")} type="button">
-            <span aria-hidden="true">
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M15.4 12.5 8.3 2H2v20h6.6V12l7.1 10H22V2h-6.6v10.5Z" />
-              </svg>
-            </span>
+          <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="네이버 계정으로 로그인" onClick={() => handleSocialLogin("naver")} type="button">
+            <img className="h-11 w-11" src={naverLogin} alt="" />
           </button>
         </div>
 
