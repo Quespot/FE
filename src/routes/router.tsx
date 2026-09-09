@@ -1,9 +1,8 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PATH } from "@/routes/paths";
 import MobileLayout from "@/layouts/MobileLayout";
 import BottomNavigationLayout from "@/layouts/BottomNavigationLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
-import LandingPage from "@/pages/LandingPage";
 import HomePage from "@/pages/HomePage";
 import MissionsPage from "@/pages/mission/MissionPage";
 import MissionDetailPage from "@/pages/mission/MissionDetailPage";
@@ -33,12 +32,12 @@ export const router = createBrowserRouter([
     element: <MobileLayout />,
     children: [
       {
-        path: PATH.LANDING,
-        element: <LandingPage />,
-      },
-      {
         path: PATH.LOGIN,
         element: <LoginPage />,
+      },
+      {
+        path: "/login",
+        element: <Navigate replace to={PATH.LOGIN} />,
       },
       {
         path: PATH.OAUTH_CALLBACK,

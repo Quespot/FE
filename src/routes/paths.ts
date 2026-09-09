@@ -1,6 +1,5 @@
 export const PATH = {
-  LANDING: "/",
-  LOGIN: "/login",
+  LOGIN: "/",
   OAUTH_CALLBACK: "/oauth/callback",
   SIGNUP: "/signup",
   SIGNUP_CHECK: "/profile/check",
