@@ -9,6 +9,7 @@ export const PATH = {
 
   // HomePage
   HOME: "/home",
+  NOTIFICATION: "/home/notification",
 
   //MissionPage
   MISSIONS: "/missions",
@@ -35,7 +36,7 @@ export const PATH = {
   SAVED_PLACES: "/my/saved-places",
   ARCHIVE: "/my/archive",
   QUESTY_CUSTOMIZE: "/my/customize",
-  
+
   // Error
   NOT_FOUND: "*",
 } as const;

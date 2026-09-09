@@ -27,6 +27,8 @@ import VerifyPage from "@/pages/mission/verify/VerifyPage";
 import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
 import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
 import LocalCouponPage from "@/pages/LocalCouponPage";
+import { pathsEquals } from "@vis.gl/react-google-maps";
+import NotificationPage from "@/pages/NotificationPage";
 
 export const router = createBrowserRouter([
   {
@@ -137,6 +139,7 @@ export const router = createBrowserRouter([
             element: <ArchivePage />,
           },
           { path: PATH.REWARD_COUPONS, element: <LocalCouponPage /> },
+          { path: PATH.NOTIFICATION, element: <NotificationPage /> },
         ],
       },
     ],

@@ -41,7 +41,7 @@ export default function HomePage() {
         mascotSrc={QuestySvg}
         notificationCount={3}
         onBellClick={() => {
-          // TODO: 알림함 페이지 연결
+          navigate(PATH.NOTIFICATION);
         }}
       />
 

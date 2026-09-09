@@ -7,6 +7,7 @@ import GoodExample from "@/assets/images/photo_verification_good.png";
 import BadExample from "@/assets/images/photo_verification_bad.png";
 import { HTMLAttributes, useEffect, useRef, useState } from "react";
 import { PATH } from "@/routes/paths";
+import { ContentCard } from "@/components/common/ContentCard";
 export default function VerifyPage() {
   const navigate = useNavigate();
 
@@ -46,7 +47,7 @@ export default function VerifyPage() {
         }
       />
       <section className="flex flex-col gap-4 p-4 [overflow-y:auto]">
-        <Section>
+        <ContentCard>
           <h2 className="text-[12px] font-black">📋 인증 안내</h2>
           <h3 className="text-[14px] font-bold text-[#5A6B84]">
             인사동 전통찻집 방문
@@ -55,9 +56,9 @@ export default function VerifyPage() {
             전통찻집 간판이 보이도록 외관을 촬영하거나, 내부에서 차를 즐기는
             사진을 찍어 제출하세요.
           </p>
-        </Section>
+        </ContentCard>
 
-        <Section>
+        <ContentCard>
           <h2 className="text-[12px] font-black pb-3">예시 사진</h2>
           <div className="flex gap-[10px]">
             <section className="flex flex-1 flex-col items-center">
@@ -91,9 +92,9 @@ export default function VerifyPage() {
               </p>
             </section>
           </div>
-        </Section>
+        </ContentCard>
 
-        <Section className="!bg-[var(--sky-100)]">
+        <ContentCard className="!bg-[var(--sky-100)]">
           <div className="grid place-items-center text-center gap-3 py-9">
             {!previewUrl ? (
               <>
@@ -149,7 +150,7 @@ export default function VerifyPage() {
               />
             </div>
           </div>
-        </Section>
+        </ContentCard>
         {!previewUrl ? (
           <Button disabled>사진을 먼저 선택해주세요</Button>
         ) : (
@@ -158,24 +159,6 @@ export default function VerifyPage() {
           </Button>
         )}
       </section>
-    </div>
-  );
-}
-
-interface SectionProps extends HTMLAttributes<HTMLDivElement> {}
-
-function Section({ className = "", children, ...props }: SectionProps) {
-  return (
-    <div
-      className={`
-        flex flex-col gap-1 p-4 rounded-2xl bg-white
-        border-[1px_solid_var(--sky-100)]
-        [box-shadow:0_1px_3px_rgba(0,_0,_0,_0.1)]
-        ${className}
-      `}
-      {...props}
-    >
-      {children}
     </div>
   );
 }
