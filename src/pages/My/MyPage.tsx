@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import {
-  AlertTriangle, Archive, Bell, Check, ChevronRight, Heart, Link2, MapPinned, Pencil,
+  AlertTriangle, Archive, Bell, Check, ChevronRight, Heart, Link2, Pencil,
   Plane, Settings2, ShieldCheck, Sparkles, Trash2, Trophy, X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { categoryIcons, categoryToneClasses } from "@/components/home/CategoryGrid";
 import { getProfile, updateBasicProfile } from "@/api/profile";
 import { categoryIdsToTravelStyles, normalizeTravelCategoryIds, profileTravelCategories, travelStylesToCategoryIds } from "@/constants/profile";
-import { logout, withdraw } from "@/api/auth";
+import { connectLoginMethod, getLoginMethods, logout, unlinkLoginMethod, withdraw, type LoginMethod, type SocialLoginMethodProvider, type SocialProvider } from "@/api/auth";
 import { PATH } from "@/routes/paths";
-import { clearAuth, clearSocialConnections, getSocialConnections, type SocialConnections, type SocialProviderId } from "@/utils/auth";
+import { beginSocialLogin, clearAuth, clearSocialConnections, saveLoginRedirect } from "@/utils/auth";
 import questyProfile from "@/assets/questy.svg";
 
 const PROFILE_KEY = "quespot-profile";
@@ -18,13 +18,12 @@ type StoredProfile = { nickname?: string; profileImageUrl?: string | null; inter
 
 const activityLinks = [
   { label: "좋아요", icon: Heart, tone: "bg-[#ffe1e8] text-[#f04461]", fill: true },
-  { label: "저장 장소", icon: MapPinned, tone: "bg-[#dff3ff] text-[#279ee9]", fill: false },
   { label: "아카이브", icon: Archive, tone: "bg-[#fff0c7] text-[#e99b20]", fill: false },
 ] as const;
-const socialProviders: Array<{ id: SocialProviderId; name: string; mark: ComponentType; markClass: string }> = [
-  { id: "google", name: "Google", mark: GoogleMark, markClass: "bg-white ring-1 ring-[#e5e9ee]" },
-  { id: "kakao", name: "Kakao", mark: KakaoMark, markClass: "bg-[#fee500]" },
-  { id: "naver", name: "Naver", mark: NaverMark, markClass: "bg-[#03c75a]" },
+const loginMethodOptions: Array<{ provider: SocialLoginMethodProvider; socialProvider: SocialProvider; name: string; mark: ComponentType; markClass: string }> = [
+  { provider: "GOOGLE", socialProvider: "google", name: "Google", mark: GoogleMark, markClass: "bg-white ring-1 ring-[#e5e9ee]" },
+  { provider: "NAVER", socialProvider: "naver", name: "Naver", mark: NaverMark, markClass: "bg-[#03c75a]" },
+  { provider: "KAKAO", socialProvider: "kakao", name: "Kakao", mark: KakaoMark, markClass: "bg-[#fee500]" },
 ];
 const panelClass = "rounded-[22px] border border-[#dbe8f5] bg-white p-[18px] shadow-[0_8px_24px_rgba(45,111,160,0.08)]";
 const travelToneClasses: Record<string, string> = {
@@ -50,7 +49,11 @@ function readProfile(): StoredProfile {
 export default function MyPage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<StoredProfile>(readProfile);
-  const [connections] = useState<SocialConnections>(getSocialConnections);
+  const [loginMethods, setLoginMethods] = useState<LoginMethod[]>([]);
+  const [isLoadingLoginMethods, setIsLoadingLoginMethods] = useState(true);
+  const [pendingConnection, setPendingConnection] = useState<SocialProvider | null>(null);
+  const [unlinkTarget, setUnlinkTarget] = useState<LoginMethod | null>(null);
+  const [isUnlinking, setIsUnlinking] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editingTravel, setEditingTravel] = useState(false);
   const [draftNickname, setDraftNickname] = useState(profile.nickname || "Quespot 탐험가");
@@ -82,6 +85,22 @@ export default function MyPage() {
     }).catch((profileError) => {
       if (active) setStatusMessage(profileError instanceof Error ? profileError.message : "프로필을 불러오지 못했습니다.");
     });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setIsLoadingLoginMethods(true);
+    getLoginMethods()
+      .then((result) => {
+        if (active) setLoginMethods(result.loginMethods);
+      })
+      .catch((loginMethodsError) => {
+        if (active) setStatusMessage(loginMethodsError instanceof Error ? loginMethodsError.message : "로그인 수단을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (active) setIsLoadingLoginMethods(false);
+      });
     return () => { active = false; };
   }, []);
 
@@ -166,6 +185,46 @@ export default function MyPage() {
     }
   };
 
+  const refreshLoginMethods = async () => {
+    const result = await getLoginMethods();
+    setLoginMethods(result.loginMethods);
+  };
+
+  const handleConnectLoginMethod = async (provider: SocialLoginMethodProvider, socialProvider: SocialProvider) => {
+    if (pendingConnection) return;
+    setPendingConnection(socialProvider);
+    try {
+      saveLoginRedirect(PATH.MY);
+      beginSocialLogin(socialProvider);
+      const authorizationUrl = await connectLoginMethod(provider);
+      if (authorizationUrl) {
+        window.location.assign(authorizationUrl);
+        return;
+      }
+      await refreshLoginMethods();
+      setStatusMessage("계정이 연결됐어요.");
+    } catch (connectionError) {
+      setStatusMessage(connectionError instanceof Error ? connectionError.message : "계정을 연결하지 못했습니다.");
+    } finally {
+      setPendingConnection(null);
+    }
+  };
+
+  const handleUnlinkLoginMethod = async () => {
+    if (!unlinkTarget || unlinkTarget.provider === "EMAIL" || isUnlinking) return;
+    setIsUnlinking(true);
+    try {
+      await unlinkLoginMethod(unlinkTarget.provider as SocialLoginMethodProvider);
+      await refreshLoginMethods();
+      setUnlinkTarget(null);
+      setStatusMessage("계정 연결을 해제했어요.");
+    } catch (unlinkError) {
+      setStatusMessage(unlinkError instanceof Error ? unlinkError.message : "계정 연결을 해제하지 못했습니다.");
+    } finally {
+      setIsUnlinking(false);
+    }
+  };
+
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#eef7ff] text-[#19233b]">
       <header className="sticky top-0 z-20 flex min-h-[66px] shrink-0 items-center justify-between border-b border-[#dcecf8] bg-white/95 px-[22px] backdrop-blur-xl">
@@ -209,9 +268,9 @@ export default function MyPage() {
           <ChevronRight className="text-[#abd9f5]" size={19} strokeWidth={2.4} />
         </button>
 
-        <section className="grid grid-cols-3 gap-[10px]" aria-label="내 활동 바로가기">
+        <section className="grid grid-cols-2 gap-[10px]" aria-label="내 활동 바로가기">
           {activityLinks.map(({ icon: Icon, label, tone, fill }) => (
-            <button className="grid min-h-[96px] content-center justify-items-center rounded-[20px] border border-[#dce8f3] bg-white px-1 py-3 shadow-[0_7px_20px_rgba(55,94,130,0.07)] transition active:scale-[0.97]" onClick={() => label === "좋아요" ? navigate(PATH.LIKES) : label === "저장 장소" ? navigate(PATH.SAVED_PLACES) : label === "아카이브" ? navigate(PATH.ARCHIVE) : undefined} type="button" key={label}>
+            <button className="grid min-h-[96px] content-center justify-items-center rounded-[20px] border border-[#dce8f3] bg-white px-1 py-3 shadow-[0_7px_20px_rgba(55,94,130,0.07)] transition active:scale-[0.97]" onClick={() => navigate(label === "좋아요" ? PATH.LIKES : PATH.ARCHIVE)} type="button" key={label}>
               <span className={`grid h-[44px] w-[44px] place-items-center rounded-[15px] shadow-sm ${tone}`}><Icon fill={fill ? "currentColor" : "none"} size={23} strokeWidth={2.15} /></span>
               <strong className="mt-2 text-[11px] font-extrabold text-[#445064]">{label}</strong>
             </button>
@@ -237,20 +296,53 @@ export default function MyPage() {
         </section>
 
         <section className={panelClass} aria-labelledby="social-title">
-          <div className="mb-1 flex items-start gap-2.5"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-[13px] bg-[#eaf7ff] text-[#42a7e9]"><Link2 size={18} strokeWidth={2.3} /></span><div><h2 className="text-[14px] font-extrabold" id="social-title">소셜 계정 연결</h2><p className="mt-1 text-[9.5px] leading-[1.45] text-[#95a2b0]">인증이 완료된 로그인 계정이 자동으로 표시돼요.</p></div></div>
+          <div className="mb-1 flex items-start gap-2.5">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[13px] bg-[#eaf7ff] text-[#42a7e9]"><Link2 size={18} strokeWidth={2.3} /></span>
+            <div><h2 className="text-[14px] font-extrabold" id="social-title">소셜 로그인</h2><p className="mt-1 text-[9.5px] leading-[1.45] text-[#95a2b0]">연결된 소셜 계정을 확인하거나 새로운 계정을 연결할 수 있어요.</p></div>
+          </div>
           <div className="mt-[13px] divide-y divide-[#edf1f5]">
-            {socialProviders.map(({ id, name, mark: Mark, markClass }) => {
-              const connected = connections[id];
-              return <div className="flex min-h-[54px] items-center gap-2.5 py-2" key={id}><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[12px] ${markClass}`}><Mark /></span><strong className="min-w-0 flex-1 text-[12px] font-extrabold text-[#374356]">{name}</strong><span className={`flex h-6 shrink-0 items-center justify-center gap-px rounded-[7px] px-[7px] text-[7.5px] font-bold leading-none ${connected ? "bg-[#eef9f4] text-[#36a97e]" : "bg-[#f3f6f8] text-[#9aa5b1]"}`}>{connected ? <><Check size={8} strokeWidth={2.6} />연결됨</> : "미연결"}</span></div>;
+            {loginMethodOptions.map(({ provider, socialProvider, name, mark: Mark, markClass }) => {
+              const method = loginMethods.find((item) => item.provider === provider);
+              const linked = method?.linked ?? false;
+              const isConnecting = pendingConnection === socialProvider;
+              return (
+                <div className="flex min-h-[58px] items-center gap-2.5 py-2" key={provider}>
+                  <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[12px] ${markClass}`}><Mark /></span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-[12px] font-extrabold text-[#374356]">{name}</strong>
+                    <small className="mt-0.5 block truncate text-[8px] font-medium text-[#9aa5b1]">{isLoadingLoginMethods ? "확인 중..." : method?.maskedEmail || (linked ? "연결됨" : "연결되지 않음")}</small>
+                  </span>
+                  {isLoadingLoginMethods ? <span className="h-6 w-12 animate-pulse rounded-[7px] bg-[#edf2f5]" /> : linked ? (
+                    method?.canUnlink && socialProvider
+                      ? <button className="h-7 shrink-0 rounded-[8px] bg-[#fff0f0] px-2.5 font-extrabold text-[#df666b] transition active:scale-95" onClick={() => setUnlinkTarget(method)} style={{ fontSize: "9px", lineHeight: 1 }} type="button">연결 해제</button>
+                      : <span className="flex h-7 shrink-0 items-center gap-0.5 rounded-[8px] bg-[#eef9f4] px-2 font-bold text-[#36a97e]" style={{ fontSize: "9px", lineHeight: 1 }}><Check size={9} strokeWidth={2.6} />연결됨</span>
+                  ) : socialProvider ? (
+                    <button className="h-7 shrink-0 rounded-[8px] bg-[#eaf6ff] px-3 font-extrabold text-[#359fdf] transition active:scale-95 disabled:opacity-50" disabled={Boolean(pendingConnection)} onClick={() => handleConnectLoginMethod(provider as SocialLoginMethodProvider, socialProvider)} style={{ fontSize: "9px", lineHeight: 1 }} type="button">{isConnecting ? "연결 중..." : "연결"}</button>
+                  ) : <span className="rounded-[7px] bg-[#f3f6f8] px-2 py-1 text-[7.5px] font-bold text-[#9aa5b1]">미등록</span>}
+                </div>
+              );
             })}
           </div>
-          <p className="mt-2 flex items-start gap-1.5 rounded-[12px] bg-[#f7f9fb] px-3 py-2.5 text-[8.5px] leading-[1.5] text-[#8e9aa7]"><ShieldCheck className="mt-px shrink-0 text-[#6dbb9f]" size={13} />소셜 로그인이 성공하면 연결 상태가 자동으로 반영돼요.</p>
+          <p className="mt-2 flex items-start gap-1.5 rounded-[12px] bg-[#f7f9fb] px-3 py-2.5 text-[8.5px] leading-[1.5] text-[#8e9aa7]"><ShieldCheck className="mt-px shrink-0 text-[#6dbb9f]" size={13} />로그인할 수단이 하나 이상 남아 있을 때만 연결을 해제할 수 있어요.</p>
         </section>
         <button className="h-[48px] rounded-[16px] border-2 border-[#f08b8f] bg-white text-[12px] font-extrabold text-[#e4545a] shadow-[0_5px_14px_rgba(224,84,90,0.08)] transition active:scale-[0.99] disabled:cursor-wait disabled:opacity-60" disabled={isLoggingOut} onClick={handleLogout} type="button">{isLoggingOut ? "로그아웃 중..." : "로그아웃"}</button>
         <button className="-mt-1 flex h-10 items-center justify-center gap-1.5 rounded-[14px] text-[10px] font-bold text-[#9aa5b1] transition hover:bg-[#fff0f0] hover:text-[#df666b] active:scale-[0.99]" onClick={() => setShowWithdrawConfirm(true)} type="button"><Trash2 size={13} />회원탈퇴</button>
       </div>
 
       {statusMessage ? <div className="fixed bottom-[92px] left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-[#25334a] px-4 py-2.5 text-[11px] font-bold text-white shadow-xl" role="status"><Check size={14} className="text-[#6ed4ad]" />{statusMessage}</div> : null}
+      {unlinkTarget ? (
+        <div className="fixed inset-0 z-[70] grid place-items-center bg-[#132036]/45 px-6 backdrop-blur-[2px]" role="presentation" onMouseDown={() => !isUnlinking && setUnlinkTarget(null)}>
+          <section className="w-full max-w-[330px] rounded-[26px] bg-white px-6 pb-6 pt-7 text-center shadow-[0_20px_60px_rgba(20,42,67,0.2)]" role="dialog" aria-modal="true" aria-labelledby="unlink-title" onMouseDown={(event) => event.stopPropagation()}>
+            <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[#fff0f0] text-[#e7686d]"><AlertTriangle size={23} strokeWidth={2.2} /></span>
+            <h2 className="mt-4 text-[17px] font-extrabold text-[#263248]" id="unlink-title">계정 연결을 해제할까요?</h2>
+            <p className="mt-2 break-keep text-[10.5px] leading-[1.65] text-[#8491a1]">해제하면 해당 계정으로 로그인할 수 없어요.<br />다른 로그인 수단은 그대로 유지됩니다.</p>
+            <div className="mt-6 grid grid-cols-2 gap-2.5">
+              <button className="h-11 rounded-[14px] bg-[#f1f5f8] text-[11px] font-extrabold text-[#647284] disabled:opacity-50" disabled={isUnlinking} onClick={() => setUnlinkTarget(null)} type="button">취소</button>
+              <button className="h-11 rounded-[14px] bg-[#e8686d] text-[11px] font-extrabold text-white shadow-[0_7px_16px_rgba(232,104,109,0.22)] disabled:opacity-50" disabled={isUnlinking} onClick={handleUnlinkLoginMethod} type="button">{isUnlinking ? "해제 중..." : "연결 해제"}</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
       {showWithdrawConfirm ? (
         <div className="fixed inset-0 z-[70] grid place-items-center bg-[#132036]/45 px-6 backdrop-blur-[2px]" role="presentation" onMouseDown={() => !isWithdrawing && setShowWithdrawConfirm(false)}>
           <section className="w-full max-w-[330px] rounded-[26px] bg-white px-6 pb-6 pt-7 text-center shadow-[0_20px_60px_rgba(20,42,67,0.2)]" role="dialog" aria-modal="true" aria-labelledby="withdraw-title" onMouseDown={(event) => event.stopPropagation()}>

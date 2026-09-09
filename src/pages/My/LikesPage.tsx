@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { ArrowLeft, Heart, MapPin, Play, Star } from "lucide-react";
+import { ArrowLeft, Heart, MapPin, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ThemeIcon, { getThemeConfig, type ThemeKey } from "@/components/common/ThemeIcon";
 import { PATH } from "@/routes/paths";
 
-type TabKey = "mission" | "place" | "course";
+type TabKey = "mission" | "course";
 type FavoriteItem = {
   id: string;
   title: string;
   theme: ThemeKey;
   location: string;
   distance?: string;
-  rating?: number;
   points?: number;
   completed?: boolean;
   stops?: number;
@@ -19,7 +18,6 @@ type FavoriteItem = {
 
 const tabs: Array<{ id: TabKey; label: string }> = [
   { id: "mission", label: "미션" },
-  { id: "place", label: "장소" },
   { id: "course", label: "코스" },
 ];
 
@@ -31,11 +29,6 @@ const initialFavorites: Record<TabKey, FavoriteItem[]> = {
     { id: "hanok-experience", title: "북촌 한옥 골목 탐험", theme: "culture", location: "북촌 한옥마을", distance: "2.1km", completed: true },
     { id: "tea-house", title: "인사동 전통찻집 방문", theme: "cafe", location: "인사동", distance: "2.5km", points: 120 },
     { id: "namsan-night", title: "남산타워 야경 포착", theme: "night", location: "남산서울타워", distance: "4.8km", points: 300 },
-  ],
-  place: [
-    { id: "tea-cafe", title: "전통 찻집 다향", theme: "cafe", location: "카페", distance: "50m", rating: 4.9 },
-    { id: "insadong-art", title: "인사아트센터", theme: "culture", location: "문화", distance: "100m", rating: 4.6 },
-    { id: "bibimbap", title: "인사동 전통 비빔밥", theme: "food", location: "음식", distance: "80m", rating: 4.8 },
   ],
   course: [
     { id: "seoul-history", title: "서울 역사 탐방 코스", theme: "history", location: "서울 종로구", stops: 5, points: 820 },
@@ -52,7 +45,6 @@ function readFavorites(): Record<TabKey, FavoriteItem[]> {
   const unlikedIds = new Set(readUnlikedIds());
   return {
     mission: initialFavorites.mission.filter((item) => !unlikedIds.has(item.id)),
-    place: initialFavorites.place.filter((item) => !unlikedIds.has(item.id)),
     course: initialFavorites.course.filter((item) => !unlikedIds.has(item.id)),
   };
 }
@@ -84,7 +76,7 @@ export default function LikesPage() {
           <button className="grid h-9 w-9 place-items-center rounded-full bg-[#eaf6ff] text-[#4faae7] transition active:scale-95" aria-label="마이페이지로 돌아가기" onClick={() => navigate(PATH.MY)} type="button"><ArrowLeft size={18} strokeWidth={2.2} /></button>
           <h1 className="ml-3 flex-1 self-center pt-[21px] text-[16px] font-extrabold">좋아요 목록</h1>
         </div>
-        <nav className="grid h-[48px] grid-cols-3 border-b border-[#eaf0f5]" aria-label="좋아요 유형">
+        <nav className="grid h-[48px] grid-cols-2 border-b border-[#eaf0f5]" aria-label="좋아요 유형">
           {tabs.map((tab) => <button className={`relative text-[12px] font-extrabold transition ${activeTab === tab.id ? "text-[#43a7e9]" : "text-[#9aa9b9]"}`} key={tab.id} onClick={() => setActiveTab(tab.id)} type="button">{tab.label}<span className={`absolute inset-x-0 bottom-0 mx-auto h-0.5 bg-[#4eb0ef] transition-all ${activeTab === tab.id ? "w-full" : "w-0"}`} /></button>)}
         </nav>
       </header>
@@ -106,7 +98,7 @@ function CompactCard({ item, liked, onToggle }: { item: FavoriteItem; liked: boo
       <div className="min-w-0 flex-1">
         <span className={`inline-flex rounded-full px-2 py-0.5 text-[8.5px] font-extrabold ${theme.tone}`}>{theme.label}</span>
         <h2 className="mt-1 truncate text-[13px] font-extrabold">{item.title}</h2>
-        <p className="mt-1 flex items-center gap-1.5 text-[9.5px] text-[#93a0af]"><span>{item.location}</span>{item.distance ? <><i className="h-0.5 w-0.5 rounded-full bg-[#bdc8d2]" />{item.distance}</> : null}{item.rating ? <><Star size={10} fill="#f5b51b" strokeWidth={0} /><strong className="text-[#59677a]">{item.rating}</strong></> : null}</p>
+        <p className="mt-1 flex items-center gap-1.5 text-[9.5px] text-[#93a0af]"><span>{item.location}</span>{item.distance ? <><i className="h-0.5 w-0.5 rounded-full bg-[#bdc8d2]" />{item.distance}</> : null}</p>
         {item.completed ? <p className="mt-1 text-[9px] font-bold text-[#42bd8e]">✓ 완료</p> : item.points ? <p className="mt-1 text-[9px] font-extrabold text-[#38a6eb]">+{item.points}P</p> : null}
       </div>
       <button className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition active:scale-90 ${liked ? "text-[#f14b59]" : "text-[#aeb9c5]"}`} aria-label={`${item.title} ${liked ? "좋아요 해제" : "다시 좋아요"}`} aria-pressed={liked} onClick={onToggle} type="button"><Heart size={19} fill={liked ? "currentColor" : "none"} strokeWidth={liked ? 0 : 2} /></button>
