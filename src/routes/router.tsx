@@ -4,6 +4,7 @@ import MobileLayout from "@/layouts/MobileLayout";
 import BottomNavigationLayout from "@/layouts/BottomNavigationLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import HomePage from "@/pages/HomePage";
+import NotificationPage from "@/pages/NotificationPage";
 import MissionsPage from "@/pages/mission/MissionPage";
 import MissionDetailPage from "@/pages/mission/MissionDetailPage";
 import MissionRecordPage from "@/pages/mission/MissionRecordPage";
@@ -148,10 +149,8 @@ export const router = createBrowserRouter([
             path: PATH.ARCHIVE,
             element: <ArchivePage />,
           },
-          {
-            path: PATH.REWARD_COUPONS,
-            element: <LocalCouponPage />,
-          },
+          { path: PATH.REWARD_COUPONS, element: <LocalCouponPage /> },
+          { path: PATH.NOTIFICATION, element: <NotificationPage /> },
         ],
       },
     ],

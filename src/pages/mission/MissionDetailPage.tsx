@@ -30,6 +30,7 @@ import { useStartMissionAttempt } from "@/hooks/mutation/useStartMissionAttempt"
 import type { MissionCategory, MissionDetail } from "@/types/mission";
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
+import { Header } from "@/components/common/Header";
 
 type LatLng = {
   lat: number;
@@ -219,13 +220,7 @@ export default function MissionDetailPage() {
 
   return (
     <QuespotPageLayout>
-      <HomeHeader
-        mascotSrc={QuestySvg}
-        notificationCount={3}
-        onBellClick={() => {
-          // TODO: 알림함 연결
-        }}
-      />
+      <Header />
 
       <QuespotDivider />
 
@@ -294,7 +289,9 @@ export default function MissionDetailPage() {
                       <button
                         type="button"
                         onClick={() => handleStepClick(step)}
-                        disabled={!isLinked || (isVerifyStep && isStartingMission)}
+                        disabled={
+                          !isLinked || (isVerifyStep && isStartingMission)
+                        }
                         className={[
                           "grid w-full grid-cols-[32px_minmax(0,1fr)_24px] items-center gap-[12px] rounded-[12px] bg-transparent p-0 text-left transition",
                           isLinked
@@ -654,7 +651,9 @@ function MissionRewardCard({
         disabled={!mission.canStart || isStartingMission}
         className={[
           "flex h-[32px] min-w-[76px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-[12px] font-sans text-[10px] font-black leading-none text-white",
-          mission.canStart && !isStartingMission ? "bg-[#5BB5F8]" : "bg-[#CBD5E1]",
+          mission.canStart && !isStartingMission
+            ? "bg-[#5BB5F8]"
+            : "bg-[#CBD5E1]",
         ].join(" ")}
       >
         {isStartingMission ? "시작 중" : "시작하기"}

@@ -1,5 +1,4 @@
-import type { ChangeEvent, HTMLAttributes } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Camera, ImageUp, Lightbulb } from "lucide-react";
 
@@ -12,6 +11,7 @@ import type { MissionDetail } from "@/types/mission";
 
 import GoodExample from "@/assets/images/photo_verification_good.png";
 import BadExample from "@/assets/images/photo_verification_bad.png";
+import { ContentCard } from "@/components/common/ContentCard";
 
 type VerifyPageState = {
   missionId?: number;
@@ -29,7 +29,6 @@ const DEFAULT_LOCATION: LatLng = {
   lat: 37.5752,
   lng: 126.9812,
 };
-
 export default function VerifyPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -189,7 +188,7 @@ export default function VerifyPage() {
       />
 
       <section className="flex flex-col gap-4 p-4 [overflow-y:auto]">
-        <Section>
+        <ContentCard>
           <h2 className="text-[12px] font-black">📋 인증 안내</h2>
 
           <h3 className="text-[14px] font-bold text-[#5A6B84]">
@@ -197,8 +196,8 @@ export default function VerifyPage() {
           </h3>
 
           <p className="text-[12px] text-[#9BAFC8]">
-            장소가 잘 식별되도록 간판, 외관, 내부 공간 중 하나가 보이게
-            촬영해서 제출하세요.
+            장소가 잘 식별되도록 간판, 외관, 내부 공간 중 하나가 보이게 촬영해서
+            제출하세요.
           </p>
 
           {attemptId ? (
@@ -210,9 +209,9 @@ export default function VerifyPage() {
               attemptId가 없어 데모 인증 모드로 진행돼요.
             </p>
           )}
-        </Section>
+        </ContentCard>
 
-        <Section>
+        <ContentCard>
           <h2 className="text-[12px] font-black pb-3">예시 사진</h2>
 
           <div className="flex gap-[10px]">
@@ -252,9 +251,9 @@ export default function VerifyPage() {
               </p>
             </section>
           </div>
-        </Section>
+        </ContentCard>
 
-        <Section className="!bg-[var(--sky-100)]">
+        <ContentCard className="!bg-[var(--sky-100)]">
           <div className="grid place-items-center text-center gap-3 py-9">
             {!previewUrl ? (
               <>
@@ -312,8 +311,7 @@ export default function VerifyPage() {
               />
             </div>
           </div>
-        </Section>
-
+        </ContentCard>
         {!previewUrl ? (
           <Button disabled>사진을 먼저 선택해주세요</Button>
         ) : (
@@ -322,24 +320,6 @@ export default function VerifyPage() {
           </Button>
         )}
       </section>
-    </div>
-  );
-}
-
-interface SectionProps extends HTMLAttributes<HTMLDivElement> {}
-
-function Section({ className = "", children, ...props }: SectionProps) {
-  return (
-    <div
-      className={`
-        flex flex-col gap-1 p-4 rounded-2xl bg-white
-        border-[1px_solid_var(--sky-100)]
-        [box-shadow:0_1px_3px_rgba(0,_0,_0,_0.1)]
-        ${className}
-      `}
-      {...props}
-    >
-      {children}
     </div>
   );
 }

@@ -8,6 +8,7 @@ export const PATH = {
 
   // HomePage
   HOME: "/home",
+  NOTIFICATION: "/home/notification",
 
   // MissionPage
   MISSIONS: "/missions",

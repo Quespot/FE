@@ -27,6 +27,7 @@ import {
 
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
+import { Header } from "@/components/common/Header";
 
 export default function RewardPage() {
   const navigate = useNavigate();
@@ -61,15 +62,7 @@ export default function RewardPage() {
 
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
-      <HomeHeader
-        mascotSrc={QuestySvg}
-        notificationCount={3}
-        onBellClick={() => {
-          // TODO: 알림함 연결
-        }}
-      />
-
-      <QuespotDivider />
+      <Header />
 
       <QuespotPageContent className="bg-[#F4F8FF]">
         <section className="shrink-0 bg-[linear-gradient(150deg,#C8E8FF_0%,#EAF5FF_100%)] px-[20px] pb-[32px] pt-[24px]">
@@ -135,10 +128,7 @@ type RewardSectionCountProps = {
   totalCount: number;
 };
 
-function BadgeSection({
-  acquiredCount,
-  totalCount,
-}: RewardSectionCountProps) {
+function BadgeSection({ acquiredCount, totalCount }: RewardSectionCountProps) {
   return (
     <>
       <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">

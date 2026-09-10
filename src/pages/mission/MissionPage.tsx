@@ -18,6 +18,7 @@ import { useMissions } from "@/hooks/queries/useMissions";
 import type { MissionCategory, MissionItem } from "@/types/mission";
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
+import { Header } from "@/components/common/Header";
 
 type LatLng = {
   lat: number;
@@ -92,15 +93,7 @@ export default function MissionPage() {
 
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
-      <HomeHeader
-        mascotSrc={QuestySvg}
-        notificationCount={3}
-        onBellClick={() => {
-          // TODO: 알림함 연결
-        }}
-      />
-
-      <QuespotDivider />
+      <Header />
 
       <section className="shrink-0 bg-white px-[16px] pb-[18px] pt-[22px]">
         <div className="flex items-center justify-between">
@@ -176,9 +169,7 @@ export default function MissionPage() {
           />
         </section>
 
-        {isLoading ? (
-          <MissionLoading />
-        ) : null}
+        {isLoading ? <MissionLoading /> : null}
 
         {isError ? <MissionError onRetry={refetch} /> : null}
 
