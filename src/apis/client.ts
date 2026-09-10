@@ -1,3 +1,4 @@
+import { getAccessToken } from "@/utils/auth";
 import axios, { AxiosHeaders } from "axios";
 
 const BASE_URL =
@@ -7,20 +8,6 @@ const BASE_URL =
 const DEV_ACCESS_TOKEN = import.meta.env.DEV
   ? (import.meta.env.VITE_DEV_ACCESS_TOKEN as string | undefined)
   : undefined;
-
-const ACCESS_TOKEN_KEYS = ["accessToken", "ACCESS_TOKEN", "token"] as const;
-
-function getStoredAccessToken() {
-  for (const key of ACCESS_TOKEN_KEYS) {
-    const localToken = localStorage.getItem(key);
-    if (localToken) return localToken;
-
-    const sessionToken = sessionStorage.getItem(key);
-    if (sessionToken) return sessionToken;
-  }
-
-  return null;
-}
 
 function normalizeBearerToken(token: string) {
   const trimmedToken = token.trim();
@@ -56,7 +43,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const storedAccessToken = getStoredAccessToken();
+  const storedAccessToken = getAccessToken();
 
   // 정석 흐름:
   // 1순위: 실제 로그인 후 저장된 accessToken
