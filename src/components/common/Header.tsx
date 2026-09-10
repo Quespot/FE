@@ -11,12 +11,15 @@ export function Header({ children }: HeaderProps) {
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-20 flex min-h-[66px] shrink-0 items-center justify-between border-b border-[#dcecf8] bg-white/95 px-[22px] backdrop-blur-xl">
-      <div className="flex items-center gap-2">
+      <button
+        className="flex items-center gap-2"
+        onClick={() => navigate(PATH.HOME)}
+      >
         <img className="h-8 w-8 object-contain" src={questyProfile} alt="" />
         <strong className="text-[21px] font-black tracking-[-0.6px] text-[#54b4f6]">
           Quespot
         </strong>
-      </div>
+      </button>
       <div className="flex items-center gap-1">
         {children}
         <button
