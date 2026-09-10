@@ -13,6 +13,7 @@ import {
   Lock,
   MapPin,
   Palette,
+  Route,
   ShoppingBag,
   Sparkles,
   Utensils,
@@ -30,7 +31,6 @@ import { useStartMissionAttempt } from "@/hooks/mutation/useStartMissionAttempt"
 import type { MissionCategory, MissionDetail } from "@/types/mission";
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
-import { Header } from "@/components/common/Header";
 
 type LatLng = {
   lat: number;
@@ -165,6 +165,17 @@ export default function MissionDetailPage() {
     });
   };
 
+  const handleMoveCourseCreatePage = () => {
+    if (!mission) return;
+
+    navigate(`${PATH.MISSION_COURSE_CREATE}?missionId=${mission.missionId}`, {
+      state: {
+        missionId: mission.missionId,
+        mission,
+      },
+    });
+  };
+
   const handleStartMission = () => {
     if (!mission || !mission.canStart || isStartingMission) return;
 
@@ -220,7 +231,13 @@ export default function MissionDetailPage() {
 
   return (
     <QuespotPageLayout>
-      <Header />
+      <HomeHeader
+        mascotSrc={QuestySvg}
+        notificationCount={3}
+        onBellClick={() => {
+          // TODO: 알림함 연결
+        }}
+      />
 
       <QuespotDivider />
 
@@ -348,23 +365,34 @@ export default function MissionDetailPage() {
               onMoveRecordPage={handleMoveRecordPage}
             />
 
-            <button
-              type="button"
-              onClick={handleStartMission}
-              disabled={!mission.canStart || isStartingMission}
-              className={[
-                "mt-[4px] h-[52px] rounded-[16px] text-[15px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition",
-                mission.canStart && !isStartingMission
-                  ? "bg-[#5BB5F8] active:scale-[0.99]"
-                  : "bg-[#CBD5E1]",
-              ].join(" ")}
-            >
-              {isStartingMission
-                ? "미션 시작 중..."
-                : mission.canStart
-                  ? "미션 인증하기"
-                  : "현재 시작할 수 없어요"}
-            </button>
+            <div className="mt-[4px] grid grid-cols-2 gap-[10px]">
+              <button
+                type="button"
+                onClick={handleMoveCourseCreatePage}
+                className="flex h-[52px] items-center justify-center gap-[7px] rounded-[16px] border border-[#C8E8FF] bg-white text-[14px] font-black text-[#5BB5F8] shadow-[0_4px_12px_rgba(8,37,95,0.08)] transition active:scale-[0.99]"
+              >
+                <Route size={17} strokeWidth={2.5} />
+                코스 생성하기
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStartMission}
+                disabled={!mission.canStart || isStartingMission}
+                className={[
+                  "flex h-[52px] items-center justify-center rounded-[16px] text-[14px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition",
+                  mission.canStart && !isStartingMission
+                    ? "bg-[#5BB5F8] active:scale-[0.99]"
+                    : "bg-[#CBD5E1]",
+                ].join(" ")}
+              >
+                {isStartingMission
+                  ? "시작 중..."
+                  : mission.canStart
+                    ? "미션 인증하기"
+                    : "시작 불가"}
+              </button>
+            </div>
           </section>
         </QuespotPageContent>
       ) : null}
