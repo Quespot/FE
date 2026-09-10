@@ -2,6 +2,7 @@ import { ApiError } from "@/apis/auth";
 import { getAccessToken } from "@/utils/auth";
 import type {
   CourseAttempt,
+  CreateMissionCourseRequest,
   MissionCourseDetail,
   MissionCourseItem,
 } from "@/types/missionCourse";
@@ -18,23 +19,36 @@ type ApiEnvelope<T> = {
   errorDetail?: unknown;
 };
 
-async function missionCourseRequest<T>(path: string): Promise<T> {
+type RequestMethod = "GET" | "POST";
+
+async function missionCourseRequest<T>(
+  path: string,
+  options?: {
+    method?: RequestMethod;
+    body?: unknown;
+  },
+): Promise<T> {
   const accessToken = getAccessToken();
 
   if (!accessToken) {
     throw new ApiError("로그인이 필요합니다.", 401);
   }
 
+  const method = options?.method ?? "GET";
+  const hasBody = options?.body !== undefined;
+
   let response: Response;
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      method: "GET",
+      method,
       credentials: "include",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: "application/json",
+        ...(hasBody ? { "Content-Type": "application/json" } : {}),
       },
+      ...(hasBody ? { body: JSON.stringify(options.body) } : {}),
     });
   } catch {
     throw new ApiError(
@@ -72,4 +86,20 @@ export function getCourseAttempts() {
   return missionCourseRequest<{
     attempts: CourseAttempt[];
   }>("/api/course-attempts");
+}
+
+export function createMissionCourse(body: CreateMissionCourseRequest) {
+  return missionCourseRequest<MissionCourseDetail>("/api/mission-courses", {
+    method: "POST",
+    body,
+  });
+}
+
+export function quitCourseAttempt(courseAttemptId: number) {
+  return missionCourseRequest<string>(
+    `/api/course-attempts/${courseAttemptId}/quit`,
+    {
+      method: "POST",
+    },
+  );
 }
