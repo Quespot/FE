@@ -50,3 +50,11 @@ export type CourseAttempt = {
   completedAt: string | null;
   earnedBonusPoint: number;
 };
+
+export type CreateMissionCourseRequest = {
+  anchorMissionId: number;
+};
+
+export type QuitCourseAttemptParams = {
+  courseAttemptId: number;
+};
