@@ -26,6 +26,7 @@ import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
 import QuestyMainSvg from "@/assets/icons/QuestyMain.svg";
 import QuestyAirplaneSvg from "@/assets/icons/QuestyAirplane.svg";
+import { Header } from "@/components/common/Header";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -37,15 +38,7 @@ export default function HomePage() {
 
   return (
     <QuespotPageLayout className="bg-[#F2F7FF]">
-      <HomeHeader
-        mascotSrc={QuestySvg}
-        notificationCount={3}
-        onBellClick={() => {
-          navigate(PATH.NOTIFICATION);
-        }}
-      />
-
-      <QuespotDivider />
+      <Header />
 
       <QuespotPageContent className="bg-[#F2F7FF] pb-[22px]">
         <section className="shrink-0 bg-[#DFF3FF] px-[18px] pb-[20px] pt-[10px]">

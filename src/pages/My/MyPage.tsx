@@ -11,6 +11,7 @@ import { connectLoginMethod, getLoginMethods, logout, unlinkLoginMethod, withdra
 import { PATH } from "@/routes/paths";
 import { beginSocialLogin, clearAuth, clearSocialConnections, saveLoginRedirect } from "@/utils/auth";
 import questyProfile from "@/assets/questy.svg";
+import { Header } from "@/components/common/Header";
 
 const PROFILE_KEY = "quespot-profile";
 const DEFAULT_INTEREST_IDS = ["history", "culture", "nature", "food"];
@@ -227,16 +228,9 @@ export default function MyPage() {
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#eef7ff] text-[#19233b]">
-      <header className="sticky top-0 z-20 flex min-h-[66px] shrink-0 items-center justify-between border-b border-[#dcecf8] bg-white/95 px-[22px] backdrop-blur-xl">
-        <div className="flex items-center gap-2">
-          <img className="h-8 w-8 object-contain" src={questyProfile} alt="" />
-          <strong className="text-[21px] font-black tracking-[-0.6px] text-[#54b4f6]">Quespot</strong>
-        </div>
-        <div className="flex items-center gap-1">
-          <button className="grid h-10 w-10 place-items-center rounded-full bg-[#f1f8fd] text-[#66798b] transition active:scale-95" onClick={() => navigate(PATH.PROFILE_DETAILS)} type="button" aria-label="상세 프로필 설정"><Settings2 size={19} strokeWidth={2.2} /></button>
-          <button className="relative grid h-10 w-10 place-items-center bg-transparent text-[#8290a2] transition active:scale-95" type="button" aria-label="알림 3개"><Bell size={19} strokeWidth={2.2} /><span className="absolute right-[1px] top-[1px] grid h-[16px] min-w-[16px] place-items-center rounded-full border-2 border-white bg-[#f26464] px-0.5 text-[8px] font-black leading-none text-white">3</span></button>
-        </div>
-      </header>
+      <Header>
+        <button className="grid h-10 w-10 place-items-center rounded-full bg-[#f1f8fd] text-[#66798b] transition active:scale-95" onClick={() => navigate(PATH.PROFILE_DETAILS)} type="button" aria-label="상세 프로필 설정"><Settings2 size={19} strokeWidth={2.2} /></button>
+      </Header>
 
       <section className="relative overflow-hidden bg-[linear-gradient(155deg,#c9ebff_0%,#dff3ff_72%,#eef7ff_100%)] px-[22px] pb-[30px] pt-[25px] text-center">
         <div className="relative mx-auto w-fit">

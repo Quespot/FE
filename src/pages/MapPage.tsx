@@ -30,6 +30,7 @@ import {
 } from "@/data/mapSpots";
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
+import { Header } from "@/components/common/Header";
 
 type LocationStatus = "loading" | "success" | "error";
 
@@ -47,9 +48,7 @@ export default function MapPage() {
 
   const { currentLocation, locationStatus } = useCurrentLocation();
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as
-    | string
-    | undefined;
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
 
   useEffect(() => {
     const state = location.state as MapPageState | null;
@@ -96,15 +95,7 @@ export default function MapPage() {
 
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
-      <HomeHeader
-        mascotSrc={QuestySvg}
-        notificationCount={3}
-        onBellClick={() => {
-          // TODO: 알림함 연결
-        }}
-      />
-
-      <QuespotDivider />
+      <Header />
 
       <section className="shrink-0 bg-white px-[16px] pb-[20px] pt-[24px]">
         <div className="flex items-center justify-between">
@@ -400,7 +391,9 @@ type CurrentLocationMarkerProps = {
   currentLocation: LatLng;
 };
 
-function CurrentLocationMarker({ currentLocation }: CurrentLocationMarkerProps) {
+function CurrentLocationMarker({
+  currentLocation,
+}: CurrentLocationMarkerProps) {
   return (
     <AdvancedMarker position={currentLocation} zIndex={30}>
       <div className="relative flex flex-col items-center">
