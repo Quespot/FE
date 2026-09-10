@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { categoryIcons, categoryToneClasses } from "@/components/home/CategoryGrid";
 import ProfileChoiceSelect, { type ChoiceGroup } from "@/components/profile/ProfileChoiceSelect";
 import ProfileDatePicker from "@/components/profile/ProfileDatePicker";
-import { createProfile, getProfile, updateDetailedProfile } from "@/api/profile";
+import { createProfile, getProfile, updateDetailedProfile } from "@/apis/profile";
 import { PROFILE_SETUP_KEY } from "@/constants/onboarding";
 import {
   categoryIdsToTravelStyles, companionFromApi, companionToApi, genderFromApi, genderToApi,

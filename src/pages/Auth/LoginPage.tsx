@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import questyLogin from "../../assets/questy.svg";
 import googleLogin from "../../assets/google_login.svg";
 import kakaoLogin from "../../assets/kakao_login.svg";
+import naverLogin from "../../assets/naver_login.svg";
 import { PATH } from "@/routes/paths";
-import { getSocialLoginUrl, login, type SocialProvider } from "@/api/auth";
+import { getSocialLoginUrl, login, type SocialProvider } from "@/apis/auth";
 import { saveAuth, saveLoginRedirect } from "@/utils/auth";
 import { resolvePostLoginPath } from "@/utils/profile";
 
@@ -72,6 +73,9 @@ export default function LoginPage() {
           </button>
           <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="카카오 계정으로 로그인" onClick={() => handleSocialLogin("kakao")} type="button">
             <img className="h-11 w-11" src={kakaoLogin} alt="" />
+          </button>
+          <button className="h-11 w-11 rounded-full bg-transparent p-0 transition hover:-translate-y-0.5 active:scale-95 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#5bb5f8]/30" aria-label="네이버 계정으로 로그인" onClick={() => handleSocialLogin("naver")} type="button">
+            <img className="h-11 w-11" src={naverLogin} alt="" />
           </button>
         </div>
 

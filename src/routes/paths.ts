@@ -1,6 +1,5 @@
 export const PATH = {
-  LANDING: "/",
-  LOGIN: "/login",
+  LOGIN: "/",
   OAUTH_CALLBACK: "/oauth/callback",
   SIGNUP: "/signup",
   SIGNUP_CHECK: "/profile/check",
@@ -11,22 +10,22 @@ export const PATH = {
   HOME: "/home",
   NOTIFICATION: "/home/notification",
 
-  //MissionPage
+  // MissionPage
   MISSIONS: "/missions",
   MISSION_DETAIL: "/missions/:missionId",
   MISSION_RECORD: "/mission/record",
   MISSION_LOCAL_RECOMMEND: "/mission/local-recommend",
   MISSION_BONUS_REGION: "/mission/bonus-region",
   MISSION_ROUTE: "/mission/route",
-
   MISSION_VERIFY: "/mission/verify",
   MISSION_VERIFY_LOADING: "/mission/verify/loading",
   MISSION_VERIFY_RESULT: "/mission/verify/result",
 
-  //MapPage
+  // MapPage
   MAP: "/map",
+  MAP_SEARCH: "/map/search",
 
-  //RewardsPage
+  // RewardsPage
   REWARDS: "/rewards",
   REWARD_COUPONS: "/rewards/coupons",
 

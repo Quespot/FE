@@ -1,4 +1,4 @@
-import { ApiError } from "@/api/auth";
+import { ApiError } from "@/apis/auth";
 import type { TravelStyle } from "@/constants/profile";
 import { getAccessToken } from "@/utils/auth";
 

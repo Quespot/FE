@@ -1,5 +1,5 @@
-import { ApiError } from "@/api/auth";
-import { getProfile } from "@/api/profile";
+import { ApiError } from "@/apis/auth";
+import { getProfile } from "@/apis/profile";
 import { PROFILE_SETUP_KEY } from "@/constants/onboarding";
 import { companionFromApi, genderFromApi, regionFromApi, travelStylesToCategoryIds } from "@/constants/profile";
 import { PATH } from "@/routes/paths";
