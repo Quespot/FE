@@ -22,7 +22,6 @@ import QuespotPageLayout, {
 } from "@/layouts/QuespotPageLayout";
 import {
   DEFAULT_CURRENT_LOCATION,
-  MAP_SPOTS,
   SEOUL_JONGNO_CENTER,
   type LatLng,
   type MapSpot,
@@ -31,11 +30,13 @@ import {
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
 import { Header } from "@/components/common/Header";
+import { useMissionSpotsQuery } from "@/hooks/queries/missionSpots/useMissionSpotsQuery";
+import { MissionSpot } from "@/apis/missionSpot";
 
 type LocationStatus = "loading" | "success" | "error";
 
 type MapPageState = {
-  selectedSpotId?: number;
+  selectedSpotId?: string;
   openPlaceList?: boolean;
 };
 
@@ -43,20 +44,21 @@ export default function MapPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [selectedSpotId, setSelectedSpotId] = useState<number>(3);
+  const [selectedSpotId, setSelectedSpotId] = useState<string>("");
   const [isPlaceListOpen, setIsPlaceListOpen] = useState(false);
 
   const { currentLocation, locationStatus } = useCurrentLocation();
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  const { data, isLoading, error } = useMissionSpotsQuery();
 
   useEffect(() => {
     const state = location.state as MapPageState | null;
 
     if (!state?.selectedSpotId) return;
 
-    const hasSelectedSpot = MAP_SPOTS.some(
-      (spot) => spot.id === state.selectedSpotId,
+    const hasSelectedSpot = data?.missionSpots.some(
+      (spot) => spot.districtCode === state.selectedSpotId,
     );
 
     if (!hasSelectedSpot) return;
@@ -65,21 +67,24 @@ export default function MapPage() {
     setIsPlaceListOpen(Boolean(state.openPlaceList));
 
     window.history.replaceState({}, document.title);
-  }, [location.state]);
+  }, [location.state, data]);
 
   const selectedSpot = useMemo(() => {
-    return MAP_SPOTS.find((spot) => spot.id === selectedSpotId) ?? MAP_SPOTS[0];
-  }, [selectedSpotId]);
+    return (
+      data?.missionSpots.find((spot) => spot.districtCode === selectedSpotId) ??
+      data?.missionSpots[0]
+    );
+  }, [selectedSpotId, data]);
 
-  const completedCount = MAP_SPOTS.filter(
-    (spot) => spot.status === "completed",
+  const completedCount = data?.missionSpots.filter(
+    (spot) => spot.completionStatus === "COMPLETE",
   ).length;
 
-  const handleSelectSpot = (spotId: number) => {
+  const handleSelectSpot = (spotId: string) => {
     setSelectedSpotId(spotId);
   };
 
-  const handleSelectSpotCard = (spotId: number) => {
+  const handleSelectSpotCard = (spotId: string) => {
     setSelectedSpotId(spotId);
     setIsPlaceListOpen(true);
   };
@@ -93,6 +98,14 @@ export default function MapPage() {
     });
   };
 
+  if (isLoading) {
+    return <div>로딩중...</div>;
+  }
+
+  if (error) {
+    return <div>에러 발생</div>;
+  }
+  console.log(data);
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
       <Header />
@@ -134,21 +147,20 @@ export default function MapPage() {
                 gestureHandling="greedy"
                 className="h-full w-full"
               >
-                <MapCameraController selectedSpot={selectedSpot} />
+                {selectedSpot && (
+                  <MapCameraController selectedSpot={selectedSpot} />
+                )}
 
-                {MAP_SPOTS.map((spot) => (
+                {data?.missionSpots.map((spot) => (
                   <MissionMapMarker
-                    key={spot.id}
+                    key={spot.districtCode}
                     spot={spot}
                     currentLocation={currentLocation}
-                    isSelected={selectedSpot.id === spot.id}
-                    onClick={() => handleSelectSpot(spot.id)}
-                    onRouteClick={() => {
-                      const firstPlace = spot.places[0];
-                      if (!firstPlace) return;
-
-                      handleMoveRoutePage(firstPlace);
-                    }}
+                    isSelected={
+                      selectedSpot?.districtCode === spot.districtCode
+                    }
+                    onClick={() => handleSelectSpot(spot.districtCode)}
+                    onRouteClick={() => {}}
                   />
                 ))}
 
@@ -165,13 +177,17 @@ export default function MapPage() {
 
           <div className="absolute bottom-[58px] right-[18px] rounded-[16px] bg-white px-[16px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]">
             <strong className="block text-[14px] font-black leading-[18px] text-[#1C1C3A]">
-              서울 미션
+              {data?.regionName} 미션
             </strong>
 
             <p className="m-0 mt-[4px] text-[14px] font-black leading-[18px]">
-              <span className="text-[#5BB5F8]">{MAP_SPOTS.length}개 스팟</span>
+              <span className="text-[#5BB5F8]">
+                {data?.totalMissionCount}개 스팟
+              </span>
               <span className="mx-[4px] text-[#A2A9B2]">·</span>
-              <span className="text-[#00C950]">{completedCount}완료</span>
+              <span className="text-[#00C950]">
+                {data?.completedMissionCount}완료
+              </span>
             </p>
           </div>
 
@@ -195,23 +211,15 @@ export default function MapPage() {
           </div>
 
           <div className="no-scrollbar flex gap-[10px] overflow-x-auto pb-[2px]">
-            {MAP_SPOTS.map((spot) => (
+            {data?.missionSpots.map((spot) => (
               <SpotSummaryCard
-                key={spot.id}
+                key={spot.districtCode}
                 spot={spot}
-                selected={selectedSpot.id === spot.id}
-                onClick={() => handleSelectSpotCard(spot.id)}
+                selected={selectedSpot?.districtCode === spot.districtCode}
+                onClick={() => handleSelectSpotCard(spot.districtCode)}
               />
             ))}
           </div>
-
-          {isPlaceListOpen ? (
-            <RecommendedPlaceList
-              spot={selectedSpot}
-              currentLocation={currentLocation}
-              onPlaceClick={handleMoveRoutePage}
-            />
-          ) : null}
         </section>
       </QuespotPageContent>
     </QuespotPageLayout>
@@ -257,7 +265,7 @@ function useCurrentLocation() {
 }
 
 type MapCameraControllerProps = {
-  selectedSpot: MapSpot;
+  selectedSpot: MissionSpot;
 };
 
 function MapCameraController({ selectedSpot }: MapCameraControllerProps) {
@@ -265,16 +273,16 @@ function MapCameraController({ selectedSpot }: MapCameraControllerProps) {
 
   useEffect(() => {
     map?.panTo({
-      lat: selectedSpot.lat,
-      lng: selectedSpot.lng,
+      lat: selectedSpot.latitude,
+      lng: selectedSpot.longitude,
     });
-  }, [map, selectedSpot.lat, selectedSpot.lng]);
+  }, [map, selectedSpot.latitude, selectedSpot.longitude]);
 
   return null;
 }
 
 type MissionMapMarkerProps = {
-  spot: MapSpot;
+  spot: MissionSpot;
   currentLocation: LatLng;
   isSelected: boolean;
   onClick: () => void;
@@ -288,8 +296,8 @@ function MissionMapMarker({
   onClick,
   onRouteClick,
 }: MissionMapMarkerProps) {
-  const isCompleted = spot.status === "completed";
-  const firstPlace = spot.places[0];
+  const isCompleted = spot.completionStatus === "COMPLETE";
+  const firstPlace = 0;
 
   const routeInfo = firstPlace
     ? getRouteInfo(currentLocation, firstPlace)
@@ -299,11 +307,12 @@ function MissionMapMarker({
         direction: "북쪽으로",
       };
 
-  const bubbleSide = spot.lng > SEOUL_JONGNO_CENTER.lng ? "left" : "right";
+  const bubbleSide =
+    spot.longitude > SEOUL_JONGNO_CENTER.lng ? "left" : "right";
 
   return (
     <AdvancedMarker
-      position={{ lat: spot.lat, lng: spot.lng }}
+      position={{ lat: spot.latitude, lng: spot.longitude }}
       onClick={onClick}
       zIndex={isSelected ? 9999 : isCompleted ? 20 : 10}
     >
@@ -324,11 +333,11 @@ function MissionMapMarker({
             isSelected ? "scale-110" : "scale-100",
           ].join(" ")}
         >
-          {spot.emoji}
+          !
         </div>
 
         <span className="relative z-10 mt-[5px] rounded-full bg-white px-[10px] py-[4px] text-[11px] font-black leading-[14px] text-[#1C1C3A] shadow-[0_2px_6px_rgba(8,37,95,0.18)]">
-          {spot.shortName}
+          {spot.districtName}
         </span>
       </div>
     </AdvancedMarker>
@@ -336,7 +345,7 @@ function MissionMapMarker({
 }
 
 type SelectedSpotBubbleProps = {
-  spot: MapSpot;
+  spot: MissionSpot;
   routeInfo: {
     distance: string;
     duration: string;
@@ -352,7 +361,7 @@ function SelectedSpotBubble({
   side,
   onRouteClick,
 }: SelectedSpotBubbleProps) {
-  const isCompleted = spot.status === "completed";
+  const isCompleted = spot.completionStatus === "COMPLETE";
 
   return (
     <div
@@ -362,7 +371,7 @@ function SelectedSpotBubble({
       ].join(" ")}
     >
       <strong className="block text-[15px] font-black leading-[20px] text-[#1C1C3A]">
-        {spot.shortName}
+        {spot.districtName}
       </strong>
 
       <p className="m-0 mt-[6px] text-[12px] font-bold leading-[17px] text-[#A2A9B2]">
@@ -479,13 +488,13 @@ function LegendItem({ color, label }: LegendItemProps) {
 }
 
 type SpotSummaryCardProps = {
-  spot: MapSpot;
+  spot: MissionSpot;
   selected: boolean;
   onClick: () => void;
 };
 
 function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
-  const isCompleted = spot.status === "completed";
+  const isCompleted = spot.completionStatus === "COMPLETE";
 
   return (
     <button
@@ -500,7 +509,7 @@ function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
             : "border-[#C8E8FF] bg-[#EAF5FF]",
       ].join(" ")}
     >
-      <span className="text-[24px] leading-none">{spot.emoji}</span>
+      <span className="text-[24px] leading-none">!</span>
 
       <strong
         className={[
@@ -508,7 +517,7 @@ function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
           selected ? "text-white" : "text-[#1C1C3A]",
         ].join(" ")}
       >
-        {spot.shortName}
+        {spot.districtName}
       </strong>
 
       <span
@@ -524,75 +533,6 @@ function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
         {isCompleted ? "완료" : `${spot.missionCount ?? 0}개`}
       </span>
     </button>
-  );
-}
-
-type RecommendedPlaceListProps = {
-  spot: MapSpot;
-  currentLocation: LatLng;
-  onPlaceClick: (place: RoutePlace) => void;
-};
-
-function RecommendedPlaceList({
-  spot,
-  currentLocation,
-  onPlaceClick,
-}: RecommendedPlaceListProps) {
-  return (
-    <div className="mt-[16px] flex flex-col gap-[10px]">
-      <div className="flex items-center justify-between">
-        <h3 className="m-0 text-[16px] font-black leading-[22px] text-[#1C1C3A]">
-          {spot.shortName} 추천 장소
-        </h3>
-
-        <span className="text-[12px] font-bold leading-[16px] text-[#5BB5F8]">
-          {spot.places.length}개
-        </span>
-      </div>
-
-      {spot.places.map((place) => {
-        const routeInfo = getRouteInfo(currentLocation, place);
-
-        return (
-          <button
-            key={place.id}
-            type="button"
-            onClick={() => onPlaceClick(place)}
-            className="flex min-h-[82px] w-full items-center rounded-[16px] border border-[#EAF5FF] bg-white p-[14px] text-left shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition active:scale-[0.99]"
-          >
-            <div className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[16px] bg-[#EAF5FF] text-[25px] leading-none">
-              {place.emoji}
-            </div>
-
-            <div className="ml-[14px] min-w-0 flex-1">
-              <strong className="block truncate text-[15px] font-black leading-[21px] text-[#1C1C3A]">
-                {place.name}
-              </strong>
-
-              <p className="m-0 mt-[4px] truncate text-[12px] font-medium leading-[17px] text-[#A2A9B2]">
-                {place.area}
-              </p>
-
-              <div className="mt-[8px] flex items-center gap-[10px]">
-                <span className="text-[11px] font-bold leading-none text-[#F59E0B]">
-                  {routeInfo.duration}
-                </span>
-
-                <span className="text-[11px] font-bold leading-none text-[#FF2D45]">
-                  {routeInfo.distance}
-                </span>
-              </div>
-            </div>
-
-            <ChevronRight
-              size={20}
-              strokeWidth={2.5}
-              className="shrink-0 text-[#C8E8FF]"
-            />
-          </button>
-        );
-      })}
-    </div>
   );
 }
 

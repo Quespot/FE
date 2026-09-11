@@ -15,7 +15,7 @@ import VerifyPage from "@/pages/mission/verify/VerifyPage";
 import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
 import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
 
-import MapPage from "@/pages/MapPage";
+import MapPage from "@/pages/map/MapPage";
 import MapSearchPage from "@/pages/map/MapSearchPage";
 
 import RewardPage from "@/pages/RewardPage";
