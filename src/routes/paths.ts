@@ -40,6 +40,8 @@ export const PATH = {
   // MapPage
   MAP: "/map",
 
+  MAP_SEARCH: "/map/search",
+
   // RewardsPage
   REWARDS: "/rewards",
 
@@ -55,6 +57,9 @@ export const PATH = {
   ARCHIVE: "/my/archive",
 
   QUESTY_CUSTOMIZE: "/my/customize",
+
+  // Notification
+  NOTIFICATION: "/notification",
 
   // Error
   NOT_FOUND: "*",
