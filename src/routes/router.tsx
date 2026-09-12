@@ -1,9 +1,10 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import { PATH } from "@/routes/paths";
 import MobileLayout from "@/layouts/MobileLayout";
 import BottomNavigationLayout from "@/layouts/BottomNavigationLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+
 import HomePage from "@/pages/HomePage";
 
 import LoginPage from "@/pages/Auth/LoginPage";
@@ -26,6 +27,7 @@ import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
 import MapPage from "@/pages/MapPage";
 import RewardPage from "@/pages/RewardPage";
 import LocalCouponPage from "@/pages/LocalCouponPage";
+import NotificationPage from "@/pages/NotificationPage";
 
 import MyPage from "@/pages/My/MyPage";
 import LikesPage from "@/pages/My/LikesPage";
@@ -37,7 +39,10 @@ export const router = createBrowserRouter([
   {
     element: <MobileLayout />,
     children: [
- 
+      {
+        path: PATH.LANDING,
+        element: <Navigate to={PATH.HOME} replace />,
+      },
       {
         path: PATH.LOGIN,
         element: <LoginPage />,
@@ -90,6 +95,14 @@ export const router = createBrowserRouter([
           },
 
           // 하단 내비게이션이 필요 없는 페이지
+          {
+            path: PATH.NOTIFICATION,
+            element: <NotificationPage />,
+          },
+          {
+            path: PATH.MAP_SEARCH,
+            element: <Navigate to={PATH.MAP} replace />,
+          },
           {
             path: PATH.MISSION_DETAIL,
             element: <MissionDetailPage />,
@@ -149,6 +162,10 @@ export const router = createBrowserRouter([
           {
             path: PATH.REWARD_COUPONS,
             element: <LocalCouponPage />,
+          },
+          {
+            path: PATH.NOT_FOUND,
+            element: <Navigate to={PATH.HOME} replace />,
           },
         ],
       },
