@@ -37,10 +37,7 @@ export const router = createBrowserRouter([
   {
     element: <MobileLayout />,
     children: [
-      {
-        path: PATH.LANDING,
-        element: <LandingPage />,
-      },
+ 
       {
         path: PATH.LOGIN,
         element: <LoginPage />,
