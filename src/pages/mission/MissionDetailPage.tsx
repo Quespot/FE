@@ -28,6 +28,8 @@ import QuespotPageLayout, {
 } from "@/layouts/QuespotPageLayout";
 import { useMissionDetail } from "@/hooks/queries/useMissionDetail";
 import { useStartMissionAttempt } from "@/hooks/mutation/useStartMissionAttempt";
+import { useLikeMission } from "@/hooks/mutation/useLikeMission";
+import { useUnlikeMission } from "@/hooks/mutation/useUnlikeMission";
 import type { MissionCategory, MissionDetail } from "@/types/mission";
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
@@ -127,8 +129,17 @@ export default function MissionDetailPage() {
   const missionId = Number(params.missionId);
   const { currentLocation } = useCurrentLocation();
 
+  const [isLiked, setIsLiked] = useState(false);
+
   const { mutate: startMission, isPending: isStartingMission } =
     useStartMissionAttempt();
+
+  const { mutate: likeMission, isPending: isLikingMission } = useLikeMission();
+
+  const { mutate: unlikeMission, isPending: isUnlikingMission } =
+    useUnlikeMission();
+
+  const isLikePending = isLikingMission || isUnlikingMission;
 
   const { data, isLoading, isError, refetch } = useMissionDetail({
     missionId,
@@ -137,6 +148,12 @@ export default function MissionDetailPage() {
   });
 
   const mission = data?.result;
+
+  useEffect(() => {
+    if (!mission) return;
+
+    setIsLiked(mission.liked);
+  }, [mission?.missionId, mission?.liked]);
 
   const routePlace = useMemo(() => {
     if (!mission) return null;
@@ -153,6 +170,24 @@ export default function MissionDetailPage() {
       direction: "목적지로",
     };
   }, [mission]);
+
+  const handleToggleLike = () => {
+    if (!mission || isLikePending) return;
+
+    const nextLiked = !isLiked;
+
+    setIsLiked(nextLiked);
+
+    const mutation = nextLiked ? likeMission : unlikeMission;
+
+    mutation(mission.missionId, {
+      onError: (error) => {
+        console.error(error);
+        setIsLiked(!nextLiked);
+        alert("좋아요 처리에 실패했어요. 잠시 후 다시 시도해주세요.");
+      },
+    });
+  };
 
   const handleMoveRoutePage = () => {
     if (!routePlace) return;
@@ -247,7 +282,12 @@ export default function MissionDetailPage() {
 
       {!isLoading && !isError && mission ? (
         <QuespotPageContent>
-          <MissionHero mission={mission} />
+          <MissionHero
+            mission={mission}
+            isLiked={isLiked}
+            isLikePending={isLikePending}
+            onToggleLike={handleToggleLike}
+          />
 
           <section className="flex flex-col gap-[16px] px-[16px] pb-[24px] pt-[20px]">
             <div className="grid grid-cols-3 gap-[12px]">
@@ -439,9 +479,17 @@ function useCurrentLocation() {
 
 type MissionHeroProps = {
   mission: MissionDetail;
+  isLiked: boolean;
+  isLikePending: boolean;
+  onToggleLike: () => void;
 };
 
-function MissionHero({ mission }: MissionHeroProps) {
+function MissionHero({
+  mission,
+  isLiked,
+  isLikePending,
+  onToggleLike,
+}: MissionHeroProps) {
   const Icon = categoryIconMap[mission.category] ?? Building2;
   const style = CATEGORY_STYLE[mission.category];
   const isCompleted = mission.userMissionStatus === "COMPLETED";
@@ -479,14 +527,23 @@ function MissionHero({ mission }: MissionHeroProps) {
 
       <button
         type="button"
-        className="absolute right-[20px] top-[20px] z-10 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#A2A9B2] shadow-[0_2px_8px_rgba(8,37,95,0.18)]"
-        aria-label="찜하기"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onToggleLike();
+        }}
+        disabled={isLikePending}
+        className={[
+          "pointer-events-auto absolute right-[20px] top-[20px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]",
+          isLikePending ? "opacity-70" : "opacity-100",
+        ].join(" ")}
+        aria-label={isLiked ? "미션 좋아요 해제" : "미션 좋아요 등록"}
       >
         <Heart
-          size={22}
+          size={23}
           strokeWidth={2.4}
-          fill={mission.liked ? "#FF4D67" : "transparent"}
-          className={mission.liked ? "text-[#FF4D67]" : "text-[#A2A9B2]"}
+          fill={isLiked ? "#FF4D67" : "transparent"}
+          className={isLiked ? "text-[#FF4D67]" : "text-[#A2A9B2]"}
         />
       </button>
 
