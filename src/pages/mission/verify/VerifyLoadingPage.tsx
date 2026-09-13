@@ -19,6 +19,7 @@ type VerifyLoadingPageState = {
   mission?: MissionDetail;
   missionTitle?: string;
   isDemoMode?: boolean;
+  isSuccess?: boolean;
 };
 
 const steps = [
@@ -57,7 +58,7 @@ export default function VerifyLoadingPage() {
           mission: state?.mission,
           missionTitle: state?.missionTitle,
           isDemoMode: state?.isDemoMode,
-          isSuccess: true,
+          isSuccess: state?.isSuccess ?? true,
         },
       });
 

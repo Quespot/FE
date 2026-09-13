@@ -15,6 +15,7 @@ export const PATH = {
 
   // HomePage
   HOME: "/home",
+  RECOMMENDED_MISSIONS: "/home/recommended-missions",
 
   // MissionPage
   MISSIONS: "/missions",

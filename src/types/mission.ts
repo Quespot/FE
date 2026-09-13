@@ -3,8 +3,10 @@ export type MissionCategory =
   | "CULTURE"
   | "NATURE"
   | "FOOD"
-  | "SHOPPING"
-  | "ACTIVITY";
+  | "NIGHT_VIEW"
+  | "ETC";
+
+export type RecommendedMissionCategory = MissionCategory;
 
 export type UserMissionStatus =
   | "AVAILABLE"
@@ -80,4 +82,37 @@ export type GetMissionDetailParams = {
   missionId: number;
   latitude?: number;
   longitude?: number;
+};
+
+export type RecommendedMissionItem = {
+  missionId: number;
+  title: string;
+  category: RecommendedMissionCategory;
+  spotName: string;
+  imageUrl: string | null;
+  distanceMeters: number | null;
+  rewardPoint: number;
+  estimatedMinutes: number;
+  liked: boolean;
+};
+
+export type RecommendedMissionListResult = {
+  missions: RecommendedMissionItem[];
+  nextCursor: string | null;
+  hasNext: boolean;
+};
+
+export type RecommendedMissionListResponse = {
+  isSuccess: boolean;
+  code: string;
+  message: string;
+  result: RecommendedMissionListResult;
+  errorDetail: string | null;
+};
+
+export type GetRecommendedMissionsParams = {
+  latitude?: number;
+  longitude?: number;
+  cursor?: string;
+  size?: number;
 };
