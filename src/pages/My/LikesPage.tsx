@@ -1,73 +1,47 @@
 import { useState } from "react";
-import { ArrowLeft, Heart, MapPin, Play } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { AlertCircle, ArrowLeft, Clock3, Heart, MapPin, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+import {
+  getLikedCourses, getLikedMissions, getLikesErrorMessage,
+  type LikedCourse, type LikedMission,
+} from "@/apis/likes";
 import ThemeIcon, { getThemeConfig, type ThemeKey } from "@/components/common/ThemeIcon";
 import { PATH } from "@/routes/paths";
 
 type TabKey = "mission" | "course";
-type FavoriteItem = {
-  id: string;
-  title: string;
-  theme: ThemeKey;
-  location: string;
-  distance?: string;
-  points?: number;
-  completed?: boolean;
-  stops?: number;
-};
 
 const tabs: Array<{ id: TabKey; label: string }> = [
   { id: "mission", label: "미션" },
   { id: "course", label: "코스" },
 ];
 
-const UNLIKED_STORAGE_KEY = "quespot-pending-unlikes";
-
-const initialFavorites: Record<TabKey, FavoriteItem[]> = {
-  mission: [
-    { id: "palace-photo", title: "경복궁 정문 인증샷", theme: "history", location: "경복궁", distance: "1.2km", completed: true },
-    { id: "hanok-experience", title: "북촌 한옥 골목 탐험", theme: "culture", location: "북촌 한옥마을", distance: "2.1km", completed: true },
-    { id: "tea-house", title: "인사동 전통찻집 방문", theme: "cafe", location: "인사동", distance: "2.5km", points: 120 },
-    { id: "namsan-night", title: "남산타워 야경 포착", theme: "night", location: "남산서울타워", distance: "4.8km", points: 300 },
-  ],
-  course: [
-    { id: "seoul-history", title: "서울 역사 탐방 코스", theme: "history", location: "서울 종로구", stops: 5, points: 820 },
-    { id: "bukhan-nature", title: "북한산 자연 힐링 코스", theme: "nature", location: "서울 강북구", stops: 3, points: 500 },
-  ],
+const courseStatusLabel: Record<string, string> = {
+  NOT_STARTED: "시작 전",
+  IN_PROGRESS: "진행 중",
+  COMPLETED: "완료",
 };
 
-function readUnlikedIds(): string[] {
-  try { return JSON.parse(localStorage.getItem(UNLIKED_STORAGE_KEY) ?? "[]") as string[]; }
-  catch { return []; }
-}
-
-function readFavorites(): Record<TabKey, FavoriteItem[]> {
-  const unlikedIds = new Set(readUnlikedIds());
-  return {
-    mission: initialFavorites.mission.filter((item) => !unlikedIds.has(item.id)),
-    course: initialFavorites.course.filter((item) => !unlikedIds.has(item.id)),
-  };
-}
+const toTheme = (category: string): ThemeKey => category.toLowerCase() as ThemeKey;
 
 export default function LikesPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>("mission");
-  const [favorites] = useState(readFavorites);
-  const [pendingUnlikes, setPendingUnlikes] = useState<Set<string>>(new Set());
-  const items = favorites[activeTab];
+  const missionQuery = useQuery({
+    queryKey: ["likes", "missions"],
+    queryFn: getLikedMissions,
+    retry: false,
+  });
+  const courseQuery = useQuery({
+    queryKey: ["likes", "courses"],
+    queryFn: getLikedCourses,
+    retry: false,
+  });
 
-  const toggleFavorite = (id: string) => {
-    setPendingUnlikes((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      const persisted = new Set(readUnlikedIds());
-      if (next.has(id)) persisted.add(id);
-      else persisted.delete(id);
-      localStorage.setItem(UNLIKED_STORAGE_KEY, JSON.stringify([...persisted]));
-      return next;
-    });
-  };
+  const activeQuery = activeTab === "mission" ? missionQuery : courseQuery;
+  const totalCount = activeTab === "mission" ? missionQuery.data?.totalCount : courseQuery.data?.totalCount;
+  const items = activeQuery.data?.items ?? [];
 
   return (
     <main className="flex min-h-dvh flex-col bg-[#f2f7ff] text-[#18213b]">
@@ -81,44 +55,63 @@ export default function LikesPage() {
         </nav>
       </header>
 
-      <section className="grid gap-3 px-[18px] pb-9 pt-4" aria-live="polite">
-        {items.length === 0 ? <EmptyState /> : activeTab === "course"
-          ? items.map((item) => <CourseCard item={item} key={item.id} liked={!pendingUnlikes.has(item.id)} onToggle={() => toggleFavorite(item.id)} />)
-          : items.map((item) => <CompactCard item={item} key={item.id} liked={!pendingUnlikes.has(item.id)} onToggle={() => toggleFavorite(item.id)} />)}
+      <section className="grid gap-3 px-[18px] pb-9 pt-4" aria-busy={activeQuery.isLoading} aria-live="polite">
+        {!activeQuery.isLoading && !activeQuery.error ? <p className="px-1 text-[9px] font-bold text-[#8da0b2]">총 <strong className="text-[11px] font-black text-[#65798c]">{totalCount ?? items.length}</strong>개</p> : null}
+        {activeQuery.isLoading ? <LoadingState /> : activeQuery.error ? <ErrorState message={getLikesErrorMessage(activeQuery.error)} onRetry={() => void activeQuery.refetch()} /> : items.length === 0 ? <EmptyState tab={activeTab} /> : activeTab === "course"
+          ? (items as LikedCourse[]).map((item) => <CourseCard item={item} key={item.courseId} />)
+          : (items as LikedMission[]).map((item) => <MissionCard item={item} key={item.missionId} onOpen={() => navigate(PATH.MISSION_DETAIL.replace(":missionId", String(item.missionId)))} />)}
       </section>
     </main>
   );
 }
 
-function CompactCard({ item, liked, onToggle }: { item: FavoriteItem; liked: boolean; onToggle: () => void }) {
-  const theme = getThemeConfig(item.theme);
+function MissionCard({ item, onOpen }: { item: LikedMission; onOpen: () => void }) {
+  const themeKey = toTheme(item.category);
+  const theme = getThemeConfig(themeKey);
   return (
-    <article className="flex min-h-[88px] items-center gap-3 rounded-[18px] border border-[#dbe6f0] bg-white p-3 shadow-[0_3px_10px_rgba(41,79,112,0.08)]">
-      <ThemeIcon className="h-[54px] w-[54px] rounded-[16px]" size={25} theme={item.theme} />
+    <article className="flex min-h-[96px] cursor-pointer items-center gap-3 rounded-[18px] border border-[#dbe6f0] bg-white p-3 shadow-[0_3px_10px_rgba(41,79,112,0.08)] transition active:scale-[0.99]" onClick={onOpen}>
+      <ItemImage alt="" fallbackTheme={themeKey} src={item.imageUrl} />
       <div className="min-w-0 flex-1">
         <span className={`inline-flex rounded-full px-2 py-0.5 text-[8.5px] font-extrabold ${theme.tone}`}>{theme.label}</span>
         <h2 className="mt-1 truncate text-[13px] font-extrabold">{item.title}</h2>
-        <p className="mt-1 flex items-center gap-1.5 text-[9.5px] text-[#93a0af]"><span>{item.location}</span>{item.distance ? <><i className="h-0.5 w-0.5 rounded-full bg-[#bdc8d2]" />{item.distance}</> : null}</p>
-        {item.completed ? <p className="mt-1 text-[9px] font-bold text-[#42bd8e]">✓ 완료</p> : item.points ? <p className="mt-1 text-[9px] font-extrabold text-[#38a6eb]">+{item.points}P</p> : null}
+        <p className="mt-1 flex items-center gap-2 text-[9px] text-[#93a0af]"><span className="flex min-w-0 items-center gap-1 truncate"><MapPin size={10} className="shrink-0 text-[#f15d67]" />{item.spotName}</span><span className="flex shrink-0 items-center gap-1"><Clock3 size={10} />약 {item.estimatedMinutes}분</span></p>
+        <p className="mt-1 text-[9px] font-extrabold text-[#38a6eb]">+{item.rewardPoint.toLocaleString()}P</p>
       </div>
-      <button className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition active:scale-90 ${liked ? "text-[#f14b59]" : "text-[#aeb9c5]"}`} aria-label={`${item.title} ${liked ? "좋아요 해제" : "다시 좋아요"}`} aria-pressed={liked} onClick={onToggle} type="button"><Heart size={19} fill={liked ? "currentColor" : "none"} strokeWidth={liked ? 0 : 2} /></button>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[#f14b59]" aria-label="좋아요한 미션"><Heart size={19} fill="currentColor" strokeWidth={0} /></span>
     </article>
   );
 }
 
-function CourseCard({ item, liked, onToggle }: { item: FavoriteItem; liked: boolean; onToggle: () => void }) {
+function CourseCard({ item }: { item: LikedCourse }) {
+  const status = courseStatusLabel[item.myStatus] ?? item.myStatus;
   return (
     <article className="overflow-hidden rounded-[20px] border border-[#dbe6f0] bg-white shadow-[0_3px_10px_rgba(41,79,112,0.08)]">
-      <div className="grid h-[105px] place-items-center bg-[linear-gradient(135deg,#dff2ff,#cae9ff)]"><ThemeIcon className="h-[66px] w-[66px] rounded-[22px] bg-white/70 shadow-sm" size={33} theme={item.theme} /></div>
+      <div className="relative h-[122px] overflow-hidden bg-[linear-gradient(135deg,#dff2ff,#cae9ff)]">
+        <ItemImage alt="" className="h-full w-full rounded-none" fallbackTheme="course" src={item.coverImageUrl} />
+        <span className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[#f46470] shadow-sm" aria-label="좋아요한 코스"><Heart size={18} fill="currentColor" strokeWidth={0} /></span>
+      </div>
       <div className="p-[14px]">
-        <div className="flex items-start gap-2"><div className="min-w-0 flex-1"><h2 className="truncate text-[14px] font-extrabold">{item.title}</h2><p className="mt-1 text-[9.5px] text-[#929eac]">{item.location}</p></div><button className={`grid h-8 w-8 place-items-center ${liked ? "text-[#f46470]" : "text-[#aeb9c5]"}`} aria-label={`${item.title} ${liked ? "좋아요 해제" : "다시 좋아요"}`} aria-pressed={liked} onClick={onToggle} type="button"><Heart size={19} fill={liked ? "currentColor" : "none"} strokeWidth={liked ? 0 : 2} /></button></div>
-        <p className="mt-2 flex items-center gap-2 text-[9px] font-bold text-[#718094]"><span className="flex items-center gap-1"><MapPin size={11} className="text-[#f15d67]" />{item.stops}곳</span><span className="text-[#35a5ea]">+{item.points}P</span></p>
-        <button className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-[13px] bg-[linear-gradient(135deg,#58b5ef,#319ce3)] text-[11px] font-extrabold text-white shadow-[0_5px_12px_rgba(53,159,228,0.2)]" type="button"><Play size={12} fill="currentColor" />코스 시작하기</button>
+        <div className="flex items-start gap-2"><div className="min-w-0 flex-1"><h2 className="truncate text-[14px] font-extrabold">{item.name}</h2><p className="mt-1 flex items-center gap-1 text-[9.5px] text-[#929eac]"><MapPin size={10} className="text-[#f15d67]" />{item.regionCode}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[8px] font-extrabold ${item.myStatus === "COMPLETED" ? "bg-[#e8f8f2] text-[#36aa81]" : item.myStatus === "IN_PROGRESS" ? "bg-[#e8f5ff] text-[#3ba5e8]" : "bg-[#f1f4f7] text-[#82909d]"}`}>{status}</span></div>
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-[9px] font-bold text-[#718094]"><span className="flex items-center gap-1"><MapPin size={11} className="text-[#f15d67]" />미션 {item.missionCount}개</span><span className="flex items-center gap-1"><Clock3 size={11} />약 {item.estimatedMinutes}분</span><span className="text-[#35a5ea]">+{item.totalRewardPoint.toLocaleString()}P</span>{item.bonusPoint > 0 ? <span className="text-[#e99a24]">보너스 +{item.bonusPoint.toLocaleString()}P</span> : null}</p>
+        <button className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-[13px] bg-[linear-gradient(135deg,#58b5ef,#319ce3)] text-[11px] font-extrabold text-white shadow-[0_5px_12px_rgba(53,159,228,0.2)]" type="button"><Play size={12} fill="currentColor" />{item.myStatus === "IN_PROGRESS" ? "코스 이어하기" : item.myStatus === "COMPLETED" ? "코스 다시 보기" : "코스 시작하기"}</button>
       </div>
     </article>
   );
 }
 
-function EmptyState() {
-  return <div className="grid min-h-[280px] place-items-center text-center"><div><ThemeIcon className="mx-auto h-16 w-16 rounded-[22px]" size={28} theme="unknown" /><h2 className="mt-4 text-[14px] font-extrabold">좋아요한 항목이 없어요</h2><p className="mt-1.5 text-[10px] text-[#95a3b2]">마음에 드는 여행을 저장해보세요.</p></div></div>;
+function ItemImage({ src, alt, fallbackTheme, className = "h-[62px] w-[62px] rounded-[16px]" }: { src: string; alt: string; fallbackTheme: ThemeKey; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  return <div className={`grid shrink-0 place-items-center overflow-hidden bg-[#eaf5ff] ${className}`}>{src && !failed ? <img alt={alt} className="h-full w-full object-cover" onError={() => setFailed(true)} src={src} /> : <ThemeIcon className="h-full w-full rounded-none" size={28} theme={fallbackTheme} />}</div>;
+}
+
+function LoadingState() {
+  return <div className="grid gap-3" aria-label="좋아요 목록 불러오는 중">{[0, 1, 2].map((item) => <div className="flex h-[96px] animate-pulse items-center gap-3 rounded-[18px] border border-[#e4ebf2] bg-white p-3" key={item}><span className="h-[62px] w-[62px] rounded-[16px] bg-[#e7f0f7]" /><span className="grid flex-1 gap-2"><i className="h-3 w-14 rounded bg-[#e7f0f7]" /><i className="h-4 w-2/3 rounded bg-[#edf2f6]" /><i className="h-3 w-1/2 rounded bg-[#edf2f6]" /></span></div>)}</div>;
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <div className="grid min-h-[280px] place-items-center text-center"><div><span className="mx-auto grid h-16 w-16 place-items-center rounded-[22px] bg-[#fff0f1] text-[#dc6970]"><AlertCircle size={28} /></span><h2 className="mt-4 text-[14px] font-extrabold">목록을 불러오지 못했어요</h2><p className="mt-1.5 break-keep text-[10px] text-[#95a3b2]">{message}</p><button className="mt-4 h-9 rounded-[11px] bg-[#55afe9] px-4 text-[10px] font-extrabold text-white" onClick={onRetry} type="button">다시 시도</button></div></div>;
+}
+
+function EmptyState({ tab }: { tab: TabKey }) {
+  return <div className="grid min-h-[280px] place-items-center text-center"><div><ThemeIcon className="mx-auto h-16 w-16 rounded-[22px]" size={28} theme={tab === "mission" ? "etc" : "course"} /><h2 className="mt-4 text-[14px] font-extrabold">좋아요한 {tab === "mission" ? "미션" : "코스"}가 없어요</h2><p className="mt-1.5 text-[10px] text-[#95a3b2]">마음에 드는 여행을 저장해보세요.</p></div></div>;
 }
