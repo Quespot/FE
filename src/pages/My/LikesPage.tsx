@@ -101,7 +101,7 @@ function CourseCard({ item }: { item: LikedCourse }) {
 
 function ItemImage({ src, alt, fallbackTheme, className = "h-[62px] w-[62px] rounded-[16px]" }: { src: string; alt: string; fallbackTheme: ThemeKey; className?: string }) {
   const [failed, setFailed] = useState(false);
-  return <div className={`grid shrink-0 place-items-center overflow-hidden bg-[#eaf5ff] ${className}`}>{src && !failed ? <img alt={alt} className="h-full w-full object-cover" onError={() => setFailed(true)} src={src} /> : <ThemeIcon className="h-full w-full rounded-none" size={28} theme={fallbackTheme} />}</div>;
+  return <div className={`grid shrink-0 place-items-center overflow-hidden bg-[#eaf5ff] ${className}`}>{src && !failed ? <img alt={alt} className="h-full w-full object-contain" onError={() => setFailed(true)} src={src} /> : <ThemeIcon className="h-full w-full rounded-none" size={28} theme={fallbackTheme} />}</div>;
 }
 
 function LoadingState() {

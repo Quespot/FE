@@ -9,6 +9,7 @@ import { PATH } from "@/routes/paths";
 import { useVerifyMissionArrival } from "@/hooks/mutation/useVerifyMissionArrival";
 import { useCreateMissionPhoto } from "@/hooks/mutation/useCreateMissionPhoto";
 import type { MissionDetail } from "@/types/mission";
+import { uploadFile } from "@/apis/file";
 
 import GoodExample from "@/assets/images/photo_verification_good.png";
 import BadExample from "@/assets/images/photo_verification_bad.png";
@@ -40,13 +41,14 @@ export default function VerifyPage() {
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const [currentLocation, setCurrentLocation] =
     useState<LatLng>(DEFAULT_LOCATION);
 
-  const { mutate: verifyArrival, isPending: isVerifyingArrival } =
+  const { mutateAsync: verifyArrival, isPending: isVerifyingArrival } =
     useVerifyMissionArrival();
 
-  const { mutate: createPhoto, isPending: isCreatingPhoto } =
+  const { mutateAsync: createPhoto, isPending: isCreatingPhoto } =
     useCreateMissionPhoto();
 
   const mission = state?.mission;
@@ -54,7 +56,7 @@ export default function VerifyPage() {
   const spotName = mission?.spotName ?? missionTitle;
   const attemptId = state?.attemptId;
 
-  const isSubmitting = isVerifyingArrival || isCreatingPhoto;
+  const isSubmitting = isVerifyingArrival || isUploading || isCreatingPhoto;
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -67,7 +69,7 @@ export default function VerifyPage() {
     setPreviewUrl(url);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!imageFile || !previewUrl) return;
 
     if (!attemptId) {
@@ -84,63 +86,59 @@ export default function VerifyPage() {
       return;
     }
 
-    verifyArrival(
-      {
+    let arrivalResult;
+    try {
+      arrivalResult = await verifyArrival({
         attemptId,
         latitude: currentLocation.lat,
         longitude: currentLocation.lng,
-      },
-      {
-        onSuccess: (arrivalResult) => {
-          createPhoto(
-            {
-              attemptId,
-              body: {
-                imageUrl: previewUrl,
-                caption: `${missionTitle} 인증 사진`,
-                latitude: currentLocation.lat,
-                longitude: currentLocation.lng,
-                takenAt: new Date().toISOString(),
-              },
-            },
-            {
-              onSuccess: (photoResult) => {
-                navigate(PATH.MISSION_VERIFY_LOADING, {
-                  state: {
-                    missionId: state?.missionId,
-                    attemptId,
-                    mission,
-                    missionTitle,
-                    arrivalResult,
-                    photoResult,
-                    isSuccess: true,
-                  },
-                });
-              },
-              onError: (error) => {
-                console.error(error);
+      });
+    } catch (error) {
+      console.error(error);
+      alert("GPS 도착 인증에 실패했어요. 위치 권한을 확인해주세요.");
+      return;
+    }
 
-                navigate(PATH.MISSION_VERIFY_LOADING, {
-                  state: {
-                    missionId: state?.missionId,
-                    attemptId,
-                    mission,
-                    missionTitle,
-                    arrivalResult,
-                    isSuccess: true,
-                    photoUploadFailed: true,
-                  },
-                });
-              },
-            },
-          );
+    try {
+      setIsUploading(true);
+      const objectKey = await uploadFile(imageFile, "MISSION");
+      setIsUploading(false);
+      const photoResult = await createPhoto({
+        attemptId,
+        body: {
+          objectKey,
+          caption: `${missionTitle} 인증 사진`,
+          latitude: currentLocation.lat,
+          longitude: currentLocation.lng,
+          takenAt: new Date().toISOString(),
         },
-        onError: (error) => {
-          console.error(error);
-          alert("GPS 도착 인증에 실패했어요. 위치 권한을 확인해주세요.");
+      });
+      navigate(PATH.MISSION_VERIFY_LOADING, {
+        state: {
+          missionId: state?.missionId,
+          attemptId,
+          mission,
+          missionTitle,
+          arrivalResult,
+          photoResult,
+          isSuccess: true,
         },
-      },
-    );
+      });
+    } catch (error) {
+      console.error(error);
+      setIsUploading(false);
+      navigate(PATH.MISSION_VERIFY_LOADING, {
+        state: {
+          missionId: state?.missionId,
+          attemptId,
+          mission,
+          missionTitle,
+          arrivalResult,
+          isSuccess: true,
+          photoUploadFailed: true,
+        },
+      });
+    }
   };
 
   useEffect(() => {
@@ -271,7 +269,7 @@ export default function VerifyPage() {
                 <img
                   src={previewUrl}
                   alt="선택한 이미지 미리보기"
-                  className="w-full max-h-[300px] object-cover rounded-xl"
+                  className="w-full max-h-[300px] object-contain rounded-xl"
                 />
               </div>
             )}
@@ -318,7 +316,7 @@ export default function VerifyPage() {
           <Button disabled>사진을 먼저 선택해주세요</Button>
         ) : (
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "인증 요청 중..." : "제출하기"}
+            {isUploading ? "사진 업로드 중..." : isSubmitting ? "인증 요청 중..." : "제출하기"}
           </Button>
         )}
       </section>

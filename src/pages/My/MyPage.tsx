@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ComponentType } from "react";
 import {
-  AlertTriangle, Archive, Bell, Check, ChevronRight, Heart, Link2, Pencil,
+  AlertTriangle, Archive, Bell, Camera, Check, ChevronRight, Heart, Link2, Pencil,
   Plane, Settings2, ShieldCheck, Sparkles, Trash2, Trophy, X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import { categoryIdsToTravelStyles, normalizeTravelCategoryIds, profileTravelCat
 import { connectLoginMethod, getLoginMethods, logout, unlinkLoginMethod, withdraw, type LoginMethod, type SocialLoginMethodProvider, type SocialProvider } from "@/apis/auth";
 import { PATH } from "@/routes/paths";
 import { beginSocialLogin, clearAuth, clearSocialConnections, saveLoginRedirect } from "@/utils/auth";
+import { uploadFile } from "@/apis/file";
 import questyProfile from "@/assets/questy.svg";
 
 const PROFILE_KEY = "quespot-profile";
@@ -48,6 +49,7 @@ function readProfile(): StoredProfile {
 
 export default function MyPage() {
   const navigate = useNavigate();
+  const profileImageInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<StoredProfile>(readProfile);
   const [loginMethods, setLoginMethods] = useState<LoginMethod[]>([]);
   const [isLoadingLoginMethods, setIsLoadingLoginMethods] = useState(true);
@@ -57,6 +59,8 @@ export default function MyPage() {
   const [editing, setEditing] = useState(false);
   const [editingTravel, setEditingTravel] = useState(false);
   const [draftNickname, setDraftNickname] = useState(profile.nickname || "Quespot 탐험가");
+  const [draftProfileImage, setDraftProfileImage] = useState(profile.profileImageUrl || questyProfile);
+  const [draftProfileImageFile, setDraftProfileImageFile] = useState<File | null>(null);
   const [draftInterests, setDraftInterests] = useState<string[]>(profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS);
   const [statusMessage, setStatusMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -114,11 +118,17 @@ export default function MyPage() {
     const nickname = draftNickname.trim();
     if (nickname.length < 2 || isSaving) return;
     setIsSaving(true);
-    const next = { ...profile, nickname };
     try {
-      await updateBasicProfile({ nickname, profileImageUrl: profile.profileImageUrl, travelStyles: categoryIdsToTravelStyles(profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS) });
+      const profileImageObjectKey = draftProfileImageFile ? await uploadFile(draftProfileImageFile, "PROFILE") : undefined;
+      const updatedProfile = await updateBasicProfile({
+        nickname,
+        ...(profileImageObjectKey ? { profileImageObjectKey } : {}),
+        travelStyles: categoryIdsToTravelStyles(profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS),
+      });
+      const next = { ...profile, nickname, profileImageUrl: updatedProfile.profileImageUrl };
       setProfile(next);
       localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...readProfile(), ...next }));
+      setDraftProfileImageFile(null);
       setEditing(false);
       setStatusMessage("프로필을 수정했어요.");
     } catch (profileError) {
@@ -126,6 +136,23 @@ export default function MyPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const openProfileEditor = () => {
+    setDraftNickname(profile.nickname || "Quespot 탐험가");
+    setDraftProfileImage(profile.profileImageUrl || questyProfile);
+    setDraftProfileImageFile(null);
+    setEditing(true);
+  };
+
+  const handleProfileImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setDraftProfileImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string" && setDraftProfileImage(reader.result);
+    reader.readAsDataURL(file);
+    event.target.value = "";
   };
 
   const openTravelEditor = () => {
@@ -143,7 +170,7 @@ export default function MyPage() {
     setIsSaving(true);
     const next = { ...profile, interests: draftInterests };
     try {
-      await updateBasicProfile({ nickname: profile.nickname || "Quespot 탐험가", profileImageUrl: profile.profileImageUrl, travelStyles: categoryIdsToTravelStyles(draftInterests) });
+      await updateBasicProfile({ nickname: profile.nickname || "Quespot 탐험가", travelStyles: categoryIdsToTravelStyles(draftInterests) });
       setProfile(next);
       localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...readProfile(), ...next }));
       setEditingTravel(false);
@@ -241,9 +268,9 @@ export default function MyPage() {
       <section className="relative overflow-hidden bg-[linear-gradient(155deg,#c9ebff_0%,#dff3ff_72%,#eef7ff_100%)] px-[22px] pb-[30px] pt-[25px] text-center">
         <div className="relative mx-auto w-fit">
           <span className="grid h-[100px] w-[100px] place-items-center rounded-full border-4 border-white bg-white/80 shadow-[0_10px_28px_rgba(48,132,189,0.16)]">
-            <img className="h-[78px] w-[78px] rounded-full object-contain" src={profile.profileImageUrl || questyProfile} onError={(event) => { event.currentTarget.src = questyProfile; }} alt="Quespot 프로필" />
+            <img className="h-[78px] w-[78px] rounded-full object-cover" src={profile.profileImageUrl || questyProfile} onError={(event) => { event.currentTarget.src = questyProfile; }} alt="Quespot 프로필" />
           </span>
-          <button className="absolute -bottom-1 -right-1 grid h-[34px] w-[34px] place-items-center rounded-full border-[3px] border-white bg-[#50ace9] text-white shadow-[0_5px_12px_rgba(54,144,205,0.28)] transition active:scale-90" onClick={() => setEditing(true)} type="button" aria-label="프로필 수정">
+          <button className="absolute -bottom-1 -right-1 grid h-[34px] w-[34px] place-items-center rounded-full border-[3px] border-white bg-[#50ace9] text-white shadow-[0_5px_12px_rgba(54,144,205,0.28)] transition active:scale-90" onClick={openProfileEditor} type="button" aria-label="프로필 수정">
             <Pencil size={14} strokeWidth={2.6} />
           </button>
         </div>
@@ -356,7 +383,16 @@ export default function MyPage() {
           </section>
         </div>
       ) : null}
-      {editing ? <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#132036]/35 p-0 backdrop-blur-[2px]" role="presentation" onMouseDown={() => setEditing(false)}><section className="w-full max-w-[430px] rounded-t-[28px] bg-white px-[22px] pb-[max(28px,env(safe-area-inset-bottom))] pt-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title" onMouseDown={(event) => event.stopPropagation()}><div className="mb-5 flex items-center justify-between"><div><p className="mb-1 text-[9px] font-bold uppercase tracking-[1.1px] text-[#50abe8]">My profile</p><h2 className="text-[17px] font-extrabold" id="edit-profile-title">닉네임 수정</h2></div><button className="grid h-9 w-9 place-items-center rounded-full bg-[#f3f6f9] text-[#748193]" onClick={() => setEditing(false)} type="button" aria-label="닫기"><X size={18} /></button></div><label className="grid gap-2 text-[11px] font-bold text-[#536071]">닉네임<input className="h-12 rounded-[15px] border border-[#e0e9f1] bg-[#f7faff] px-4 text-[13px] outline-none focus:border-[#62b7ed] focus:ring-4 focus:ring-[#5bb5f8]/10" autoFocus maxLength={10} minLength={2} onChange={(event) => setDraftNickname(event.target.value)} value={draftNickname} /></label><button className="mt-4 h-12 w-full rounded-[15px] bg-[#53afea] text-[13px] font-extrabold text-white disabled:opacity-40" disabled={draftNickname.trim().length < 2 || isSaving} onClick={saveProfile} type="button">{isSaving ? "저장 중..." : "저장하기"}</button></section></div> : null}
+      {editing ? <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#132036]/35 p-0 backdrop-blur-[2px]" role="presentation" onMouseDown={() => !isSaving && setEditing(false)}><section className="w-full max-w-[430px] rounded-t-[28px] bg-white px-[22px] pb-[max(28px,env(safe-area-inset-bottom))] pt-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between"><div><p className="mb-1 text-[9px] font-bold uppercase tracking-[1.1px] text-[#50abe8]">My profile</p><h2 className="text-[17px] font-extrabold" id="edit-profile-title">프로필 수정</h2></div><button className="grid h-9 w-9 place-items-center rounded-full bg-[#f3f6f9] text-[#748193] disabled:opacity-50" disabled={isSaving} onClick={() => setEditing(false)} type="button" aria-label="닫기"><X size={18} /></button></div>
+        <div className="mb-5 grid justify-items-center">
+          <button className="relative grid h-[92px] w-[92px] place-items-center overflow-visible rounded-full border-4 border-[#edf8ff] bg-white p-1 shadow-[0_8px_22px_rgba(55,142,200,0.14)]" disabled={isSaving} onClick={() => profileImageInputRef.current?.click()} type="button" aria-label="프로필 사진 선택"><img className="h-full w-full rounded-full object-cover" src={draftProfileImage} alt="선택한 프로필 사진" /><span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-[3px] border-white bg-[#50ace9] text-white"><Camera size={14} /></span></button>
+          <input ref={profileImageInputRef} className="hidden" accept="image/*" onChange={handleProfileImageChange} type="file" />
+          <span className="mt-2 text-[9px] font-bold text-[#8495a5]">사진 변경</span>
+        </div>
+        <label className="grid gap-2 text-[11px] font-bold text-[#536071]">닉네임<input className="h-12 rounded-[15px] border border-[#e0e9f1] bg-[#f7faff] px-4 text-[13px] outline-none focus:border-[#62b7ed] focus:ring-4 focus:ring-[#5bb5f8]/10" autoFocus maxLength={10} minLength={2} onChange={(event) => setDraftNickname(event.target.value)} value={draftNickname} /></label>
+        <button className="mt-4 h-12 w-full rounded-[15px] bg-[#53afea] text-[13px] font-extrabold text-white disabled:opacity-40" disabled={draftNickname.trim().length < 2 || isSaving} onClick={saveProfile} type="button">{isSaving ? draftProfileImageFile ? "사진 업로드 중..." : "저장 중..." : "저장하기"}</button>
+      </section></div> : null}
       {editingTravel ? (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#132036]/35 backdrop-blur-[2px]" role="presentation" onMouseDown={() => setEditingTravel(false)}>
           <section className="w-full max-w-[430px] rounded-t-[28px] bg-white px-[20px] pb-[max(26px,env(safe-area-inset-bottom))] pt-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="edit-travel-title" onMouseDown={(event) => event.stopPropagation()}>
