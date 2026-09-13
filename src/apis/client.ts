@@ -8,7 +8,12 @@ const DEV_ACCESS_TOKEN = import.meta.env.DEV
   ? (import.meta.env.VITE_DEV_ACCESS_TOKEN as string | undefined)
   : undefined;
 
-const ACCESS_TOKEN_KEYS = ["accessToken", "ACCESS_TOKEN", "token"] as const;
+const ACCESS_TOKEN_KEYS = [
+  "quespot-access-token",
+  "accessToken",
+  "ACCESS_TOKEN",
+  "token",
+] as const;
 
 function getStoredAccessToken() {
   for (const key of ACCESS_TOKEN_KEYS) {
