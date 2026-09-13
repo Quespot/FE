@@ -132,7 +132,9 @@ export default function MissionPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleMoveMissionDetail = (mission: MissionItem) => {
-    navigate(PATH.MISSION_DETAIL.replace(":missionId", String(mission.missionId)));
+    navigate(
+      PATH.MISSION_DETAIL.replace(":missionId", String(mission.missionId)),
+    );
   };
 
   return (
@@ -215,14 +217,10 @@ export default function MissionPage() {
           />
         </section>
 
-        <section className="mt-[20px] flex items-center justify-between">
+        <section className="mt-[20px]">
           <h2 className="m-0 text-[21px] font-black leading-[28px] text-[#1C1C3A]">
             미션 목록
           </h2>
-
-          <span className="text-[14px] font-black leading-[18px] text-[#A2A9B2]">
-            {missions.length}개
-          </span>
         </section>
 
         {isLoading ? <MissionListLoading /> : null}
@@ -458,10 +456,7 @@ function formatDistance(distanceMeters: number | null) {
   return `${(distanceMeters / 1000).toFixed(1)}km`;
 }
 
-function getMissionStatusLabel(
-  status: UserMissionStatus,
-  canStart: boolean,
-) {
+function getMissionStatusLabel(status: UserMissionStatus, canStart: boolean) {
   if (status === "COMPLETED") return "완료";
   if (status === "IN_PROGRESS") return "진행중";
   if (status === "LOCKED") return "잠김";
