@@ -12,6 +12,7 @@ import {
   Loader2,
   Lock,
   MapPin,
+  MoonStar,
   Palette,
   Route,
   ShoppingBag,
@@ -54,8 +55,8 @@ const categoryIconMap: Record<MissionCategory, LucideIcon> = {
   CULTURE: Palette,
   NATURE: Leaf,
   FOOD: Utensils,
-  SHOPPING: ShoppingBag,
-  ACTIVITY: Zap,
+  NIGHT_VIEW: MoonStar,
+  ETC: Sparkles,
 };
 
 const CATEGORY_STYLE: Record<
@@ -86,15 +87,15 @@ const CATEGORY_STYLE: Record<
     heroIcon: "text-[#E58A14]",
     chipText: "text-[#E58A14]",
   },
-  SHOPPING: {
-    hero: "bg-[#FDB9D4]",
-    heroIcon: "text-[#EC4899]",
-    chipText: "text-[#EC4899]",
+  NIGHT_VIEW: {
+    hero: "bg-[#AFC8FF]",
+    heroIcon: "text-[#496FD8]",
+    chipText: "text-[#496FD8]",
   },
-  ACTIVITY: {
-    hero: "bg-[#FFB86B]",
-    heroIcon: "text-[#F97316]",
-    chipText: "text-[#F97316]",
+  ETC: {
+    hero: "bg-[#A7E6E7]",
+    heroIcon: "text-[#15969A]",
+    chipText: "text-[#15969A]",
   },
 };
 
@@ -758,8 +759,8 @@ function getCategoryLabel(category: MissionCategory) {
     CULTURE: "문화",
     NATURE: "자연",
     FOOD: "음식",
-    SHOPPING: "쇼핑",
-    ACTIVITY: "활동",
+    NIGHT_VIEW: "야경·전망",
+    ETC: "기타",
   };
 
   return categoryLabelMap[category];
@@ -771,8 +772,8 @@ function getCategoryEmoji(category: MissionCategory) {
     CULTURE: "🎨",
     NATURE: "🌳",
     FOOD: "🍜",
-    SHOPPING: "🛍️",
-    ACTIVITY: "🏃",
+    NIGHT_VIEW: "🌙",
+    ETC: "✨",
   };
 
   return categoryEmojiMap[category];

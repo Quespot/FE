@@ -13,6 +13,7 @@ import {
 } from "@/apis/item";
 import { customizeAssets } from "@/assets/customize";
 import { getQuestyCombinationAsset } from "@/assets/customize/combinations";
+import { LOCAL_EQUIPPED_QUESTY_KEY } from "@/utils/questyAsset";
 import cafeRoom from "@/assets/customize/scenes/cafe-room.png";
 import cozyBedroom from "@/assets/customize/scenes/cozy-bedroom.png";
 import schoolRoom from "@/assets/customize/scenes/school-room.png";
@@ -130,7 +131,13 @@ export default function QuestyCustomizePage() {
   const [points, setPoints] = useState<number | null>(1240);
   const [ownedScenes, setOwnedScenes] = useState<Set<SceneId>>(() => new Set(["garden"]));
   const [equippedScene, setEquippedScene] = useState<SceneId>("garden");
-  const [localEquipped, setLocalEquipped] = useState<Partial<Record<LocalSlot, string>>>({});
+  const [localEquipped, setLocalEquipped] = useState<Partial<Record<LocalSlot, string>>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(LOCAL_EQUIPPED_QUESTY_KEY) ?? "{}");
+    } catch {
+      return {};
+    }
+  });
   const [pendingItemId, setPendingItemId] = useState<number | null>(null);
   const [status, setStatus] = useState<{ message: string; error?: boolean } | null>(null);
 
@@ -143,6 +150,10 @@ export default function QuestyCustomizePage() {
     const timer = window.setTimeout(() => setStatus(null), 2600);
     return () => window.clearTimeout(timer);
   }, [status]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_EQUIPPED_QUESTY_KEY, JSON.stringify(localEquipped));
+  }, [localEquipped]);
 
   const ownedIds = useMemo(() => new Set((ownedQuery.data ?? []).map((item) => item.itemId)), [ownedQuery.data]);
   const equippedIds = useMemo(() => new Set((questyQuery.data?.equippedItems ?? []).map((item) => item.itemId)), [questyQuery.data]);

@@ -7,6 +7,7 @@ type NearbySpot = {
   done?: boolean;
   status?: string;
   missionCount?: number;
+  completedMissionCount?: number;
   rating?: number;
   badge?: number;
 };
@@ -58,7 +59,7 @@ export default function NearbySpotCard({ spot, onClick }: NearbySpotCardProps) {
           {isDone || spot.status === "완료" ? (
             <em className="not-italic font-black text-[#16c77a]">완료</em>
           ) : (
-            `미션 ${spot.missionCount ?? 0}개`
+            `미션 ${spot.missionCount ?? 0}개 · 완료 ${spot.completedMissionCount ?? 0}개`
           )}
         </p>
       </div>

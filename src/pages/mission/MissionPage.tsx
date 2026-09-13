@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Clock3,
   Coins,
@@ -58,21 +58,34 @@ const CATEGORY_OPTIONS: CategoryOption[] = [
     value: "FOOD",
   },
   {
-    label: "쇼핑",
-    value: "SHOPPING",
+    label: "야경·전망",
+    value: "NIGHT_VIEW",
   },
   {
-    label: "활동",
-    value: "ACTIVITY",
+    label: "기타",
+    value: "ETC",
   },
 ];
 
+const MISSION_CATEGORY_VALUES = new Set<MissionCategory>([
+  "HISTORY",
+  "CULTURE",
+  "NATURE",
+  "FOOD",
+  "NIGHT_VIEW",
+  "ETC",
+]);
+
+function getMissionCategory(value: string | null) {
+  return value && MISSION_CATEGORY_VALUES.has(value as MissionCategory)
+    ? (value as MissionCategory)
+    : undefined;
+}
+
 export default function MissionPage() {
   const navigate = useNavigate();
-
-  const [selectedCategory, setSelectedCategory] = useState<
-    MissionCategory | undefined
-  >(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCategory = getMissionCategory(searchParams.get("category"));
   const [keyword, setKeyword] = useState("");
 
   const { currentLocation, locationStatus } = useCurrentLocation();
@@ -135,7 +148,17 @@ export default function MissionPage() {
               <button
                 key={category.label}
                 type="button"
-                onClick={() => setSelectedCategory(category.value)}
+                onClick={() => {
+                  setSearchParams((current) => {
+                    const next = new URLSearchParams(current);
+                    if (category.value) {
+                      next.set("category", category.value);
+                    } else {
+                      next.delete("category");
+                    }
+                    return next;
+                  });
+                }}
                 className={[
                   "h-[36px] shrink-0 rounded-full px-[15px] text-[13px] font-black transition active:scale-[0.98]",
                   isSelected
@@ -416,8 +439,8 @@ function getCategoryLabel(category: MissionCategory) {
     CULTURE: "문화",
     NATURE: "자연",
     FOOD: "음식",
-    SHOPPING: "쇼핑",
-    ACTIVITY: "활동",
+    NIGHT_VIEW: "야경·전망",
+    ETC: "기타",
   };
 
   return categoryLabelMap[category];
@@ -429,8 +452,8 @@ function getCategoryEmoji(category: MissionCategory) {
     CULTURE: "🎨",
     NATURE: "🌳",
     FOOD: "🍜",
-    SHOPPING: "🛍️",
-    ACTIVITY: "🏃",
+    NIGHT_VIEW: "🌙",
+    ETC: "✨",
   };
 
   return categoryEmojiMap[category];
