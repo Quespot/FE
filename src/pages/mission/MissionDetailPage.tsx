@@ -19,6 +19,7 @@ import {
   ShoppingBag,
   Sparkles,
   Utensils,
+  X,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -149,6 +150,7 @@ export default function MissionDetailPage() {
   const { currentLocation } = useCurrentLocation();
 
   const [isLiked, setIsLiked] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
   const { mutate: startMission, isPending: isStartingMission } =
     useStartMissionAttempt();
@@ -319,6 +321,7 @@ export default function MissionDetailPage() {
             isLikePending={isLikePending}
             onBack={() => navigate(-1)}
             onToggleLike={handleToggleLike}
+            onOpenImage={() => setIsImagePreviewOpen(true)}
           />
 
           <section className="flex flex-col gap-[14px] px-[16px] pb-[24px] pt-[12px]">
@@ -449,6 +452,14 @@ export default function MissionDetailPage() {
           </section>
         </QuespotPageContent>
       ) : null}
+
+      {isImagePreviewOpen && mission?.imageUrl ? (
+        <MissionImagePreview
+          imageUrl={mission.imageUrl}
+          title={mission.title}
+          onClose={() => setIsImagePreviewOpen(false)}
+        />
+      ) : null}
     </QuespotPageLayout>
   );
 }
@@ -496,6 +507,7 @@ type MissionHeroProps = {
   isLikePending: boolean;
   onBack: () => void;
   onToggleLike: () => void;
+  onOpenImage: () => void;
 };
 
 function MissionHero({
@@ -504,6 +516,7 @@ function MissionHero({
   isLikePending,
   onBack,
   onToggleLike,
+  onOpenImage,
 }: MissionHeroProps) {
   const Icon = categoryIconMap[mission.category] ?? Building2;
   const style = CATEGORY_STYLE[mission.category] ?? DEFAULT_CATEGORY_STYLE;
@@ -513,27 +526,38 @@ function MissionHero({
   return (
     <section className="relative h-[354px] min-h-[354px] w-full shrink-0 overflow-hidden bg-[#F4F8FF]">
       {mission.imageUrl ? (
-        <img
-          src={mission.imageUrl}
-          alt={mission.title}
-          className="absolute inset-x-0 top-0 h-[290px] w-full object-cover"
-        />
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onOpenImage();
+          }}
+          className="absolute inset-x-0 top-0 z-10 h-[290px] w-full cursor-pointer overflow-hidden border-0 bg-transparent p-0 text-left"
+          aria-label="미션 이미지 크게 보기"
+        >
+          <img
+            src={mission.imageUrl}
+            alt={mission.title}
+            className="h-full w-full object-cover"
+          />
+        </button>
       ) : (
         <div
           className={[
-            "absolute inset-x-0 top-0 h-[290px]",
+            "absolute inset-x-0 top-0 z-10 h-[290px]",
             style.hero,
             "bg-[linear-gradient(90deg,rgba(28,28,58,0.08)_1px,transparent_1px),linear-gradient(0deg,rgba(28,28,58,0.08)_1px,transparent_1px)] bg-[length:40px_40px]",
           ].join(" ")}
         />
       )}
 
-      <div className="absolute inset-x-0 top-0 h-[290px] bg-gradient-to-b from-black/10 via-black/5 to-[#F4F8FF]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[290px] bg-gradient-to-b from-black/10 via-black/5 to-[#F4F8FF]" />
 
       {!mission.imageUrl ? (
         <Icon
           className={[
-            "absolute left-1/2 top-[60px] h-[126px] w-[126px] -translate-x-1/2 opacity-20",
+            "absolute left-1/2 top-[60px] z-20 h-[126px] w-[126px] -translate-x-1/2 opacity-20",
             style.heroIcon,
           ].join(" ")}
           strokeWidth={1.7}
@@ -542,8 +566,12 @@ function MissionHero({
 
       <button
         type="button"
-        onClick={onBack}
-        className="absolute left-[18px] top-[18px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#5BB5F8] shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onBack();
+        }}
+        className="absolute left-[18px] top-[18px] z-50 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#5BB5F8] shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]"
         aria-label="뒤로가기"
       >
         <ArrowLeft size={22} strokeWidth={2.6} />
@@ -558,7 +586,7 @@ function MissionHero({
         }}
         disabled={isLikePending}
         className={[
-          "pointer-events-auto absolute right-[18px] top-[18px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]",
+          "pointer-events-auto absolute right-[18px] top-[18px] z-50 grid h-[44px] w-[44px] place-items-center rounded-full bg-white shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]",
           isLikePending ? "opacity-70" : "opacity-100",
         ].join(" ")}
         aria-label={isLiked ? "미션 좋아요 해제" : "미션 좋아요 등록"}
@@ -571,7 +599,7 @@ function MissionHero({
         />
       </button>
 
-      <article className="absolute bottom-[14px] left-[16px] right-[16px] z-20 rounded-[18px] border border-[#EAF5FF] bg-white/96 px-[15px] py-[12px] shadow-[0_8px_22px_rgba(8,37,95,0.13)] backdrop-blur">
+      <article className="absolute bottom-[14px] left-[16px] right-[16px] z-40 rounded-[18px] border border-[#EAF5FF] bg-white/96 px-[15px] py-[12px] shadow-[0_8px_22px_rgba(8,37,95,0.13)] backdrop-blur">
         <div className="flex flex-wrap items-center gap-[7px]">
           <span
             className={[
@@ -727,6 +755,52 @@ function MissionRewardCard({
         {isStartingMission ? "시작 중" : "시작하기"}
       </button>
     </section>
+  );
+}
+
+type MissionImagePreviewProps = {
+  imageUrl: string;
+  title: string;
+  onClose: () => void;
+};
+
+function MissionImagePreview({
+  imageUrl,
+  title,
+  onClose,
+}: MissionImagePreviewProps) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClose}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" || event.key === "Enter") {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 px-[16px]"
+      aria-label="이미지 미리보기 닫기"
+    >
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
+        className="absolute right-[18px] top-[18px] z-10 grid h-[42px] w-[42px] place-items-center rounded-full bg-white/95 text-[#1C1C3A] shadow-[0_4px_16px_rgba(0,0,0,0.25)] transition active:scale-[0.94]"
+        aria-label="닫기"
+      >
+        <X size={22} strokeWidth={2.8} />
+      </button>
+
+      <img
+        src={imageUrl}
+        alt={title}
+        onClick={(event) => event.stopPropagation()}
+        className="max-h-[86vh] max-w-full rounded-[18px] object-contain shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+      />
+    </div>
   );
 }
 
