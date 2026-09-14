@@ -12,7 +12,9 @@ import {
   Loader2,
   Lock,
   MapPin,
+  MoonStar,
   Palette,
+  Route,
   ShoppingBag,
   Sparkles,
   Utensils,
@@ -27,10 +29,11 @@ import QuespotPageLayout, {
 } from "@/layouts/QuespotPageLayout";
 import { useMissionDetail } from "@/hooks/queries/useMissionDetail";
 import { useStartMissionAttempt } from "@/hooks/mutation/useStartMissionAttempt";
+import { useLikeMission } from "@/hooks/mutation/useLikeMission";
+import { useUnlikeMission } from "@/hooks/mutation/useUnlikeMission";
 import type { MissionCategory, MissionDetail } from "@/types/mission";
 import { PATH } from "@/routes/paths";
 import QuestySvg from "@/assets/icons/Questy.svg";
-import { Header } from "@/components/common/Header";
 
 type LatLng = {
   lat: number;
@@ -54,8 +57,8 @@ const categoryIconMap: Record<MissionCategory, LucideIcon> = {
   CULTURE: Palette,
   NATURE: Leaf,
   FOOD: Utensils,
-  SHOPPING: ShoppingBag,
-  ACTIVITY: Zap,
+  NIGHT_VIEW: MoonStar,
+  ETC: Sparkles,
 };
 
 const CATEGORY_STYLE: Record<
@@ -86,15 +89,15 @@ const CATEGORY_STYLE: Record<
     heroIcon: "text-[#E58A14]",
     chipText: "text-[#E58A14]",
   },
-  SHOPPING: {
-    hero: "bg-[#FDB9D4]",
-    heroIcon: "text-[#EC4899]",
-    chipText: "text-[#EC4899]",
+  NIGHT_VIEW: {
+    hero: "bg-[#AFC8FF]",
+    heroIcon: "text-[#496FD8]",
+    chipText: "text-[#496FD8]",
   },
-  ACTIVITY: {
-    hero: "bg-[#FFB86B]",
-    heroIcon: "text-[#F97316]",
-    chipText: "text-[#F97316]",
+  ETC: {
+    hero: "bg-[#A7E6E7]",
+    heroIcon: "text-[#15969A]",
+    chipText: "text-[#15969A]",
   },
 };
 
@@ -127,8 +130,17 @@ export default function MissionDetailPage() {
   const missionId = Number(params.missionId);
   const { currentLocation } = useCurrentLocation();
 
+  const [isLiked, setIsLiked] = useState(false);
+
   const { mutate: startMission, isPending: isStartingMission } =
     useStartMissionAttempt();
+
+  const { mutate: likeMission, isPending: isLikingMission } = useLikeMission();
+
+  const { mutate: unlikeMission, isPending: isUnlikingMission } =
+    useUnlikeMission();
+
+  const isLikePending = isLikingMission || isUnlikingMission;
 
   const { data, isLoading, isError, refetch } = useMissionDetail({
     missionId,
@@ -137,6 +149,12 @@ export default function MissionDetailPage() {
   });
 
   const mission = data?.result;
+
+  useEffect(() => {
+    if (!mission) return;
+
+    setIsLiked(mission.liked);
+  }, [mission?.missionId, mission?.liked]);
 
   const routePlace = useMemo(() => {
     if (!mission) return null;
@@ -154,6 +172,24 @@ export default function MissionDetailPage() {
     };
   }, [mission]);
 
+  const handleToggleLike = () => {
+    if (!mission || isLikePending) return;
+
+    const nextLiked = !isLiked;
+
+    setIsLiked(nextLiked);
+
+    const mutation = nextLiked ? likeMission : unlikeMission;
+
+    mutation(mission.missionId, {
+      onError: (error) => {
+        console.error(error);
+        setIsLiked(!nextLiked);
+        alert("좋아요 처리에 실패했어요. 잠시 후 다시 시도해주세요.");
+      },
+    });
+  };
+
   const handleMoveRoutePage = () => {
     if (!routePlace) return;
 
@@ -161,6 +197,17 @@ export default function MissionDetailPage() {
       state: {
         place: routePlace,
         origin: currentLocation,
+      },
+    });
+  };
+
+  const handleMoveCourseCreatePage = () => {
+    if (!mission) return;
+
+    navigate(`${PATH.MISSION_COURSE_CREATE}?missionId=${mission.missionId}`, {
+      state: {
+        missionId: mission.missionId,
+        mission,
       },
     });
   };
@@ -220,7 +267,13 @@ export default function MissionDetailPage() {
 
   return (
     <QuespotPageLayout>
-      <Header />
+      <HomeHeader
+        mascotSrc={QuestySvg}
+        notificationCount={3}
+        onBellClick={() => {
+          // TODO: 알림함 연결
+        }}
+      />
 
       <QuespotDivider />
 
@@ -230,7 +283,12 @@ export default function MissionDetailPage() {
 
       {!isLoading && !isError && mission ? (
         <QuespotPageContent>
-          <MissionHero mission={mission} />
+          <MissionHero
+            mission={mission}
+            isLiked={isLiked}
+            isLikePending={isLikePending}
+            onToggleLike={handleToggleLike}
+          />
 
           <section className="flex flex-col gap-[16px] px-[16px] pb-[24px] pt-[20px]">
             <div className="grid grid-cols-3 gap-[12px]">
@@ -348,23 +406,34 @@ export default function MissionDetailPage() {
               onMoveRecordPage={handleMoveRecordPage}
             />
 
-            <button
-              type="button"
-              onClick={handleStartMission}
-              disabled={!mission.canStart || isStartingMission}
-              className={[
-                "mt-[4px] h-[52px] rounded-[16px] text-[15px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition",
-                mission.canStart && !isStartingMission
-                  ? "bg-[#5BB5F8] active:scale-[0.99]"
-                  : "bg-[#CBD5E1]",
-              ].join(" ")}
-            >
-              {isStartingMission
-                ? "미션 시작 중..."
-                : mission.canStart
-                  ? "미션 인증하기"
-                  : "현재 시작할 수 없어요"}
-            </button>
+            <div className="mt-[4px] grid grid-cols-2 gap-[10px]">
+              <button
+                type="button"
+                onClick={handleMoveCourseCreatePage}
+                className="flex h-[52px] items-center justify-center gap-[7px] rounded-[16px] border border-[#C8E8FF] bg-white text-[14px] font-black text-[#5BB5F8] shadow-[0_4px_12px_rgba(8,37,95,0.08)] transition active:scale-[0.99]"
+              >
+                <Route size={17} strokeWidth={2.5} />
+                코스 생성하기
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStartMission}
+                disabled={!mission.canStart || isStartingMission}
+                className={[
+                  "flex h-[52px] items-center justify-center rounded-[16px] text-[14px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition",
+                  mission.canStart && !isStartingMission
+                    ? "bg-[#5BB5F8] active:scale-[0.99]"
+                    : "bg-[#CBD5E1]",
+                ].join(" ")}
+              >
+                {isStartingMission
+                  ? "시작 중..."
+                  : mission.canStart
+                    ? "미션 인증하기"
+                    : "시작 불가"}
+              </button>
+            </div>
           </section>
         </QuespotPageContent>
       ) : null}
@@ -411,9 +480,17 @@ function useCurrentLocation() {
 
 type MissionHeroProps = {
   mission: MissionDetail;
+  isLiked: boolean;
+  isLikePending: boolean;
+  onToggleLike: () => void;
 };
 
-function MissionHero({ mission }: MissionHeroProps) {
+function MissionHero({
+  mission,
+  isLiked,
+  isLikePending,
+  onToggleLike,
+}: MissionHeroProps) {
   const Icon = categoryIconMap[mission.category] ?? Building2;
   const style = CATEGORY_STYLE[mission.category];
   const isCompleted = mission.userMissionStatus === "COMPLETED";
@@ -451,14 +528,23 @@ function MissionHero({ mission }: MissionHeroProps) {
 
       <button
         type="button"
-        className="absolute right-[20px] top-[20px] z-10 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#A2A9B2] shadow-[0_2px_8px_rgba(8,37,95,0.18)]"
-        aria-label="찜하기"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onToggleLike();
+        }}
+        disabled={isLikePending}
+        className={[
+          "pointer-events-auto absolute right-[20px] top-[20px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]",
+          isLikePending ? "opacity-70" : "opacity-100",
+        ].join(" ")}
+        aria-label={isLiked ? "미션 좋아요 해제" : "미션 좋아요 등록"}
       >
         <Heart
-          size={22}
+          size={23}
           strokeWidth={2.4}
-          fill={mission.liked ? "#FF4D67" : "transparent"}
-          className={mission.liked ? "text-[#FF4D67]" : "text-[#A2A9B2]"}
+          fill={isLiked ? "#FF4D67" : "transparent"}
+          className={isLiked ? "text-[#FF4D67]" : "text-[#A2A9B2]"}
         />
       </button>
 
@@ -730,8 +816,8 @@ function getCategoryLabel(category: MissionCategory) {
     CULTURE: "문화",
     NATURE: "자연",
     FOOD: "음식",
-    SHOPPING: "쇼핑",
-    ACTIVITY: "활동",
+    NIGHT_VIEW: "야경·전망",
+    ETC: "기타",
   };
 
   return categoryLabelMap[category];
@@ -743,8 +829,8 @@ function getCategoryEmoji(category: MissionCategory) {
     CULTURE: "🎨",
     NATURE: "🌳",
     FOOD: "🍜",
-    SHOPPING: "🛍️",
-    ACTIVITY: "🏃",
+    NIGHT_VIEW: "🌙",
+    ETC: "✨",
   };
 
   return categoryEmojiMap[category];

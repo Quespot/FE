@@ -111,12 +111,28 @@
   animation: questy-shadow-breathe 2.4s ease-in-out infinite;
 }
 
+@keyframes questy-scene-breathe {
+  0%,
+  100% {
+    transform: scale(1.025) translateY(0);
+  }
+
+  50% {
+    transform: scale(1.055) translateY(-2px);
+  }
+}
+
+.animate-questy-scene {
+  animation: questy-scene-breathe 10s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-questy-cloud,
   .animate-questy-cloud-delayed,
   .animate-questy-sparkle,
   .animate-questy-sparkle-delayed,
-  .animate-questy-shadow {
+  .animate-questy-shadow,
+  .animate-questy-scene {
     animation: none;
   }
 }

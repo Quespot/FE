@@ -1,4 +1,4 @@
-import { Heart, MapPin } from "lucide-react";
+import { Heart, Loader2, MapPin } from "lucide-react";
 
 const missionToneClasses: Record<string, string> = {
   cream: "bg-[linear-gradient(145deg,#fff6cc_0%,#fffef6_100%)]",
@@ -8,7 +8,7 @@ const missionToneClasses: Record<string, string> = {
   blue: "bg-[linear-gradient(145deg,#dff1ff_0%,#f7fcff_100%)]",
 };
 
-type Mission = {
+export type RecommendedMissionCardItem = {
   id: string | number;
   title: string;
   category: string;
@@ -16,14 +16,23 @@ type Mission = {
   points: number;
   visual: string;
   tone: string;
+  imageUrl?: string | null;
+  liked?: boolean;
 };
 
 type MissionCardProps = {
-  mission: Mission;
+  mission: RecommendedMissionCardItem;
   onClick: () => void;
+  onLikeClick?: () => void;
+  isLikePending?: boolean;
 };
 
-export default function MissionCard({ mission, onClick }: MissionCardProps) {
+export default function MissionCard({
+  mission,
+  onClick,
+  onLikeClick,
+  isLikePending = false,
+}: MissionCardProps) {
   const toneClass = missionToneClasses[mission.tone] ?? missionToneClasses.blue;
 
   return (
@@ -33,17 +42,40 @@ export default function MissionCard({ mission, onClick }: MissionCardProps) {
     >
       <div className={`relative grid min-h-[122px] place-items-center ${toneClass}`}>
         <button
-          className="absolute right-[10px] top-[10px] grid h-7 w-7 place-items-center rounded-full bg-white/85 text-[#b8c3d2]"
-          onClick={(event) => event.stopPropagation()}
           type="button"
-          aria-label={`${mission.title} 찜하기`}
+          disabled={isLikePending || !onLikeClick}
+          onClick={(event) => {
+            event.stopPropagation();
+            onLikeClick?.();
+          }}
+          className={`absolute right-[10px] top-[10px] z-10 grid h-7 w-7 place-items-center rounded-full bg-white/90 ${
+            mission.liked ? "text-[#ff6b8a]" : "text-[#b8c3d2]"
+          } disabled:cursor-wait disabled:opacity-70`}
+          aria-label={mission.liked ? "미션 좋아요 해제" : "미션 좋아요"}
+          aria-pressed={Boolean(mission.liked)}
         >
-          <Heart size={15} strokeWidth={2.3} />
+          {isLikePending ? (
+            <Loader2 className="animate-spin" size={14} />
+          ) : (
+            <Heart
+              size={15}
+              strokeWidth={2.3}
+              fill={mission.liked ? "currentColor" : "none"}
+            />
+          )}
         </button>
 
-        <span className="text-[44px] drop-shadow-[0_10px_12px_rgba(8,37,95,0.12)]">
-          {mission.visual}
-        </span>
+        {mission.imageUrl ? (
+          <img
+            src={mission.imageUrl}
+            alt={mission.title}
+            className="h-[122px] w-full object-cover"
+          />
+        ) : (
+          <span className="text-[44px] drop-shadow-[0_10px_12px_rgba(8,37,95,0.12)]">
+            {mission.visual}
+          </span>
+        )}
       </div>
 
       <div className="px-3 pb-[14px] pt-3">

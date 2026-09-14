@@ -47,9 +47,13 @@ type Category = {
 
 type CategoryGridProps = {
   categories: Category[];
+  onCategoryClick?: (categoryId: string) => void;
 };
 
-export default function CategoryGrid({ categories }: CategoryGridProps) {
+export default function CategoryGrid({
+  categories,
+  onCategoryClick,
+}: CategoryGridProps) {
   return (
     <section className="grid gap-[14px]">
       <SectionHeader title="카테고리" />
@@ -65,6 +69,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
               className="grid min-h-24 justify-items-center gap-2.5 rounded-[15px] border border-[#dce8f5] bg-white px-1.5 pb-3 pt-3.5 text-[#1c1c3a] shadow-[0_2px_6px_rgba(8,37,95,0.11)] transition active:scale-[0.98]"
               key={category.id}
               type="button"
+              onClick={() => onCategoryClick?.(category.id)}
             >
               <span
                 className={`grid h-[50px] w-[50px] place-items-center rounded-[17px] ${toneClass}`}

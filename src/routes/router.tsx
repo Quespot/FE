@@ -1,16 +1,26 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
+
 import { PATH } from "@/routes/paths";
 import MobileLayout from "@/layouts/MobileLayout";
 import BottomNavigationLayout from "@/layouts/BottomNavigationLayout";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+
 import HomePage from "@/pages/HomePage";
-import NotificationPage from "@/pages/NotificationPage";
+
+import LoginPage from "@/pages/Auth/LoginPage";
+import OAuthCallbackPage from "@/pages/Auth/OAuthCallbackPage";
+import SignupPage from "@/pages/Auth/SignupPage";
+import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
+import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
+
 import MissionsPage from "@/pages/mission/MissionPage";
 import MissionDetailPage from "@/pages/mission/MissionDetailPage";
 import MissionRecordPage from "@/pages/mission/MissionRecordPage";
 import LocalRecommendPage from "@/pages/mission/LocalRecommendPage";
 import BonusRegionPage from "@/pages/mission/BonusRegionPage";
 import MissionRoutePage from "@/pages/mission/MissionRoutePage";
+import RecommendedMissionsPage from "@/pages/mission/RecommendedMissionsPage";
+import MissionCourseCreatePage from "@/pages/mission/MissionCourseCreatePage";
 import VerifyPage from "@/pages/mission/verify/VerifyPage";
 import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
 import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
@@ -20,6 +30,7 @@ import MapSearchPage from "@/pages/map/MapSearchPage";
 
 import RewardPage from "@/pages/RewardPage";
 import LocalCouponPage from "@/pages/LocalCouponPage";
+import NotificationPage from "@/pages/NotificationPage";
 
 import MyPage from "@/pages/My/MyPage";
 import LikesPage from "@/pages/My/LikesPage";
@@ -27,23 +38,17 @@ import SavedPlacesPage from "@/pages/My/SavedPlacesPage";
 import ArchivePage from "@/pages/My/ArchivePage";
 import QuestyCustomizePage from "@/pages/My/QuestyCustomizePage";
 
-import LoginPage from "@/pages/Auth/LoginPage";
-import OAuthCallbackPage from "@/pages/Auth/OAuthCallbackPage";
-import SignupPage from "@/pages/Auth/SignupPage";
-import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
-import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
-
 export const router = createBrowserRouter([
   {
     element: <MobileLayout />,
     children: [
       {
-        path: PATH.LOGIN,
-        element: <LoginPage />,
+        path: PATH.LANDING,
+        element: <Navigate to={PATH.HOME} replace />,
       },
       {
-        path: "/login",
-        element: <Navigate replace to={PATH.LOGIN} />,
+        path: PATH.LOGIN,
+        element: <LoginPage />,
       },
       {
         path: PATH.OAUTH_CALLBACK,
@@ -94,12 +99,24 @@ export const router = createBrowserRouter([
 
           // 하단 내비게이션이 필요 없는 페이지
           {
+            path: PATH.NOTIFICATION,
+            element: <NotificationPage />,
+          },
+          {
             path: PATH.MAP_SEARCH,
             element: <MapSearchPage />,
           },
           {
+            path: PATH.RECOMMENDED_MISSIONS,
+            element: <RecommendedMissionsPage />,
+          },
+          {
             path: PATH.MISSION_DETAIL,
             element: <MissionDetailPage />,
+          },
+          {
+            path: PATH.MISSION_COURSE_CREATE,
+            element: <MissionCourseCreatePage />,
           },
           {
             path: PATH.MISSION_VERIFY,
@@ -149,8 +166,14 @@ export const router = createBrowserRouter([
             path: PATH.ARCHIVE,
             element: <ArchivePage />,
           },
-          { path: PATH.REWARD_COUPONS, element: <LocalCouponPage /> },
-          { path: PATH.NOTIFICATION, element: <NotificationPage /> },
+          {
+            path: PATH.REWARD_COUPONS,
+            element: <LocalCouponPage />,
+          },
+          {
+            path: PATH.NOT_FOUND,
+            element: <Navigate to={PATH.HOME} replace />,
+          },
         ],
       },
     ],
