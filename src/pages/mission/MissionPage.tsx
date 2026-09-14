@@ -6,6 +6,7 @@ import {
   Landmark,
   Leaf,
   Loader2,
+  MapPinned,
   MapPin,
   Moon,
   Palette,
@@ -28,7 +29,6 @@ import type {
   UserMissionStatus,
 } from "@/types/mission";
 import { PATH } from "@/routes/paths";
-import QuestyMainSvg from "@/assets/icons/QuestyMain.svg";
 
 type LatLng = {
   lat: number;
@@ -260,11 +260,12 @@ export default function MissionPage() {
             </p>
           </div>
 
-          <img
-            src={QuestyMainSvg}
-            alt="퀘스티"
-            className="h-[58px] w-[58px] object-contain"
-          />
+          <div className="flex h-[62px] w-[68px] shrink-0 items-center justify-end" aria-hidden="true">
+            <span className="relative grid h-[60px] w-[60px] place-items-center rounded-full border border-white bg-white/65 text-[#50AAE8] shadow-[0_6px_16px_rgba(58,139,197,0.11)]">
+              <span className="absolute inset-[6px] rounded-full border border-dashed border-[#B9DDF5]" />
+              <MapPinned className="relative" size={30} strokeWidth={2} />
+            </span>
+          </div>
         </section>
 
         <section className="mt-[20px]">

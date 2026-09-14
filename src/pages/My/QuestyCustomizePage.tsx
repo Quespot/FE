@@ -11,6 +11,7 @@ import {
   purchaseItem, unequipItem, type EquippedItem, type ItemCategory,
   type ItemRarity, type OwnedItem, type ShopItem,
 } from "@/apis/item";
+import { getMyAchievements } from "@/apis/achievement";
 import { customizeAssets } from "@/assets/customize";
 import { getQuestyCombinationAsset } from "@/assets/customize/combinations";
 import { LOCAL_EQUIPPED_QUESTY_KEY } from "@/utils/questyAsset";
@@ -21,7 +22,7 @@ import seasideCamp from "@/assets/customize/scenes/seaside-camp.png";
 import starObservatory from "@/assets/customize/scenes/star-observatory.png";
 
 type ViewMode = "closet" | "shop";
-type FilterKey = "all" | ItemCategory | "background";
+type FilterKey = "all" | ItemCategory;
 type SceneId = "garden" | "cafe" | "school" | "bedroom" | "seaside" | "observatory";
 type LocalSlot = "head" | "face" | "neck" | "outfit" | "bag" | "hand";
 
@@ -29,7 +30,7 @@ type SceneItem = {
   id: SceneId;
   name: string;
   image?: string;
-  price: number;
+  aliases: readonly string[];
 };
 
 type DisplayItem = {
@@ -50,6 +51,7 @@ const itemQueryKeys = {
   questy: ["items", "questy"] as const,
   owned: ["items", "owned"] as const,
   shop: ["items", "shop"] as const,
+  achievements: ["users", "me", "achievements"] as const,
 };
 
 const filters: Array<{ id: FilterKey; label: string; icon: ComponentType<{ size?: number; className?: string }> }> = [
@@ -58,16 +60,16 @@ const filters: Array<{ id: FilterKey; label: string; icon: ComponentType<{ size?
   { id: "ACCESSORY", label: "액세서리", icon: Glasses },
   { id: "OUTFIT", label: "의상", icon: Shirt },
   { id: "ITEM", label: "소품", icon: ShoppingBag },
-  { id: "background", label: "배경", icon: ImageIcon },
+  { id: "BACKGROUND", label: "배경", icon: ImageIcon },
 ];
 
 const sceneItems: SceneItem[] = [
-  { id: "garden", name: "햇살 정원", price: 0 },
-  { id: "cafe", name: "포근한 카페", image: cafeRoom, price: 320 },
-  { id: "school", name: "햇살 교실", image: schoolRoom, price: 320 },
-  { id: "bedroom", name: "포근한 방", image: cozyBedroom, price: 280 },
-  { id: "seaside", name: "바닷가 캠핑", image: seasideCamp, price: 360 },
-  { id: "observatory", name: "별빛 관측소", image: starObservatory, price: 400 },
+  { id: "garden", name: "햇살 정원", aliases: ["sunnygarden", "햇살정원"] },
+  { id: "cafe", name: "포근한 카페", image: cafeRoom, aliases: ["cozycafe", "warmcafe", "포근한카페"] },
+  { id: "school", name: "햇살 교실", image: schoolRoom, aliases: ["sunnyclassroom", "sunnyclass", "햇살교실"] },
+  { id: "bedroom", name: "포근한 방", image: cozyBedroom, aliases: ["cozyroom", "cozybedroom", "포근한방"] },
+  { id: "seaside", name: "바닷가 캠핑", image: seasideCamp, aliases: ["seasidecamp", "beachcamp", "바닷가캠핑"] },
+  { id: "observatory", name: "별빛 관측소", image: starObservatory, aliases: ["starobservatory", "starlightobservatory", "별빛관측소"] },
 ];
 
 const rarityLabel: Record<string, string> = {
@@ -89,6 +91,11 @@ const localItemAssets = [
 const equippedAssetFallback = getQuestyCombinationAsset([]);
 
 const normalizeItemKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
+
+function getLocalScene(item: { name: string; code?: string }) {
+  const key = normalizeItemKey(`${item.code ?? ""}${item.name}`);
+  return sceneItems.find(({ aliases }) => aliases.some((alias) => key.includes(alias)));
+}
 
 function getLocalItem(item: Pick<DisplayItem, "name" | "code">) {
   const key = normalizeItemKey(`${item.code ?? ""}${item.name}`);
@@ -128,9 +135,7 @@ export default function QuestyCustomizePage() {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<ViewMode>("closet");
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [points, setPoints] = useState<number | null>(1240);
-  const [ownedScenes, setOwnedScenes] = useState<Set<SceneId>>(() => new Set(["garden"]));
-  const [equippedScene, setEquippedScene] = useState<SceneId>("garden");
+  const [points, setPoints] = useState<number | null>(null);
   const [localEquipped, setLocalEquipped] = useState<Partial<Record<LocalSlot, string>>>(() => {
     try {
       return JSON.parse(localStorage.getItem(LOCAL_EQUIPPED_QUESTY_KEY) ?? "{}");
@@ -144,6 +149,11 @@ export default function QuestyCustomizePage() {
   const questyQuery = useQuery({ queryKey: itemQueryKeys.questy, queryFn: getMyQuesty, retry: false });
   const ownedQuery = useQuery({ queryKey: itemQueryKeys.owned, queryFn: getMyItems, retry: false });
   const shopQuery = useQuery({ queryKey: itemQueryKeys.shop, queryFn: () => getShopItems(), retry: false });
+  const achievementsQuery = useQuery({ queryKey: itemQueryKeys.achievements, queryFn: getMyAchievements, retry: false });
+
+  useEffect(() => {
+    if (achievementsQuery.data) setPoints(achievementsQuery.data.totalPoint);
+  }, [achievementsQuery.data]);
 
   useEffect(() => {
     if (!status) return;
@@ -175,15 +185,23 @@ export default function QuestyCustomizePage() {
     const source = mode === "closet"
       ? [...remoteOwnedItems, ...localOnlyItems]
       : (shopQuery.data ?? []).map((item) => toShopDisplayItem(item, ownedIds, equippedIds));
-    if (filter === "background") return [];
-    return filter === "all" ? source : source.filter((item) => item.category === filter);
+    const wearableItems = source.filter((item) => item.category !== "BACKGROUND" && !getLocalScene(item));
+    if (filter === "BACKGROUND") return [];
+    return filter === "all" ? wearableItems : wearableItems.filter((item) => item.category === filter);
   }, [equippedIds, filter, localEquipped, mode, ownedIds, ownedQuery.data, shopQuery.data]);
 
-  const scenes = useMemo(() => {
-    if (filter !== "all" && filter !== "background") return [];
-    return sceneItems.filter((scene) => mode === "closet" ? ownedScenes.has(scene.id) : !ownedScenes.has(scene.id));
-  }, [filter, mode, ownedScenes]);
-  const activeScene = sceneItems.find((scene) => scene.id === equippedScene) ?? sceneItems[0];
+  const backgroundItems = useMemo(() => {
+    if (filter !== "all" && filter !== "BACKGROUND") return [];
+    const source = mode === "closet"
+      ? (ownedQuery.data ?? []).map(toOwnedDisplayItem)
+      : (shopQuery.data ?? []).map((item) => toShopDisplayItem(item, ownedIds, equippedIds));
+    return source.filter((item) => item.category === "BACKGROUND" || Boolean(getLocalScene(item)));
+  }, [equippedIds, filter, mode, ownedIds, ownedQuery.data, shopQuery.data]);
+  const equippedBackground = (questyQuery.data?.equippedItems ?? []).find((item) =>
+    item.category === "BACKGROUND" || Boolean(getLocalScene(item)),
+  );
+  const matchedActiveScene = equippedBackground ? getLocalScene(equippedBackground) : undefined;
+  const activeSceneImage = matchedActiveScene?.image ?? (equippedBackground ? equippedBackground.imageUrl : undefined);
   const equippedPreviewItems = useMemo(() => (questyQuery.data?.equippedItems ?? []).map((item) => ({
     ...item,
     code: shopQuery.data?.find((shopItem) => shopItem.id === item.itemId)?.code,
@@ -199,9 +217,8 @@ export default function QuestyCustomizePage() {
     };
   })), [localEquipped, questyQuery.data, shopQuery.data]);
 
-  const showApiItems = filter !== "background";
-  const isLoading = showApiItems && (mode === "closet" ? ownedQuery.isLoading : shopQuery.isLoading);
-  const activeError = showApiItems ? (mode === "closet" ? ownedQuery.error : shopQuery.error) : null;
+  const isLoading = mode === "closet" ? ownedQuery.isLoading : shopQuery.isLoading;
+  const activeError = mode === "closet" ? ownedQuery.error : shopQuery.error;
 
   const refreshItems = async () => {
     await Promise.all([
@@ -262,13 +279,6 @@ export default function QuestyCustomizePage() {
     }
   };
 
-  const handleScenePurchase = (scene: SceneItem) => {
-    if (ownedScenes.has(scene.id) || points === null || points < scene.price) return;
-    setPoints((current) => current === null ? current : current - scene.price);
-    setOwnedScenes((current) => new Set([...current, scene.id]));
-    setStatus({ message: `${scene.name} 구매를 완료했어요.` });
-  };
-
   const retry = () => {
     if (mode === "closet") void ownedQuery.refetch();
     else void shopQuery.refetch();
@@ -283,7 +293,7 @@ export default function QuestyCustomizePage() {
       </header>
 
       <section className="relative h-[310px] overflow-hidden bg-[linear-gradient(180deg,#bfe9ff_0%,#eaf8ff_62%,#dff3d6_63%,#ccebbf_100%)]">
-        {activeScene.image ? <img alt="" aria-hidden="true" className="animate-questy-scene absolute inset-0 h-full w-full object-cover object-center motion-reduce:animate-none" src={activeScene.image} /> : <>
+        {activeSceneImage ? <img alt="" aria-hidden="true" className="animate-questy-scene absolute inset-0 h-full w-full object-cover object-center motion-reduce:animate-none" src={activeSceneImage} /> : <>
           <div className="absolute left-7 top-7 h-14 w-14 rounded-full bg-[#ffe57a] opacity-90 shadow-[0_0_28px_rgba(255,224,95,.7)]" />
           <div className="animate-questy-cloud absolute left-[-14px] top-[72px] flex items-end opacity-80" aria-hidden="true"><span className="h-5 w-10 rounded-full bg-white/85" /><span className="-ml-7 h-8 w-9 rounded-full bg-white/90" /><span className="-ml-6 h-5 w-12 rounded-full bg-white/85" /></div>
           <div className="animate-questy-cloud-delayed absolute right-[12px] top-[42px] flex items-end scale-75 opacity-70" aria-hidden="true"><span className="h-5 w-10 rounded-full bg-white/85" /><span className="-ml-7 h-8 w-9 rounded-full bg-white/90" /><span className="-ml-6 h-5 w-12 rounded-full bg-white/85" /></div>
@@ -305,20 +315,20 @@ export default function QuestyCustomizePage() {
         </div>
 
         <div className="mt-3 flex w-full gap-1 pb-1">
-          {filters.map(({ id, label, icon: Icon }) => <button className={`flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 rounded-full px-1 text-[8px] font-extrabold transition ${filter === id ? "bg-[#55b1ed] text-white" : "bg-[#eaf3fa] text-[#8395a6]"}`} key={id} onClick={() => setFilter(id)} type="button"><Icon className="shrink-0" size={10} />{label}</button>)}
+          {filters.map(({ id, label, icon: Icon }) => <button className={`flex h-8 min-w-0 flex-1 items-center justify-center gap-0.5 whitespace-nowrap rounded-full px-0.5 text-[7.5px] font-extrabold leading-none tracking-[-0.2px] transition ${filter === id ? "bg-[#55b1ed] text-white" : "bg-[#eaf3fa] text-[#8395a6]"}`} key={id} onClick={() => setFilter(id)} type="button"><Icon className="shrink-0" size={9} />{label}</button>)}
         </div>
 
         <div className="mb-3 mt-3 flex items-end justify-between px-1">
           <div><h2 className="text-[13px] font-extrabold">{mode === "closet" ? "보유 아이템" : "판매 아이템"}</h2><p className="mt-1 text-[8.5px] text-[#96a4b1]">{mode === "closet" ? "구매한 아이템과 배경을 여기에서 적용할 수 있어요." : "포인트로 구매하면 내 보관함에 추가돼요."}</p></div>
-          {!isLoading && !activeError ? <span className="text-[9px] font-bold text-[#6baedf]">{items.length + scenes.length}개</span> : null}
+          {!isLoading && !activeError ? <span className="text-[9px] font-bold text-[#6baedf]">{items.length + backgroundItems.length}개</span> : null}
         </div>
 
-        {isLoading ? <LoadingState /> : activeError ? <ErrorState message={getItemApiErrorMessage(activeError)} onRetry={retry} /> : items.length || scenes.length ? (
+        {isLoading ? <LoadingState /> : activeError ? <ErrorState message={getItemApiErrorMessage(activeError)} onRetry={retry} /> : items.length || backgroundItems.length ? (
           <div className="space-y-5">
             {items.length ? <section><div className="grid grid-cols-3 gap-2.5">{items.map((item) => <ItemCard item={item} key={item.id} mode={mode} pending={pendingItemId === item.id} onEquip={handleEquip} onPurchase={handlePurchase} />)}</div></section> : null}
-            {scenes.length ? <section className={items.length ? "border-t border-[#e4edf4] pt-5" : ""}>
+            {backgroundItems.length ? <section className={items.length ? "border-t border-[#e4edf4] pt-5" : ""}>
               {items.length ? <h3 className="mb-2 px-1 text-[10px] font-extrabold text-[#6e8192]">배경 아이템</h3> : null}
-              <div className="grid grid-cols-2 gap-3">{scenes.map((scene) => <SceneCard equipped={equippedScene === scene.id} key={scene.id} mode={mode} points={points} scene={scene} onApply={() => setEquippedScene(scene.id)} onPurchase={() => handleScenePurchase(scene)} />)}</div>
+              <div className="grid grid-cols-2 gap-3">{backgroundItems.map((item) => <BackgroundItemCard item={item} key={item.id} mode={mode} pending={pendingItemId === item.id} onEquip={handleEquip} onPurchase={handlePurchase} />)}</div>
             </section> : null}
           </div>
         ) : <EmptyState mode={mode} />}
@@ -334,7 +344,7 @@ function QuestyPreview({ items, loading }: { items: EquippedPreviewItem[]; loadi
     .map((item) => getLocalItem(item)?.id)
     .filter((itemId): itemId is (typeof localItemAssets)[number]["id"] => Boolean(itemId));
   const equippedAsset = getQuestyCombinationAsset(localItemIds);
-  const remoteOnlyItems = items.filter((item) => !getLocalItem(item));
+  const remoteOnlyItems = items.filter((item) => item.category !== "BACKGROUND" && !getLocalItem(item) && !getLocalScene(item));
 
   return <div className="absolute bottom-[8px] left-1/2 z-10 h-[248px] w-[248px] -translate-x-1/2">
     <div className="animate-questy-dressup relative h-full w-full motion-reduce:animate-none">
@@ -367,21 +377,23 @@ function ItemCard({ item, mode, pending, onEquip, onPurchase }: { item: DisplayI
   </article>;
 }
 
-function SceneCard({ scene, mode, equipped, points, onApply, onPurchase }: { scene: SceneItem; mode: ViewMode; equipped: boolean; points: number | null; onApply: () => void; onPurchase: () => void }) {
-  const canBuy = points === null || points >= scene.price;
-  return <article className={`relative overflow-hidden rounded-[18px] border bg-white p-2 shadow-[0_5px_16px_rgba(50,87,117,0.07)] ${equipped ? "border-[#55b5f5] ring-2 ring-[#55b5f5]/15" : "border-[#e1e9f0]"}`}>
-    {mode === "shop" ? <span className="absolute right-3 top-3 z-10 grid h-6 w-6 place-items-center rounded-full bg-[#293a53]/90 text-white shadow-md"><Lock size={11} strokeWidth={2.8} /></span> : null}
-    <ScenePreview scene={scene} />
+function BackgroundItemCard({ item, mode, pending, onEquip, onPurchase }: { item: DisplayItem; mode: ViewMode; pending: boolean; onEquip: (item: DisplayItem) => void; onPurchase: (item: DisplayItem) => void }) {
+  const matchedScene = getLocalScene(item);
+  const scene = matchedScene ?? sceneItems[0];
+  return <article className={`relative overflow-hidden rounded-[18px] border bg-white p-2 shadow-[0_5px_16px_rgba(50,87,117,0.07)] ${item.isEquipped ? "border-[#55b5f5] ring-2 ring-[#55b5f5]/15" : "border-[#e1e9f0]"}`}>
+    {item.isEquipped ? <span className="absolute right-3 top-3 z-10 grid h-6 w-6 place-items-center rounded-full bg-[#55b5f5] text-white shadow-md"><Check size={13} strokeWidth={3} /></span> : mode === "shop" && !item.isOwned ? <span className="absolute right-3 top-3 z-10 grid h-6 w-6 place-items-center rounded-full bg-[#293a53]/90 text-white shadow-md"><Lock size={11} strokeWidth={2.8} /></span> : null}
+    <ScenePreview fallbackImageUrl={matchedScene ? undefined : item.imageUrl} scene={scene} />
     <div className="px-1 pb-1 pt-2">
-      <div className="flex items-center justify-between gap-1"><strong className="block min-w-0 truncate text-[10px] font-extrabold">{scene.name}</strong>{equipped ? <Check className="shrink-0 text-[#4caeea]" size={14} strokeWidth={3} /> : null}</div>
-      {mode === "closet" ? <button className={`mt-2 h-7 w-full rounded-[9px] text-[8px] font-extrabold ${equipped ? "bg-[#eef7fd] text-[#8ba3b4]" : "bg-[#55b1ed] text-white"}`} disabled={equipped} onClick={onApply} type="button">{equipped ? "적용 중" : "배경 적용"}</button> : <button className="mt-2 flex h-7 w-full items-center justify-center gap-1 rounded-[9px] bg-[#55b1ed] text-[8px] font-extrabold text-white disabled:bg-[#dbe4eb]" disabled={!canBuy} onClick={onPurchase} type="button"><Zap size={9} fill="currentColor" strokeWidth={0} />{scene.price}P</button>}
+      <strong className="block min-w-0 truncate text-[10px] font-extrabold">{item.name}</strong>
+      {mode === "closet" ? <button className={`mt-2 h-7 w-full rounded-[9px] text-[8px] font-extrabold ${item.isEquipped ? "bg-[#eef7fd] text-[#3ca5e8]" : "bg-[#55b1ed] text-white"}`} disabled={pending} onClick={() => onEquip(item)} type="button">{pending ? "처리 중..." : item.isEquipped ? "적용 해제" : "배경 적용"}</button> : <button className={`mt-2 flex h-7 w-full items-center justify-center gap-1 rounded-[9px] text-[8px] font-extrabold disabled:opacity-60 ${item.isOwned ? "bg-[#eef3f7] text-[#8596a4]" : "bg-[#55b1ed] text-white"}`} disabled={pending || item.isOwned} onClick={() => onPurchase(item)} type="button">{pending ? "구매 중..." : item.isOwned ? "보유 중" : <><Zap size={9} fill="currentColor" strokeWidth={0} />{(item.price ?? 0).toLocaleString()}P</>}</button>}
     </div>
   </article>;
 }
 
-function ScenePreview({ scene }: { scene: SceneItem }) {
+function ScenePreview({ scene, fallbackImageUrl }: { scene: SceneItem; fallbackImageUrl?: string }) {
+  const imageUrl = scene.image || fallbackImageUrl;
   return <div className="relative h-[92px] overflow-hidden rounded-[13px] bg-[linear-gradient(180deg,#c6ebff_0%,#edfaff_62%,#b9e4a9_63%,#a7d78f_100%)]">
-    {scene.image ? <img alt="" className="h-full w-full object-cover" src={scene.image} /> : <><span className="absolute left-3 top-3 h-6 w-6 rounded-full bg-[#ffe574] shadow-[0_0_12px_rgba(255,220,76,.65)]" /><span className="absolute -bottom-4 -left-5 h-12 w-28 rounded-[50%] bg-[#9bd28f]" /><span className="absolute -bottom-5 right-[-18px] h-14 w-32 rounded-[50%] bg-[#80c77e]" /></>}
+    {imageUrl ? <img alt="" className="h-full w-full object-cover" src={imageUrl} /> : <><span className="absolute left-3 top-3 h-6 w-6 rounded-full bg-[#ffe574] shadow-[0_0_12px_rgba(255,220,76,.65)]" /><span className="absolute -bottom-4 -left-5 h-12 w-28 rounded-[50%] bg-[#9bd28f]" /><span className="absolute -bottom-5 right-[-18px] h-14 w-32 rounded-[50%] bg-[#80c77e]" /></>}
   </div>;
 }
 
