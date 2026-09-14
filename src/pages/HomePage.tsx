@@ -13,9 +13,7 @@ import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 
-import {
-  homeCategories,
-} from "@/data/quespot";
+import { homeCategories } from "@/data/quespot";
 
 import { useNearbyMissionSpots } from "@/hooks/queries/useNearbyMissionSpots";
 import { useHomeProfile } from "@/hooks/queries/useHomeProfile";
@@ -46,7 +44,8 @@ export default function HomePage() {
   const { profileQuery, questyQuery } = useHomeProfile();
   const { toggleMissionLike, pendingMissionId } = useToggleMissionLike();
   const { coordinates, status: locationStatus } = useCurrentCoordinates();
-  const nickname = profileQuery.data?.nickname || readStoredNickname() || "탐험가";
+  const nickname =
+    profileQuery.data?.nickname || readStoredNickname() || "탐험가";
   const questySrc =
     getEquippedQuestyAsset(questyQuery.data?.equippedItems ?? []) ??
     DefaultQuestySvg;
@@ -55,9 +54,7 @@ export default function HomePage() {
     size: 2,
   });
   const nearbySpotQuery = useNearbyMissionSpots(
-    coordinates
-      ? { ...coordinates, limit: 5 }
-      : undefined,
+    coordinates ? { ...coordinates, limit: 5 } : undefined,
   );
   const recommendedMissions =
     recommendedMissionQuery.data?.result.missions.map(
@@ -110,10 +107,7 @@ export default function HomePage() {
               }
               onMissionClick={(mission) =>
                 navigate(
-                  PATH.MISSION_DETAIL.replace(
-                    ":missionId",
-                    String(mission.id),
-                  ),
+                  PATH.MISSION_DETAIL.replace(":missionId", String(mission.id)),
                 )
               }
             />
@@ -122,7 +116,7 @@ export default function HomePage() {
           <div className="mt-[30px]">
             <NearbySpotSection
               spots={
-                nearbySpotQuery.data?.result.missionSpots.map((spot) => ({
+                nearbySpotQuery.data?.missionSpots.map((spot) => ({
                   id: spot.districtCode,
                   name: spot.districtName,
                   distance: formatSpotDistance(spot.distanceMeters),
@@ -131,7 +125,9 @@ export default function HomePage() {
                   completedMissionCount: spot.completedMissionCount,
                 })) ?? []
               }
-              isLoading={locationStatus === "loading" || nearbySpotQuery.isLoading}
+              isLoading={
+                locationStatus === "loading" || nearbySpotQuery.isLoading
+              }
               isError={locationStatus === "error" || nearbySpotQuery.isError}
               errorMessage={
                 locationStatus === "error"

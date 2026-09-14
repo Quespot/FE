@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MapPin, Minus, Navigation, Plus, Search, X } from "lucide-react";
+import {
+  MapPin,
+  Minus,
+  Navigation,
+  Plus,
+  Search,
+  X,
+  ChevronRight,
+} from "lucide-react";
 import {
   APIProvider,
   AdvancedMarker,
@@ -701,7 +709,7 @@ function MissionListBottomSheet({
                   )
                 }
               >
-                <Search />
+                <ChevronRight />
               </Button>
             </div>
           ))}
