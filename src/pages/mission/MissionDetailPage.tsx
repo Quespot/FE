@@ -13,12 +13,13 @@ import {
   Loader2,
   Lock,
   MapPin,
-  MoonStar,
+  Moon,
   Palette,
   Route,
   ShoppingBag,
   Sparkles,
   Utensils,
+  X,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -48,28 +49,35 @@ type MissionStep = {
   targetPath?: string;
 };
 
+type CategoryStyle = {
+  hero: string;
+  heroIcon: string;
+  chipText: string;
+};
+
 const DEFAULT_LOCATION: LatLng = {
   lat: 37.5752,
   lng: 126.9812,
 };
 
-const categoryIconMap: Record<MissionCategory, LucideIcon> = {
+const DEFAULT_CATEGORY_STYLE: CategoryStyle = {
+  hero: "bg-[#92C7FF]",
+  heroIcon: "text-[#3B82F6]",
+  chipText: "text-[#5BB5F8]",
+};
+
+const categoryIconMap: Record<string, LucideIcon> = {
   HISTORY: Landmark,
   CULTURE: Palette,
   NATURE: Leaf,
   FOOD: Utensils,
-  NIGHT_VIEW: MoonStar,
+  SHOPPING: ShoppingBag,
+  ACTIVITY: Zap,
+  NIGHT_VIEW: Moon,
   ETC: Sparkles,
 };
 
-const CATEGORY_STYLE: Record<
-  MissionCategory,
-  {
-    hero: string;
-    heroIcon: string;
-    chipText: string;
-  }
-> = {
+const CATEGORY_STYLE: Record<string, CategoryStyle> = {
   HISTORY: {
     hero: "bg-[#B794FF]",
     heroIcon: "text-[#8B5CF6]",
@@ -90,15 +98,25 @@ const CATEGORY_STYLE: Record<
     heroIcon: "text-[#E58A14]",
     chipText: "text-[#E58A14]",
   },
+  SHOPPING: {
+    hero: "bg-[#FDB9D4]",
+    heroIcon: "text-[#EC4899]",
+    chipText: "text-[#EC4899]",
+  },
+  ACTIVITY: {
+    hero: "bg-[#FFB86B]",
+    heroIcon: "text-[#F97316]",
+    chipText: "text-[#F97316]",
+  },
   NIGHT_VIEW: {
-    hero: "bg-[#AFC8FF]",
-    heroIcon: "text-[#496FD8]",
-    chipText: "text-[#496FD8]",
+    hero: "bg-[#7C8CFF]",
+    heroIcon: "text-[#4F46E5]",
+    chipText: "text-[#4F46E5]",
   },
   ETC: {
-    hero: "bg-[#A7E6E7]",
-    heroIcon: "text-[#15969A]",
-    chipText: "text-[#15969A]",
+    hero: "bg-[#A8D8FF]",
+    heroIcon: "text-[#5BB5F8]",
+    chipText: "text-[#5BB5F8]",
   },
 };
 
@@ -132,6 +150,7 @@ export default function MissionDetailPage() {
   const { currentLocation } = useCurrentLocation();
 
   const [isLiked, setIsLiked] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
   const { mutate: startMission, isPending: isStartingMission } =
     useStartMissionAttempt();
@@ -208,7 +227,10 @@ export default function MissionDetailPage() {
     navigate(`${PATH.MISSION_COURSE_CREATE}?missionId=${mission.missionId}`, {
       state: {
         missionId: mission.missionId,
-        mission,
+        mission: {
+          ...mission,
+          liked: isLiked,
+        },
       },
     });
   };
@@ -222,7 +244,10 @@ export default function MissionDetailPage() {
           state: {
             missionId: mission.missionId,
             attemptId: attempt.attemptId,
-            mission,
+            mission: {
+              ...mission,
+              liked: isLiked,
+            },
             missionTitle: mission.title,
           },
         });
@@ -250,7 +275,10 @@ export default function MissionDetailPage() {
     navigate(step.targetPath, {
       state: {
         missionId: mission.missionId,
-        mission,
+        mission: {
+          ...mission,
+          liked: isLiked,
+        },
       },
     });
   };
@@ -261,7 +289,10 @@ export default function MissionDetailPage() {
     navigate(PATH.MISSION_RECORD, {
       state: {
         missionId: mission.missionId,
-        mission,
+        mission: {
+          ...mission,
+          liked: isLiked,
+        },
       },
     });
   };
@@ -272,7 +303,7 @@ export default function MissionDetailPage() {
         mascotSrc={QuestySvg}
         notificationCount={3}
         onBellClick={() => {
-          // TODO: 알림함 연결
+          navigate(PATH.NOTIFICATION);
         }}
       />
 
@@ -290,48 +321,49 @@ export default function MissionDetailPage() {
             isLikePending={isLikePending}
             onBack={() => navigate(-1)}
             onToggleLike={handleToggleLike}
+            onOpenImage={() => setIsImagePreviewOpen(true)}
           />
 
-          <section className="flex flex-col gap-[16px] px-[16px] pb-[24px] pt-[20px]">
-            <div className="grid grid-cols-3 gap-[12px]">
+          <section className="flex flex-col gap-[14px] px-[16px] pb-[24px] pt-[12px]">
+            <div className="grid grid-cols-3 gap-[10px]">
               <InfoCard
-                icon={<MapPin size={22} strokeWidth={2.4} />}
+                icon={<MapPin size={20} strokeWidth={2.4} />}
                 iconClassName="bg-[#FFECEF] text-[#FF2D45]"
                 value={formatDistance(mission.distanceMeters)}
                 label="거리"
               />
 
               <InfoCard
-                icon={<Zap size={22} strokeWidth={2.4} />}
+                icon={<Zap size={20} strokeWidth={2.4} />}
                 iconClassName="bg-[#EAF5FF] text-[#5BB5F8]"
                 value={`+${mission.rewardPoint}P`}
                 label="보상 포인트"
               />
 
               <InfoCard
-                icon={<Clock3 size={22} strokeWidth={2.4} />}
+                icon={<Clock3 size={20} strokeWidth={2.4} />}
                 iconClassName="bg-[#FFF6D9] text-[#F59E0B]"
                 value={`약 ${mission.estimatedMinutes}분`}
                 label="예상 시간"
               />
             </div>
 
-            <div className="rounded-[16px] border border-[#EAF5FF] bg-white px-[16px] py-[14px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-              <p className="m-0 text-[12px] font-medium leading-[17px] text-[#A2A9B2]">
+            <div className="rounded-[16px] border border-[#EAF5FF] bg-white px-[15px] py-[13px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+              <p className="m-0 text-[12px] font-medium leading-[16px] text-[#A2A9B2]">
                 미션 설명
               </p>
 
-              <p className="m-0 mt-[8px] break-keep text-[14px] font-bold leading-[22px] text-[#1C1C3A]">
+              <p className="m-0 mt-[7px] break-keep text-[13px] font-bold leading-[21px] text-[#1C1C3A]">
                 {mission.description || "장소에 방문해 미션을 수행해보세요."}
               </p>
             </div>
 
             <div className="h-[2px] rounded-full bg-[#EAF5FF]" />
 
-            <section className="rounded-[16px] border border-[#EAF5FF] bg-white px-[16px] py-[16px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+            <section className="rounded-[16px] border border-[#EAF5FF] bg-white px-[15px] py-[15px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
               <header className="flex items-center gap-[10px]">
-                <span className="grid h-[28px] w-[28px] place-items-center rounded-full bg-[#EAF5FF] text-[#5BB5F8]">
-                  <Crosshair size={15} strokeWidth={2.4} />
+                <span className="grid h-[27px] w-[27px] place-items-center rounded-full bg-[#EAF5FF] text-[#5BB5F8]">
+                  <Crosshair size={14} strokeWidth={2.4} />
                 </span>
 
                 <h2 className="m-0 text-[15px] font-black leading-[20px] text-[#1C1C3A]">
@@ -339,7 +371,7 @@ export default function MissionDetailPage() {
                 </h2>
               </header>
 
-              <ol className="mt-[16px] flex flex-col gap-[12px] p-0">
+              <ol className="mt-[15px] flex flex-col gap-[11px] p-0">
                 {missionSteps.map((step, index) => {
                   const isLinked = Boolean(step.targetPath);
                   const isVerifyStep = step.targetPath === PATH.MISSION_VERIFY;
@@ -353,7 +385,7 @@ export default function MissionDetailPage() {
                           !isLinked || (isVerifyStep && isStartingMission)
                         }
                         className={[
-                          "grid w-full grid-cols-[32px_minmax(0,1fr)_24px] items-center gap-[12px] rounded-[12px] bg-transparent p-0 text-left transition",
+                          "grid w-full grid-cols-[31px_minmax(0,1fr)_23px] items-center gap-[11px] rounded-[12px] bg-transparent p-0 text-left transition",
                           isLinked
                             ? "cursor-pointer active:scale-[0.99]"
                             : "cursor-default",
@@ -362,17 +394,17 @@ export default function MissionDetailPage() {
                             : "opacity-100",
                         ].join(" ")}
                       >
-                        <span className="grid h-[28px] w-[28px] place-items-center rounded-full bg-[#E8FBF3] text-[#00C950]">
-                          <Check size={16} strokeWidth={3} />
+                        <span className="grid h-[27px] w-[27px] place-items-center rounded-full bg-[#E8FBF3] text-[#00C950]">
+                          <Check size={15} strokeWidth={3} />
                         </span>
 
-                        <span className="text-[14px] font-bold leading-[20px] text-[#A2A9B2]">
+                        <span className="text-[13px] font-bold leading-[19px] text-[#A2A9B2]">
                           {isVerifyStep && isStartingMission
                             ? "미션 시작 중..."
                             : step.label}
                         </span>
 
-                        <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-[#EAF5FF] text-[11px] font-black text-[#A2A9B2]">
+                        <span className="grid h-[21px] w-[21px] place-items-center rounded-full bg-[#EAF5FF] text-[10px] font-black text-[#A2A9B2]">
                           {index + 1}
                         </span>
                       </button>
@@ -382,25 +414,6 @@ export default function MissionDetailPage() {
               </ol>
             </section>
 
-            <div className="grid grid-cols-2 gap-[12px]">
-              <SmallFeatureCard
-                icon={<Utensils size={20} strokeWidth={2.4} />}
-                iconClassName="bg-[#EAF5FF] text-[#5BB5F8]"
-                title="주변 로컬"
-                description="맛집 · 카페 추천"
-                onClick={() => navigate(PATH.MISSION_LOCAL_RECOMMEND)}
-              />
-
-              <SmallFeatureCard
-                icon={<Sparkles size={20} strokeWidth={2.4} />}
-                iconClassName="bg-[#FFF6D9] text-[#F59E0B]"
-                title="보너스 지역"
-                description="추가 포인트 안내"
-                highlighted
-                onClick={() => navigate(PATH.MISSION_BONUS_REGION)}
-              />
-            </div>
-
             <MissionRewardCard
               mission={mission}
               isStartingMission={isStartingMission}
@@ -408,13 +421,13 @@ export default function MissionDetailPage() {
               onMoveRecordPage={handleMoveRecordPage}
             />
 
-            <div className="mt-[4px] grid grid-cols-2 gap-[10px]">
+            <div className="mt-[2px] grid grid-cols-2 gap-[10px]">
               <button
                 type="button"
                 onClick={handleMoveCourseCreatePage}
-                className="flex h-[52px] items-center justify-center gap-[7px] rounded-[16px] border border-[#C8E8FF] bg-white text-[14px] font-black text-[#5BB5F8] shadow-[0_4px_12px_rgba(8,37,95,0.08)] transition active:scale-[0.99]"
+                className="flex h-[50px] items-center justify-center gap-[7px] rounded-[16px] border border-[#C8E8FF] bg-white text-[13px] font-black text-[#5BB5F8] shadow-[0_4px_12px_rgba(8,37,95,0.08)] transition active:scale-[0.99]"
               >
-                <Route size={17} strokeWidth={2.5} />
+                <Route size={16} strokeWidth={2.5} />
                 코스 생성하기
               </button>
 
@@ -423,7 +436,7 @@ export default function MissionDetailPage() {
                 onClick={handleStartMission}
                 disabled={!mission.canStart || isStartingMission}
                 className={[
-                  "flex h-[52px] items-center justify-center rounded-[16px] text-[14px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition",
+                  "flex h-[50px] items-center justify-center rounded-[16px] text-[13px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition",
                   mission.canStart && !isStartingMission
                     ? "bg-[#5BB5F8] active:scale-[0.99]"
                     : "bg-[#CBD5E1]",
@@ -438,6 +451,14 @@ export default function MissionDetailPage() {
             </div>
           </section>
         </QuespotPageContent>
+      ) : null}
+
+      {isImagePreviewOpen && mission?.imageUrl ? (
+        <MissionImagePreview
+          imageUrl={mission.imageUrl}
+          title={mission.title}
+          onClose={() => setIsImagePreviewOpen(false)}
+        />
       ) : null}
     </QuespotPageLayout>
   );
@@ -486,6 +507,7 @@ type MissionHeroProps = {
   isLikePending: boolean;
   onBack: () => void;
   onToggleLike: () => void;
+  onOpenImage: () => void;
 };
 
 function MissionHero({
@@ -494,45 +516,48 @@ function MissionHero({
   isLikePending,
   onBack,
   onToggleLike,
+  onOpenImage,
 }: MissionHeroProps) {
   const Icon = categoryIconMap[mission.category] ?? Building2;
-  const style = CATEGORY_STYLE[mission.category];
+  const style = CATEGORY_STYLE[mission.category] ?? DEFAULT_CATEGORY_STYLE;
   const isCompleted = mission.userMissionStatus === "COMPLETED";
   const isLocked = mission.userMissionStatus === "LOCKED" || !mission.canStart;
 
   return (
-    <section className="relative h-[220px] min-h-[220px] w-full shrink-0 overflow-hidden">
+    <section className="relative h-[354px] min-h-[354px] w-full shrink-0 overflow-hidden bg-[#F4F8FF]">
       {mission.imageUrl ? (
-        <img
-          src={mission.imageUrl}
-          alt={mission.title}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onOpenImage();
+          }}
+          className="absolute inset-x-0 top-0 z-10 h-[290px] w-full cursor-pointer overflow-hidden border-0 bg-transparent p-0 text-left"
+          aria-label="미션 이미지 크게 보기"
+        >
+          <img
+            src={mission.imageUrl}
+            alt={mission.title}
+            className="h-full w-full object-cover"
+          />
+        </button>
       ) : (
         <div
           className={[
-            "absolute inset-0",
+            "absolute inset-x-0 top-0 z-10 h-[290px]",
             style.hero,
             "bg-[linear-gradient(90deg,rgba(28,28,58,0.08)_1px,transparent_1px),linear-gradient(0deg,rgba(28,28,58,0.08)_1px,transparent_1px)] bg-[length:40px_40px]",
           ].join(" ")}
         />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-[#F4F8FF]" />
-
-      <button
-        type="button"
-        onClick={onBack}
-        className="pointer-events-auto absolute left-[20px] top-[20px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#5BB5F8] shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]"
-        aria-label="이전 화면으로 돌아가기"
-      >
-        <ArrowLeft size={21} strokeWidth={2.6} />
-      </button>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[290px] bg-gradient-to-b from-black/10 via-black/5 to-[#F4F8FF]" />
 
       {!mission.imageUrl ? (
         <Icon
           className={[
-            "absolute left-1/2 top-[54px] h-[124px] w-[124px] -translate-x-1/2 opacity-20",
+            "absolute left-1/2 top-[60px] z-20 h-[126px] w-[126px] -translate-x-1/2 opacity-20",
             style.heroIcon,
           ].join(" ")}
           strokeWidth={1.7}
@@ -544,11 +569,24 @@ function MissionHero({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          onBack();
+        }}
+        className="absolute left-[18px] top-[18px] z-50 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#5BB5F8] shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]"
+        aria-label="뒤로가기"
+      >
+        <ArrowLeft size={22} strokeWidth={2.6} />
+      </button>
+
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
           onToggleLike();
         }}
         disabled={isLikePending}
         className={[
-          "pointer-events-auto absolute right-[20px] top-[20px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]",
+          "pointer-events-auto absolute right-[18px] top-[18px] z-50 grid h-[44px] w-[44px] place-items-center rounded-full bg-white shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]",
           isLikePending ? "opacity-70" : "opacity-100",
         ].join(" ")}
         aria-label={isLiked ? "미션 좋아요 해제" : "미션 좋아요 등록"}
@@ -561,44 +599,51 @@ function MissionHero({
         />
       </button>
 
-      <div className="absolute bottom-[20px] left-[20px] right-[20px] z-10 flex flex-col items-start">
-        <div className="flex items-center gap-[8px]">
+      <article className="absolute bottom-[14px] left-[16px] right-[16px] z-40 rounded-[18px] border border-[#EAF5FF] bg-white/96 px-[15px] py-[12px] shadow-[0_8px_22px_rgba(8,37,95,0.13)] backdrop-blur">
+        <div className="flex flex-wrap items-center gap-[7px]">
           <span
             className={[
-              "inline-flex h-[26px] items-center gap-[5px] rounded-full bg-white/90 px-[12px] text-[12px] font-black leading-none",
+              "inline-flex h-[24px] items-center gap-[5px] rounded-full bg-[#F4F8FF] px-[10px] text-[11px] font-black leading-none",
               style.chipText,
             ].join(" ")}
           >
-            <Icon size={13} strokeWidth={2.4} />
+            <Icon size={12} strokeWidth={2.4} />
             {getCategoryLabel(mission.category)}
           </span>
 
           {isCompleted ? (
-            <span className="inline-flex h-[26px] items-center gap-[5px] rounded-full bg-[#E8FBF3] px-[12px] text-[12px] font-black leading-none text-[#00C950]">
-              <Check size={13} strokeWidth={3} />
+            <span className="inline-flex h-[24px] items-center gap-[5px] rounded-full bg-[#E8FBF3] px-[10px] text-[11px] font-black leading-none text-[#00C950]">
+              <Check size={12} strokeWidth={3} />
               완료
             </span>
           ) : null}
 
           {isLocked ? (
-            <span className="inline-flex h-[26px] items-center gap-[5px] rounded-full bg-[#F1F5F9] px-[12px] text-[12px] font-black leading-none text-[#94A3B8]">
-              <Lock size={13} strokeWidth={2.6} />
+            <span className="inline-flex h-[24px] items-center gap-[5px] rounded-full bg-[#F1F5F9] px-[10px] text-[11px] font-black leading-none text-[#94A3B8]">
+              <Lock size={12} strokeWidth={2.6} />
               잠김
             </span>
           ) : null}
         </div>
 
-        <h1 className="m-0 mt-[12px] break-keep text-[22px] font-black leading-[30px] text-[#1C1C3A]">
+        <h1 className="m-0 mt-[9px] break-keep text-[19px] font-black leading-[26px] text-[#1C1C3A]">
           {mission.title}
         </h1>
 
-        <p className="m-0 mt-[6px] flex items-center gap-[6px] text-[13px] font-medium leading-[18px] text-[#6B7280]">
-          <MapPin size={14} strokeWidth={2.2} />
-          {mission.spotName}
-          <span>·</span>
-          {mission.address}
+        <p className="m-0 mt-[6px] flex items-start gap-[6px] break-keep text-[11px] font-medium leading-[16px] text-[#6B7280]">
+          <MapPin
+            size={13}
+            strokeWidth={2.2}
+            className="mt-[1px] shrink-0 text-[#A2A9B2]"
+          />
+
+          <span>
+            {mission.spotName}
+            <span className="px-[4px] text-[#CBD5E1]">·</span>
+            {mission.address}
+          </span>
         </p>
-      </div>
+      </article>
     </section>
   );
 }
@@ -612,72 +657,24 @@ type InfoCardProps = {
 
 function InfoCard({ icon, iconClassName, value, label }: InfoCardProps) {
   return (
-    <article className="flex min-h-[96px] flex-col items-center justify-center rounded-[16px] border border-[#EAF5FF] bg-white px-[12px] py-[12px] text-center shadow-[0_1px_3px_rgba(0,0,0,0.12)]">
+    <article className="flex min-h-[86px] flex-col items-center justify-center rounded-[15px] border border-[#EAF5FF] bg-white px-[10px] py-[10px] text-center shadow-[0_1px_3px_rgba(0,0,0,0.1)]">
       <span
         className={[
-          "grid h-[40px] w-[40px] place-items-center rounded-full",
+          "grid h-[36px] w-[36px] place-items-center rounded-full",
           iconClassName,
         ].join(" ")}
       >
         {icon}
       </span>
 
-      <strong className="mt-[10px] text-[15px] font-black leading-[18px] text-[#1C1C3A]">
+      <strong className="mt-[8px] text-[14px] font-black leading-[17px] text-[#1C1C3A]">
         {value}
       </strong>
 
-      <span className="mt-[4px] text-[11px] font-medium leading-[15px] text-[#A2A9B2]">
+      <span className="mt-[3px] text-[10px] font-medium leading-[14px] text-[#A2A9B2]">
         {label}
       </span>
     </article>
-  );
-}
-
-type SmallFeatureCardProps = {
-  icon: ReactNode;
-  iconClassName: string;
-  title: string;
-  description: string;
-  highlighted?: boolean;
-  onClick?: () => void;
-};
-
-function SmallFeatureCard({
-  icon,
-  iconClassName,
-  title,
-  description,
-  highlighted = false,
-  onClick,
-}: SmallFeatureCardProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "relative flex h-[72px] items-center gap-[12px] rounded-[16px] border bg-white px-[12px] py-[12px] text-left shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition active:scale-[0.99]",
-        highlighted ? "border-[#FACC15]" : "border-[#EAF5FF]",
-      ].join(" ")}
-    >
-      <span
-        className={[
-          "grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full",
-          iconClassName,
-        ].join(" ")}
-      >
-        {icon}
-      </span>
-
-      <div className="min-w-0">
-        <strong className="block font-sans text-[13px] font-black leading-[18px] text-[#1C1C3A]">
-          {title}
-        </strong>
-
-        <p className="m-0 mt-[2px] font-sans text-[10px] font-medium leading-[14px] text-[#A2A9B2]">
-          {description}
-        </p>
-      </div>
-    </button>
   );
 }
 
@@ -698,17 +695,17 @@ function MissionRewardCard({
 
   if (isCompleted) {
     return (
-      <section className="flex items-center gap-[12px] rounded-[16px] border border-[#BBF7D0] bg-[#E8FBF3] px-[16px] py-[16px]">
-        <span className="grid h-[48px] w-[48px] shrink-0 place-items-center rounded-[14px] bg-[#C6F7D9] text-[#00C950]">
-          <Check size={26} strokeWidth={3} />
+      <section className="flex items-center gap-[12px] rounded-[16px] border border-[#BBF7D0] bg-[#E8FBF3] px-[15px] py-[15px]">
+        <span className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-[14px] bg-[#C6F7D9] text-[#00C950]">
+          <Check size={24} strokeWidth={3} />
         </span>
 
         <div className="min-w-0 flex-1">
-          <strong className="block text-[17px] font-black leading-[21px] text-[#008A3D]">
+          <strong className="block text-[16px] font-black leading-[20px] text-[#008A3D]">
             미션 완료!
           </strong>
 
-          <p className="m-0 mt-[4px] text-[14px] font-medium leading-[20px] text-[#00C950]">
+          <p className="m-0 mt-[4px] text-[13px] font-medium leading-[19px] text-[#00C950]">
             +{mission.rewardPoint}P 보상이 지급됐어요
           </p>
         </div>
@@ -718,7 +715,7 @@ function MissionRewardCard({
           onClick={onMoveRecordPage}
           disabled={!mission.canCreateArchive}
           className={[
-            "flex h-[32px] min-w-[76px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-[12px] font-sans text-[10px] font-black leading-none text-white",
+            "flex h-[31px] min-w-[74px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-[12px] font-sans text-[10px] font-black leading-none text-white",
             mission.canCreateArchive ? "bg-[#00D664]" : "bg-[#CBD5E1]",
           ].join(" ")}
         >
@@ -729,13 +726,13 @@ function MissionRewardCard({
   }
 
   return (
-    <section className="flex items-center gap-[12px] rounded-[16px] border border-[#C8E8FF] bg-white px-[16px] py-[16px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-      <span className="grid h-[48px] w-[48px] shrink-0 place-items-center rounded-[14px] bg-[#EAF5FF] text-[#5BB5F8]">
-        <Zap size={25} strokeWidth={2.6} />
+    <section className="flex items-center gap-[12px] rounded-[16px] border border-[#C8E8FF] bg-white px-[15px] py-[15px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+      <span className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-[14px] bg-[#EAF5FF] text-[#5BB5F8]">
+        <Zap size={23} strokeWidth={2.6} />
       </span>
 
       <div className="min-w-0 flex-1">
-        <strong className="block text-[16px] font-black leading-[21px] text-[#1C1C3A]">
+        <strong className="block text-[15px] font-black leading-[20px] text-[#1C1C3A]">
           미션 완료 시 보상 지급
         </strong>
 
@@ -749,7 +746,7 @@ function MissionRewardCard({
         onClick={onStartMission}
         disabled={!mission.canStart || isStartingMission}
         className={[
-          "flex h-[32px] min-w-[76px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-[12px] font-sans text-[10px] font-black leading-none text-white",
+          "flex h-[31px] min-w-[74px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-[12px] font-sans text-[10px] font-black leading-none text-white",
           mission.canStart && !isStartingMission
             ? "bg-[#5BB5F8]"
             : "bg-[#CBD5E1]",
@@ -758,6 +755,52 @@ function MissionRewardCard({
         {isStartingMission ? "시작 중" : "시작하기"}
       </button>
     </section>
+  );
+}
+
+type MissionImagePreviewProps = {
+  imageUrl: string;
+  title: string;
+  onClose: () => void;
+};
+
+function MissionImagePreview({
+  imageUrl,
+  title,
+  onClose,
+}: MissionImagePreviewProps) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClose}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" || event.key === "Enter") {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 px-[16px]"
+      aria-label="이미지 미리보기 닫기"
+    >
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onClose();
+        }}
+        className="absolute right-[18px] top-[18px] z-10 grid h-[42px] w-[42px] place-items-center rounded-full bg-white/95 text-[#1C1C3A] shadow-[0_4px_16px_rgba(0,0,0,0.25)] transition active:scale-[0.94]"
+        aria-label="닫기"
+      >
+        <X size={22} strokeWidth={2.8} />
+      </button>
+
+      <img
+        src={imageUrl}
+        alt={title}
+        onClick={(event) => event.stopPropagation()}
+        className="max-h-[86vh] max-w-full rounded-[18px] object-contain shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+      />
+    </div>
   );
 }
 
@@ -824,29 +867,33 @@ function MissionDetailError({ onRetry }: MissionDetailErrorProps) {
 }
 
 function getCategoryLabel(category: MissionCategory) {
-  const categoryLabelMap: Record<MissionCategory, string> = {
+  const categoryLabelMap: Record<string, string> = {
     HISTORY: "역사",
     CULTURE: "문화",
     NATURE: "자연",
     FOOD: "음식",
+    SHOPPING: "쇼핑",
+    ACTIVITY: "활동",
     NIGHT_VIEW: "야경·전망",
     ETC: "기타",
   };
 
-  return categoryLabelMap[category];
+  return categoryLabelMap[category] ?? "기타";
 }
 
 function getCategoryEmoji(category: MissionCategory) {
-  const categoryEmojiMap: Record<MissionCategory, string> = {
+  const categoryEmojiMap: Record<string, string> = {
     HISTORY: "🏯",
     CULTURE: "🎨",
     NATURE: "🌳",
     FOOD: "🍜",
+    SHOPPING: "🛍️",
+    ACTIVITY: "🏃",
     NIGHT_VIEW: "🌙",
     ETC: "✨",
   };
 
-  return categoryEmojiMap[category];
+  return categoryEmojiMap[category] ?? "📍";
 }
 
 function formatDistance(distanceMeters: number | null) {
