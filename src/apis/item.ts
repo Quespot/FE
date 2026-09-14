@@ -2,7 +2,7 @@ import { isAxiosError } from "axios";
 
 import { apiClient } from "@/apis/client";
 
-export type ItemCategory = "HAT" | "ACCESSORY" | "OUTFIT" | "ITEM";
+export type ItemCategory = "HAT" | "ACCESSORY" | "OUTFIT" | "ITEM" | "BACKGROUND";
 export type ItemRarity = "NORMAL" | "RARE" | "EPIC" | "LEGENDARY" | string;
 
 type ApiEnvelope<T> = {

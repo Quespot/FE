@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  ArrowLeft,
   Building2,
   Check,
   Clock3,
@@ -287,6 +288,7 @@ export default function MissionDetailPage() {
             mission={mission}
             isLiked={isLiked}
             isLikePending={isLikePending}
+            onBack={() => navigate(-1)}
             onToggleLike={handleToggleLike}
           />
 
@@ -482,6 +484,7 @@ type MissionHeroProps = {
   mission: MissionDetail;
   isLiked: boolean;
   isLikePending: boolean;
+  onBack: () => void;
   onToggleLike: () => void;
 };
 
@@ -489,6 +492,7 @@ function MissionHero({
   mission,
   isLiked,
   isLikePending,
+  onBack,
   onToggleLike,
 }: MissionHeroProps) {
   const Icon = categoryIconMap[mission.category] ?? Building2;
@@ -515,6 +519,15 @@ function MissionHero({
       )}
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-[#F4F8FF]" />
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="pointer-events-auto absolute left-[20px] top-[20px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#5BB5F8] shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]"
+        aria-label="이전 화면으로 돌아가기"
+      >
+        <ArrowLeft size={21} strokeWidth={2.6} />
+      </button>
 
       {!mission.imageUrl ? (
         <Icon

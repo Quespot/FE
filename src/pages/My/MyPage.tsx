@@ -13,6 +13,7 @@ import { beginSocialLogin, clearAuth, clearSocialConnections, saveLoginRedirect 
 import { uploadFile } from "@/apis/file";
 import questyProfile from "@/assets/questy.svg";
 import { Header } from "@/components/common/Header";
+import { getAchievementErrorMessage, getMyAchievements, type AchievementSummary } from "@/apis/achievement";
 
 const PROFILE_KEY = "quespot-profile";
 const DEFAULT_INTEREST_IDS = ["history", "culture", "nature", "food"];
@@ -68,6 +69,7 @@ export default function MyPage() {
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [achievements, setAchievements] = useState<AchievementSummary | null>(null);
 
   const selectedCategories = useMemo(() => {
     const selectedIds = profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS;
@@ -90,6 +92,20 @@ export default function MyPage() {
     }).catch((profileError) => {
       if (active) setStatusMessage(profileError instanceof Error ? profileError.message : "프로필을 불러오지 못했습니다.");
     });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    getMyAchievements()
+      .then((result) => {
+        if (active) setAchievements(result);
+      })
+      .catch((achievementError) => {
+        if (active) setStatusMessage(getAchievementErrorMessage(achievementError));
+      });
+
     return () => { active = false; };
   }, []);
 
@@ -272,7 +288,11 @@ export default function MyPage() {
           <h1 className="m-0 text-[21px] font-extrabold tracking-[-0.5px]">{profile.nickname || "Quespot 탐험가"}</h1>
         </div>
         <div className="relative mx-auto mt-[20px] grid max-w-[310px] grid-cols-3 divide-x divide-[#c7e4f5]">
-          {[["2", "완료 미션"], ["1,240", "포인트"], ["2", "배지"]].map(([value, label]) => (
+          {[
+            [achievements?.completedMissionCount.toLocaleString() ?? "—", "완료 미션"],
+            [achievements?.totalPoint.toLocaleString() ?? "—", "포인트"],
+            [achievements?.acquiredBadgeCount.toLocaleString() ?? "—", "배지"],
+          ].map(([value, label]) => (
             <article className="grid gap-1.5" key={label}><strong className="text-[19px] font-black leading-none text-[#44a7e9]">{value}</strong><span className="text-[10px] font-semibold text-[#94a4b5]">{label}</span></article>
           ))}
         </div>
@@ -284,7 +304,6 @@ export default function MyPage() {
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5 text-[15px] font-extrabold"><Sparkles size={15} className="text-[#f0a53b]" />마스코트 꾸미기</span>
             <span className="mt-1.5 block text-[10.5px] leading-[1.45] text-[#94a0ae]">포인트로 아이템을 구매하고<br />나만의 퀘스티를 만들어요</span>
-            <span className="mt-2 flex gap-1.5"><b className="rounded-full bg-[#e8f6ff] px-2 py-1 text-[9px] text-[#339fe7]">3개 보유</b><b className="rounded-full bg-[#fff3d9] px-2 py-1 text-[9px] text-[#df921e]">전설 1개</b></span>
           </span>
           <ChevronRight className="text-[#abd9f5]" size={19} strokeWidth={2.4} />
         </button>
@@ -313,7 +332,9 @@ export default function MyPage() {
 
         <section className={`${panelClass} grid gap-[11px]`} aria-labelledby="achievement-title">
           <h2 className="mb-1 flex items-center gap-1.5 text-[14px] font-extrabold" id="achievement-title"><Trophy size={16} className="text-[#f0aa36]" />달성 현황</h2>
-          <ProgressRow label="미션 완료" value={2} max={20} color="bg-[#55b2ef]" /><ProgressRow label="배지 획득" value={2} max={8} color="bg-[#9f7bea]" /><ProgressRow label="스탬프" value={2} max={8} color="bg-[#55c9a4]" />
+          <ProgressRow label="미션 완료" value={achievements?.completedMissionCount} color="bg-[#55b2ef]" />
+          <ProgressRow label="배지 획득" value={achievements?.acquiredBadgeCount} max={achievements?.totalBadgeCount} color="bg-[#9f7bea]" />
+          <ProgressRow label="스탬프" value={achievements?.acquiredStampCount} max={achievements?.totalStampCount} color="bg-[#55c9a4]" />
         </section>
 
         <section className={panelClass} aria-labelledby="social-title">
@@ -415,8 +436,13 @@ export default function MyPage() {
   );
 }
 
-function ProgressRow({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
-  return <div><div className="mb-1.5 flex items-center justify-between text-[10px] font-semibold text-[#7d8b9c]"><span>{label}</span><strong className="text-[10px] font-black text-[#344057]">{value} / {max}</strong></div><div className="h-2 overflow-hidden rounded-full bg-[#ecf2f7]" role="progressbar" aria-label={label} aria-valuemax={max} aria-valuemin={0} aria-valuenow={value}><div className={`h-full rounded-full ${color}`} style={{ width: `${(value / max) * 100}%` }} /></div></div>;
+function ProgressRow({ label, value, max, color }: { label: string; value?: number; max?: number; color: string }) {
+  const isLoading = value === undefined;
+  const hasTotal = max !== undefined;
+  const progress = hasTotal && max > 0 && value !== undefined ? Math.min((value / max) * 100, 100) : 0;
+  const valueLabel = isLoading ? "—" : hasTotal ? `${value} / ${max}` : `${value}개`;
+
+  return <div><div className={`${hasTotal || isLoading ? "mb-1.5" : ""} flex items-center justify-between text-[10px] font-semibold text-[#7d8b9c]`}><span>{label}</span><strong className="text-[10px] font-black text-[#344057]">{valueLabel}</strong></div>{hasTotal ? <div className="h-2 overflow-hidden rounded-full bg-[#ecf2f7]" role="progressbar" aria-label={label} aria-valuemax={max} aria-valuemin={0} aria-valuenow={value}><div className={`h-full rounded-full ${color}`} style={{ width: `${progress}%` }} /></div> : isLoading ? <div className="h-2 animate-pulse rounded-full bg-[#ecf2f7]" aria-hidden="true" /> : null}</div>;
 }
 
 function GoogleMark() { return <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.6h3.3c1.9-1.8 2.9-4.4 2.9-7.5Z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.7-2.3l-3.3-2.6c-.9.6-2.1 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.7A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 14a6 6 0 0 1 0-3.9V7.4H3a10 10 0 0 0 0 9.3L6.4 14Z"/><path fill="#EA4335" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.8A9.7 9.7 0 0 0 3 7.4l3.4 2.7C7.2 7.8 9.4 6 12 6Z"/></svg>; }
