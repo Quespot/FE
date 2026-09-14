@@ -205,11 +205,6 @@ textarea::placeholder {
   letter-spacing: 0 !important;
 }
 
-button {
-  border: 0;
-  cursor: pointer;
-}
-
 a {
   text-decoration: none;
 }
