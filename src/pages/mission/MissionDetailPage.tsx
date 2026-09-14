@@ -13,7 +13,7 @@ import {
   Loader2,
   Lock,
   MapPin,
-  MoonStar,
+  Moon,
   Palette,
   Route,
   ShoppingBag,
@@ -48,28 +48,35 @@ type MissionStep = {
   targetPath?: string;
 };
 
+type CategoryStyle = {
+  hero: string;
+  heroIcon: string;
+  chipText: string;
+};
+
 const DEFAULT_LOCATION: LatLng = {
   lat: 37.5752,
   lng: 126.9812,
 };
 
-const categoryIconMap: Record<MissionCategory, LucideIcon> = {
+const DEFAULT_CATEGORY_STYLE: CategoryStyle = {
+  hero: "bg-[#92C7FF]",
+  heroIcon: "text-[#3B82F6]",
+  chipText: "text-[#5BB5F8]",
+};
+
+const categoryIconMap: Record<string, LucideIcon> = {
   HISTORY: Landmark,
   CULTURE: Palette,
   NATURE: Leaf,
   FOOD: Utensils,
-  NIGHT_VIEW: MoonStar,
+  SHOPPING: ShoppingBag,
+  ACTIVITY: Zap,
+  NIGHT_VIEW: Moon,
   ETC: Sparkles,
 };
 
-const CATEGORY_STYLE: Record<
-  MissionCategory,
-  {
-    hero: string;
-    heroIcon: string;
-    chipText: string;
-  }
-> = {
+const CATEGORY_STYLE: Record<string, CategoryStyle> = {
   HISTORY: {
     hero: "bg-[#B794FF]",
     heroIcon: "text-[#8B5CF6]",
@@ -90,15 +97,25 @@ const CATEGORY_STYLE: Record<
     heroIcon: "text-[#E58A14]",
     chipText: "text-[#E58A14]",
   },
+  SHOPPING: {
+    hero: "bg-[#FDB9D4]",
+    heroIcon: "text-[#EC4899]",
+    chipText: "text-[#EC4899]",
+  },
+  ACTIVITY: {
+    hero: "bg-[#FFB86B]",
+    heroIcon: "text-[#F97316]",
+    chipText: "text-[#F97316]",
+  },
   NIGHT_VIEW: {
-    hero: "bg-[#AFC8FF]",
-    heroIcon: "text-[#496FD8]",
-    chipText: "text-[#496FD8]",
+    hero: "bg-[#7C8CFF]",
+    heroIcon: "text-[#4F46E5]",
+    chipText: "text-[#4F46E5]",
   },
   ETC: {
-    hero: "bg-[#A7E6E7]",
-    heroIcon: "text-[#15969A]",
-    chipText: "text-[#15969A]",
+    hero: "bg-[#A8D8FF]",
+    heroIcon: "text-[#5BB5F8]",
+    chipText: "text-[#5BB5F8]",
   },
 };
 
@@ -208,7 +225,10 @@ export default function MissionDetailPage() {
     navigate(`${PATH.MISSION_COURSE_CREATE}?missionId=${mission.missionId}`, {
       state: {
         missionId: mission.missionId,
-        mission,
+        mission: {
+          ...mission,
+          liked: isLiked,
+        },
       },
     });
   };
@@ -222,7 +242,10 @@ export default function MissionDetailPage() {
           state: {
             missionId: mission.missionId,
             attemptId: attempt.attemptId,
-            mission,
+            mission: {
+              ...mission,
+              liked: isLiked,
+            },
             missionTitle: mission.title,
           },
         });
@@ -250,7 +273,10 @@ export default function MissionDetailPage() {
     navigate(step.targetPath, {
       state: {
         missionId: mission.missionId,
-        mission,
+        mission: {
+          ...mission,
+          liked: isLiked,
+        },
       },
     });
   };
@@ -261,7 +287,10 @@ export default function MissionDetailPage() {
     navigate(PATH.MISSION_RECORD, {
       state: {
         missionId: mission.missionId,
-        mission,
+        mission: {
+          ...mission,
+          liked: isLiked,
+        },
       },
     });
   };
@@ -272,7 +301,7 @@ export default function MissionDetailPage() {
         mascotSrc={QuestySvg}
         notificationCount={3}
         onBellClick={() => {
-          // TODO: 알림함 연결
+          navigate(PATH.NOTIFICATION);
         }}
       />
 
@@ -382,25 +411,6 @@ export default function MissionDetailPage() {
               </ol>
             </section>
 
-            <div className="grid grid-cols-2 gap-[12px]">
-              <SmallFeatureCard
-                icon={<Utensils size={20} strokeWidth={2.4} />}
-                iconClassName="bg-[#EAF5FF] text-[#5BB5F8]"
-                title="주변 로컬"
-                description="맛집 · 카페 추천"
-                onClick={() => navigate(PATH.MISSION_LOCAL_RECOMMEND)}
-              />
-
-              <SmallFeatureCard
-                icon={<Sparkles size={20} strokeWidth={2.4} />}
-                iconClassName="bg-[#FFF6D9] text-[#F59E0B]"
-                title="보너스 지역"
-                description="추가 포인트 안내"
-                highlighted
-                onClick={() => navigate(PATH.MISSION_BONUS_REGION)}
-              />
-            </div>
-
             <MissionRewardCard
               mission={mission}
               isStartingMission={isStartingMission}
@@ -496,48 +506,48 @@ function MissionHero({
   onToggleLike,
 }: MissionHeroProps) {
   const Icon = categoryIconMap[mission.category] ?? Building2;
-  const style = CATEGORY_STYLE[mission.category];
+  const style = CATEGORY_STYLE[mission.category] ?? DEFAULT_CATEGORY_STYLE;
   const isCompleted = mission.userMissionStatus === "COMPLETED";
   const isLocked = mission.userMissionStatus === "LOCKED" || !mission.canStart;
 
   return (
-    <section className="relative h-[220px] min-h-[220px] w-full shrink-0 overflow-hidden">
+    <section className="relative h-[292px] min-h-[292px] w-full shrink-0 overflow-hidden bg-[#F4F8FF]">
       {mission.imageUrl ? (
         <img
           src={mission.imageUrl}
           alt={mission.title}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-[220px] w-full object-cover"
         />
       ) : (
         <div
           className={[
-            "absolute inset-0",
+            "absolute inset-x-0 top-0 h-[220px]",
             style.hero,
             "bg-[linear-gradient(90deg,rgba(28,28,58,0.08)_1px,transparent_1px),linear-gradient(0deg,rgba(28,28,58,0.08)_1px,transparent_1px)] bg-[length:40px_40px]",
           ].join(" ")}
         />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-[#F4F8FF]" />
-
-      <button
-        type="button"
-        onClick={onBack}
-        className="pointer-events-auto absolute left-[20px] top-[20px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#5BB5F8] shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]"
-        aria-label="이전 화면으로 돌아가기"
-      >
-        <ArrowLeft size={21} strokeWidth={2.6} />
-      </button>
+      <div className="absolute inset-x-0 top-0 h-[220px] bg-gradient-to-b from-black/15 via-black/10 to-[#F4F8FF]" />
 
       {!mission.imageUrl ? (
         <Icon
           className={[
-            "absolute left-1/2 top-[54px] h-[124px] w-[124px] -translate-x-1/2 opacity-20",
+            "absolute left-1/2 top-[46px] h-[118px] w-[118px] -translate-x-1/2 opacity-20",
             style.heroIcon,
           ].join(" ")}
           strokeWidth={1.7}
         />
       ) : null}
+
+      <button
+        type="button"
+        onClick={onBack}
+        className="absolute left-[20px] top-[20px] z-30 grid h-[44px] w-[44px] place-items-center rounded-full bg-white text-[#5BB5F8] shadow-[0_2px_8px_rgba(8,37,95,0.18)] transition active:scale-[0.94]"
+        aria-label="뒤로가기"
+      >
+        <ArrowLeft size={22} strokeWidth={2.6} />
+      </button>
 
       <button
         type="button"
@@ -561,11 +571,11 @@ function MissionHero({
         />
       </button>
 
-      <div className="absolute bottom-[20px] left-[20px] right-[20px] z-10 flex flex-col items-start">
-        <div className="flex items-center gap-[8px]">
+      <article className="absolute bottom-[16px] left-[16px] right-[16px] z-20 rounded-[20px] border border-[#EAF5FF] bg-white/95 px-[16px] py-[14px] shadow-[0_8px_24px_rgba(8,37,95,0.14)] backdrop-blur">
+        <div className="flex flex-wrap items-center gap-[8px]">
           <span
             className={[
-              "inline-flex h-[26px] items-center gap-[5px] rounded-full bg-white/90 px-[12px] text-[12px] font-black leading-none",
+              "inline-flex h-[26px] items-center gap-[5px] rounded-full bg-[#F4F8FF] px-[12px] text-[12px] font-black leading-none",
               style.chipText,
             ].join(" ")}
           >
@@ -588,17 +598,24 @@ function MissionHero({
           ) : null}
         </div>
 
-        <h1 className="m-0 mt-[12px] break-keep text-[22px] font-black leading-[30px] text-[#1C1C3A]">
+        <h1 className="m-0 mt-[10px] break-keep text-[21px] font-black leading-[29px] text-[#1C1C3A]">
           {mission.title}
         </h1>
 
-        <p className="m-0 mt-[6px] flex items-center gap-[6px] text-[13px] font-medium leading-[18px] text-[#6B7280]">
-          <MapPin size={14} strokeWidth={2.2} />
-          {mission.spotName}
-          <span>·</span>
-          {mission.address}
+        <p className="m-0 mt-[7px] flex items-start gap-[6px] break-keep text-[12px] font-medium leading-[18px] text-[#6B7280]">
+          <MapPin
+            size={14}
+            strokeWidth={2.2}
+            className="mt-[2px] shrink-0 text-[#A2A9B2]"
+          />
+
+          <span>
+            {mission.spotName}
+            <span className="px-[4px] text-[#CBD5E1]">·</span>
+            {mission.address}
+          </span>
         </p>
-      </div>
+      </article>
     </section>
   );
 }
@@ -630,54 +647,6 @@ function InfoCard({ icon, iconClassName, value, label }: InfoCardProps) {
         {label}
       </span>
     </article>
-  );
-}
-
-type SmallFeatureCardProps = {
-  icon: ReactNode;
-  iconClassName: string;
-  title: string;
-  description: string;
-  highlighted?: boolean;
-  onClick?: () => void;
-};
-
-function SmallFeatureCard({
-  icon,
-  iconClassName,
-  title,
-  description,
-  highlighted = false,
-  onClick,
-}: SmallFeatureCardProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "relative flex h-[72px] items-center gap-[12px] rounded-[16px] border bg-white px-[12px] py-[12px] text-left shadow-[0_1px_3px_rgba(0,0,0,0.1)] transition active:scale-[0.99]",
-        highlighted ? "border-[#FACC15]" : "border-[#EAF5FF]",
-      ].join(" ")}
-    >
-      <span
-        className={[
-          "grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full",
-          iconClassName,
-        ].join(" ")}
-      >
-        {icon}
-      </span>
-
-      <div className="min-w-0">
-        <strong className="block font-sans text-[13px] font-black leading-[18px] text-[#1C1C3A]">
-          {title}
-        </strong>
-
-        <p className="m-0 mt-[2px] font-sans text-[10px] font-medium leading-[14px] text-[#A2A9B2]">
-          {description}
-        </p>
-      </div>
-    </button>
   );
 }
 
@@ -824,29 +793,33 @@ function MissionDetailError({ onRetry }: MissionDetailErrorProps) {
 }
 
 function getCategoryLabel(category: MissionCategory) {
-  const categoryLabelMap: Record<MissionCategory, string> = {
+  const categoryLabelMap: Record<string, string> = {
     HISTORY: "역사",
     CULTURE: "문화",
     NATURE: "자연",
     FOOD: "음식",
+    SHOPPING: "쇼핑",
+    ACTIVITY: "활동",
     NIGHT_VIEW: "야경·전망",
     ETC: "기타",
   };
 
-  return categoryLabelMap[category];
+  return categoryLabelMap[category] ?? "기타";
 }
 
 function getCategoryEmoji(category: MissionCategory) {
-  const categoryEmojiMap: Record<MissionCategory, string> = {
+  const categoryEmojiMap: Record<string, string> = {
     HISTORY: "🏯",
     CULTURE: "🎨",
     NATURE: "🌳",
     FOOD: "🍜",
+    SHOPPING: "🛍️",
+    ACTIVITY: "🏃",
     NIGHT_VIEW: "🌙",
     ETC: "✨",
   };
 
-  return categoryEmojiMap[category];
+  return categoryEmojiMap[category] ?? "📍";
 }
 
 function formatDistance(distanceMeters: number | null) {
