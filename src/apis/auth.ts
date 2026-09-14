@@ -1,6 +1,9 @@
 import { getAccessToken } from "@/utils/auth";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://api.quespot.site").replace(/\/$/, "");
+const FRONTEND_REDIRECT_URI = import.meta.env.PROD
+  ? "https://quespot.site/oauth/callback"
+  : "http://localhost:5173/oauth/callback";
 
 export type SocialProvider = "google" | "kakao" | "naver";
 export type LoginMethodProvider = "EMAIL" | "GOOGLE" | "NAVER" | "KAKAO";
@@ -106,7 +109,8 @@ export const login = (email: string, password: string) =>
   post<LoginResult>("/api/auth/login", { email, password });
 
 export const getSocialLoginUrl = (provider: SocialProvider) =>
-  `${API_BASE_URL}/api/auth/login/${provider}`;
+  `${API_BASE_URL}/api/auth/login/${provider}`
+  + `?frontendRedirectUri=${encodeURIComponent(FRONTEND_REDIRECT_URI)}`;
 
 export const exchangeSocialLoginCode = (code: string) =>
   post<LoginResult>("/api/auth/login/oauth2/exchange", { code });
