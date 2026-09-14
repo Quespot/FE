@@ -24,7 +24,7 @@ export type MissionArrivalResult = {
 };
 
 export type MissionPhotoRequest = {
-  imageUrl: string;
+  objectKey: string;
   caption: string;
   latitude: number;
   longitude: number;

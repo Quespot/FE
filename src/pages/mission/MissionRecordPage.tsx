@@ -81,7 +81,7 @@ export default function MissionRecordPage() {
               <img
                 src={previewUrl}
                 alt="선택한 이미지 미리보기"
-                className="w-16 h-16 object-cover rounded-xl"
+                className="w-16 h-16 object-contain rounded-xl"
               />
             )}
             <button

@@ -1,21 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Clock3,
-  Filter,
+  Coins,
   Landmark,
   Leaf,
   Loader2,
   MapPin,
+  Moon,
   Palette,
   Search,
-  ShoppingBag,
+  SlidersHorizontal,
+  Sparkles,
   Utensils,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 
-import HomeHeader from "@/components/home/HomeHeader";
+import { Header } from "@/components/common/Header";
 import QuespotPageLayout, {
   QuespotDivider,
   QuespotPageContent,
@@ -36,7 +37,7 @@ type LatLng = {
 
 type LocationStatus = "loading" | "success" | "error";
 
-type CategoryFilter = {
+type CategoryOption = {
   label: string;
   value?: MissionCategory;
 };
@@ -46,23 +47,52 @@ const DEFAULT_LOCATION: LatLng = {
   lng: 126.9812,
 };
 
-const CATEGORY_FILTERS: CategoryFilter[] = [
-  { label: "전체" },
-  { label: "역사", value: "HISTORY" },
-  { label: "문화", value: "CULTURE" },
-  { label: "자연", value: "NATURE" },
-  { label: "음식", value: "FOOD" },
-  { label: "쇼핑", value: "SHOPPING" },
-  { label: "활동", value: "ACTIVITY" },
+const CATEGORY_OPTIONS: CategoryOption[] = [
+  {
+    label: "전체",
+  },
+  {
+    label: "역사",
+    value: "HISTORY",
+  },
+  {
+    label: "문화",
+    value: "CULTURE",
+  },
+  {
+    label: "자연",
+    value: "NATURE",
+  },
+  {
+    label: "음식",
+    value: "FOOD",
+  },
+  {
+    label: "야경·전망",
+    value: "NIGHT_VIEW",
+  },
+  {
+    label: "기타",
+    value: "ETC",
+  },
 ];
+
+const MISSION_CATEGORY_VALUES = new Set<MissionCategory>([
+  "HISTORY",
+  "CULTURE",
+  "NATURE",
+  "FOOD",
+  "NIGHT_VIEW",
+  "ETC",
+]);
 
 const categoryIconMap: Record<MissionCategory, LucideIcon> = {
   HISTORY: Landmark,
   CULTURE: Palette,
   NATURE: Leaf,
   FOOD: Utensils,
-  SHOPPING: ShoppingBag,
-  ACTIVITY: Zap,
+  NIGHT_VIEW: Moon,
+  ETC: Sparkles,
 };
 
 const categoryLabelMap: Record<MissionCategory, string> = {
@@ -70,16 +100,22 @@ const categoryLabelMap: Record<MissionCategory, string> = {
   CULTURE: "문화",
   NATURE: "자연",
   FOOD: "음식",
-  SHOPPING: "쇼핑",
-  ACTIVITY: "활동",
+  NIGHT_VIEW: "야경·전망",
+  ETC: "기타",
 };
+
+function getMissionCategory(value: string | null) {
+  return value && MISSION_CATEGORY_VALUES.has(value as MissionCategory)
+    ? (value as MissionCategory)
+    : undefined;
+}
 
 export default function MissionPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [selectedCategory, setSelectedCategory] = useState<
-    MissionCategory | undefined
-  >(undefined);
+  const selectedCategory = getMissionCategory(searchParams.get("category"));
+
   const [keyword, setKeyword] = useState("");
 
   const { currentLocation, locationStatus } = useCurrentLocation();
@@ -131,6 +167,20 @@ export default function MissionPage() {
     };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+  const handleChangeCategory = (category?: MissionCategory) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+
+      if (category) {
+        next.set("category", category);
+      } else {
+        next.delete("category");
+      }
+
+      return next;
+    });
+  };
+
   const handleMoveMissionDetail = (mission: MissionItem) => {
     navigate(
       PATH.MISSION_DETAIL.replace(":missionId", String(mission.missionId)),
@@ -139,7 +189,7 @@ export default function MissionPage() {
 
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
-      <HomeHeader notificationCount={3} />
+      <Header />
 
       <QuespotDivider />
 
@@ -157,7 +207,7 @@ export default function MissionPage() {
 
           <span className="mt-[2px] inline-flex h-[34px] items-center gap-[7px] rounded-full bg-[#E8FBF3] px-[14px] text-[12px] font-black text-[#008A3D]">
             <i className="h-[8px] w-[8px] rounded-full bg-[#00C950]" />
-            {locationStatus === "success" ? "현재 위치" : "서울 종로구"}
+            {locationStatus === "success" ? "현재 위치" : "서울 기준"}
           </span>
         </div>
 
@@ -172,18 +222,18 @@ export default function MissionPage() {
             className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium leading-[20px] text-[#1C1C3A] outline-none placeholder:text-[#A2A9B2]"
           />
 
-          <Filter size={18} strokeWidth={2.2} />
+          <SlidersHorizontal size={18} strokeWidth={2.2} />
         </label>
 
         <div className="no-scrollbar mt-[14px] flex gap-[10px] overflow-x-auto pb-[2px]">
-          {CATEGORY_FILTERS.map((category) => {
+          {CATEGORY_OPTIONS.map((category) => {
             const isSelected = selectedCategory === category.value;
 
             return (
               <button
                 key={category.label}
                 type="button"
-                onClick={() => setSelectedCategory(category.value)}
+                onClick={() => handleChangeCategory(category.value)}
                 className={[
                   "h-[38px] shrink-0 rounded-full px-[18px] text-[14px] font-bold leading-none transition active:scale-[0.98]",
                   isSelected
@@ -228,7 +278,7 @@ export default function MissionPage() {
         {isError ? <MissionListError onRetry={() => refetch()} /> : null}
 
         {!isLoading && !isError && missions.length === 0 ? (
-          <MissionListEmpty />
+          <MissionListEmpty keyword={keyword} />
         ) : null}
 
         {!isLoading && !isError && missions.length > 0 ? (
@@ -307,14 +357,22 @@ type MissionCardProps = {
 };
 
 function MissionCard({ mission, onClick }: MissionCardProps) {
-  const Icon = categoryIconMap[mission.category];
+  const Icon = categoryIconMap[mission.category] ?? Sparkles;
+  const isLocked = mission.userMissionStatus === "LOCKED";
+  const isCompleted = mission.userMissionStatus === "COMPLETED";
   const statusStyle = getMissionStatusStyle(mission.userMissionStatus);
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="min-h-[276px] overflow-hidden rounded-[18px] border border-[#EAF5FF] bg-white text-left shadow-[0_2px_8px_rgba(8,37,95,0.08)] transition active:scale-[0.99]"
+      disabled={isLocked}
+      className={[
+        "min-h-[276px] overflow-hidden rounded-[18px] border bg-white text-left shadow-[0_2px_8px_rgba(8,37,95,0.08)] transition active:scale-[0.99]",
+        isLocked
+          ? "border-[#EEF2F6] opacity-55"
+          : "border-[#EAF5FF] active:border-[#5BB5F8]",
+      ].join(" ")}
     >
       <div className="relative h-[104px] overflow-hidden bg-[#EAF5FF]">
         {mission.imageUrl ? (
@@ -333,6 +391,18 @@ function MissionCard({ mission, onClick }: MissionCardProps) {
           <Icon size={12} strokeWidth={2.5} />
           {categoryLabelMap[mission.category]}
         </span>
+
+        {isCompleted ? (
+          <span className="absolute right-[10px] top-[10px] rounded-full bg-[#E8FBF3] px-[9px] py-[5px] text-[10px] font-black leading-none text-[#00A85A]">
+            완료
+          </span>
+        ) : null}
+
+        {isLocked ? (
+          <span className="absolute right-[10px] top-[10px] rounded-full bg-[#F1F5F9] px-[9px] py-[5px] text-[10px] font-black leading-none text-[#94A3B8]">
+            잠김
+          </span>
+        ) : null}
       </div>
 
       <div className="flex min-h-[172px] flex-col px-[12px] pb-[12px] pt-[12px]">
@@ -355,7 +425,7 @@ function MissionCard({ mission, onClick }: MissionCardProps) {
           </span>
 
           <span className="inline-flex items-center gap-[4px] text-[11px] font-black leading-none text-[#F59E0B]">
-            <Zap size={13} strokeWidth={2.6} />
+            <Coins size={13} strokeWidth={2.4} />
             {mission.rewardPoint}P
           </span>
         </div>
@@ -417,7 +487,7 @@ function MissionListError({ onRetry }: MissionListErrorProps) {
 
       <button
         type="button"
-        onClick={onRetry}
+        onClick={() => onRetry()}
         className="mt-[20px] h-[42px] rounded-full bg-[#5BB5F8] px-[22px] text-[13px] font-black leading-none text-white"
       >
         다시 불러오기
@@ -426,7 +496,11 @@ function MissionListError({ onRetry }: MissionListErrorProps) {
   );
 }
 
-function MissionListEmpty() {
+type MissionListEmptyProps = {
+  keyword: string;
+};
+
+function MissionListEmpty({ keyword }: MissionListEmptyProps) {
   return (
     <section className="flex flex-1 flex-col items-center justify-center py-[120px] text-center">
       <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-[#EAF5FF] text-[32px]">
@@ -434,11 +508,13 @@ function MissionListEmpty() {
       </div>
 
       <h2 className="m-0 mt-[18px] text-[17px] font-black leading-[24px] text-[#1C1C3A]">
-        조건에 맞는 미션이 없어요
+        검색 결과가 없어요
       </h2>
 
-      <p className="m-0 mt-[8px] text-[13px] font-medium leading-[20px] text-[#A2A9B2]">
-        다른 카테고리나 검색어로 다시 찾아보세요.
+      <p className="m-0 mt-[8px] break-keep text-[13px] font-medium leading-[20px] text-[#A2A9B2]">
+        {keyword.trim()
+          ? `"${keyword.trim()}"에 해당하는 미션을 찾을 수 없어요.`
+          : "현재 조건에 해당하는 미션이 없어요."}
       </p>
     </section>
   );

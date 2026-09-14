@@ -5,6 +5,7 @@ import { categoryIcons, categoryToneClasses } from "@/components/home/CategoryGr
 import ProfileChoiceSelect, { type ChoiceGroup } from "@/components/profile/ProfileChoiceSelect";
 import ProfileDatePicker from "@/components/profile/ProfileDatePicker";
 import { createProfile, getProfile, updateDetailedProfile } from "@/apis/profile";
+import { uploadFile } from "@/apis/file";
 import { PROFILE_SETUP_KEY } from "@/constants/onboarding";
 import {
   categoryIdsToTravelStyles, companionFromApi, companionToApi, genderFromApi, genderToApi,
@@ -49,6 +50,7 @@ export default function ProfileSetupPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
   const [profileImage, setProfileImage] = useState(questyProfile);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [nickname, setNickname] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
@@ -84,6 +86,7 @@ export default function ProfileSetupPage() {
   const handleProfileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setProfileImageFile(file);
     const reader = new FileReader();
     reader.onload = () => typeof reader.result === "string" && setProfileImage(reader.result);
     reader.readAsDataURL(file);
@@ -96,16 +99,17 @@ export default function ProfileSetupPage() {
     if (!canSubmit || isSubmitting) return;
     setError("");
     setIsSubmitting(true);
-    const payload = {
-      ...(profileImage.startsWith("http") ? { profileImageUrl: profileImage } : {}),
-      nickname: nickname.trim(),
-      gender: gender && gender !== "선택 안 함" ? genderToApi[gender as keyof typeof genderToApi] : null,
-      birthDate,
-      residenceRegion: regionToApi[region as keyof typeof regionToApi],
-      travelCompanion: companion ? companionToApi[companion as keyof typeof companionToApi] : null,
-      travelStyles: categoryIdsToTravelStyles(interests),
-    };
     try {
+      const profileImageObjectKey = profileImageFile ? await uploadFile(profileImageFile, "PROFILE") : undefined;
+      const payload = {
+        ...(profileImageObjectKey ? { profileImageObjectKey } : {}),
+        nickname: nickname.trim(),
+        gender: gender && gender !== "선택 안 함" ? genderToApi[gender as keyof typeof genderToApi] : null,
+        birthDate,
+        residenceRegion: regionToApi[region as keyof typeof regionToApi],
+        travelCompanion: companion ? companionToApi[companion as keyof typeof companionToApi] : null,
+        travelStyles: categoryIdsToTravelStyles(interests),
+      };
       await (isEditingDetails ? updateDetailedProfile(payload) : createProfile(payload));
       localStorage.setItem(PROFILE_SETUP_KEY, "true");
       localStorage.setItem("quespot-profile", JSON.stringify({ nickname: nickname.trim(), birthDate, gender, region, companion, interests }));
@@ -131,13 +135,20 @@ export default function ProfileSetupPage() {
           <div className="min-w-0 pr-3"><p className="type-caption3 mb-2 text-[#52ace9]">마지막 단계예요</p><h2 className="type-brand">나만의 여행 프로필을<br />완성해 주세요</h2><p className="type-caption2 mt-2 text-[#8d99a8]">입력한 정보로 취향에 맞는 미션을 추천해드려요.</p></div>
           <div className="ml-2 flex shrink-0 flex-col items-center">
             <button className="relative grid h-[72px] w-[72px] place-items-center rounded-full bg-[linear-gradient(145deg,#e4f5ff,#f5fbff)] p-[5px] ring-2 ring-white shadow-[0_8px_24px_rgba(64,162,224,0.18)]" aria-label="프로필 사진 선택" onClick={() => imageInputRef.current?.click()} type="button">
-              <img className="h-full w-full rounded-full object-contain" src={profileImage} alt="선택된 프로필" />
+              <img className="h-full w-full rounded-full object-cover" src={profileImage} alt="선택된 프로필" />
               <span className="absolute -right-0.5 bottom-0 grid h-[25px] w-[25px] place-items-center rounded-full border-[3px] border-[#f7faff] bg-[#52afeF] text-white"><Camera aria-hidden="true" size={12} strokeWidth={2.6} /></span>
             </button>
             <input className="hidden" ref={imageInputRef} accept="image/*" onChange={handleProfileChange} type="file" />
             <small className="type-body5 mt-2 text-[#929eab]">사진 변경</small>
           </div>
-        </section> : <section className="rounded-[20px] bg-[#eaf6ff] px-5 py-4"><p className="text-[12px] font-extrabold text-[#329fe8]">여행 기본 설정</p><p className="mt-1 text-[10px] leading-4 text-[#778797]">생년월일, 성별, 거주 지역과 동행 유형을 변경할 수 있어요.</p></section>}
+        </section> : <section className="flex items-center gap-4 rounded-[20px] bg-[#eaf6ff] px-5 py-4">
+          <button className="relative grid h-[64px] w-[64px] shrink-0 place-items-center rounded-full bg-white p-1 shadow-[0_6px_18px_rgba(64,162,224,0.16)]" aria-label="프로필 사진 변경" onClick={() => imageInputRef.current?.click()} type="button">
+            <img className="h-full w-full rounded-full object-cover" src={profileImage} alt="현재 프로필" />
+            <span className="absolute -bottom-0.5 -right-0.5 grid h-[23px] w-[23px] place-items-center rounded-full border-[3px] border-[#eaf6ff] bg-[#52afef] text-white"><Camera aria-hidden="true" size={11} strokeWidth={2.6} /></span>
+          </button>
+          <div><p className="text-[12px] font-extrabold text-[#329fe8]">여행 기본 설정</p><p className="mt-1 text-[10px] leading-4 text-[#778797]">프로필 사진과 기본 여행 정보를 변경할 수 있어요.</p></div>
+          <input className="hidden" ref={imageInputRef} accept="image/*" onChange={handleProfileChange} type="file" />
+        </section>}
 
         <section className={sectionClass} aria-labelledby="basic-profile-title">
           <div className="mb-[19px] flex items-center justify-between"><div><h3 className="type-body6" id="basic-profile-title">기본 정보</h3><p className="type-body5 mt-[5px] text-[#97a2ae]">필수 정보만 간단히 알려주세요.</p></div><span className="type-body4 rounded-full bg-[#f1f6fa] px-2 py-1 text-[#8996a3]">* 필수</span></div>

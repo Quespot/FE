@@ -2,8 +2,10 @@ import { ApiError } from "@/apis/auth";
 import type {
   GetMissionDetailParams,
   GetMissionsParams,
+  GetRecommendedMissionsParams,
   MissionDetailResponse,
   MissionListResponse,
+  RecommendedMissionListResponse,
 } from "@/types/mission";
 import { getAccessToken } from "@/utils/auth";
 
@@ -106,5 +108,28 @@ export async function getMissionDetail(params: GetMissionDetailParams) {
     `${API_BASE_URL}/api/missions/${params.missionId}${
       queryString ? `?${queryString}` : ""
     }`,
+  );
+}
+
+export async function getRecommendedMissions(
+  params: GetRecommendedMissionsParams = {},
+) {
+  const searchParams = new URLSearchParams();
+  const hasCoordinates =
+    params.latitude !== undefined && params.longitude !== undefined;
+
+  if (hasCoordinates) {
+    searchParams.set("latitude", String(params.latitude));
+    searchParams.set("longitude", String(params.longitude));
+  }
+
+  if (params.cursor) {
+    searchParams.set("cursor", params.cursor);
+  }
+
+  searchParams.set("size", String(params.size ?? 20));
+
+  return missionRequest<RecommendedMissionListResponse>(
+    `${API_BASE_URL}/api/missions/recommendations?${searchParams.toString()}`,
   );
 }

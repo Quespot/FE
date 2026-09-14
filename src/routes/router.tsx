@@ -19,6 +19,7 @@ import MissionRecordPage from "@/pages/mission/MissionRecordPage";
 import LocalRecommendPage from "@/pages/mission/LocalRecommendPage";
 import BonusRegionPage from "@/pages/mission/BonusRegionPage";
 import MissionRoutePage from "@/pages/mission/MissionRoutePage";
+import RecommendedMissionsPage from "@/pages/mission/RecommendedMissionsPage";
 import MissionCourseCreatePage from "@/pages/mission/MissionCourseCreatePage";
 import VerifyPage from "@/pages/mission/verify/VerifyPage";
 import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
@@ -102,6 +103,10 @@ export const router = createBrowserRouter([
           {
             path: PATH.MAP_SEARCH,
             element: <Navigate to={PATH.MAP} replace />,
+          },
+          {
+            path: PATH.RECOMMENDED_MISSIONS,
+            element: <RecommendedMissionsPage />,
           },
           {
             path: PATH.MISSION_DETAIL,
