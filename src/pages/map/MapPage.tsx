@@ -21,6 +21,7 @@ import { PATH } from "@/routes/paths";
 import { Header } from "@/components/common/Header";
 import { useMissionSpotsQuery } from "@/hooks/queries/missionSpots/useMissionSpotsQuery";
 import { MissionSpot } from "@/apis/missionSpot";
+import { useNearbyMissionSpotsQuery } from "@/hooks/queries/missionSpots/useNearbyMissionSpotsQuery";
 
 type LocationStatus = "loading" | "success" | "error";
 
@@ -36,11 +37,18 @@ export default function MapPage() {
   const [selectedSpotId, setSelectedSpotId] = useState<string>("");
   const [isPlaceListOpen, setIsPlaceListOpen] = useState(false);
 
-  const { currentLocation, locationStatus } = useCurrentLocation();
+  const { currentLocation } = useCurrentLocation();
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-  const { data, isLoading, error } = useMissionSpotsQuery();
-
+  const { data, isLoading, isError } = useMissionSpotsQuery();
+  const {
+    data: nearData,
+    isLoading: isNearLoading,
+    isError: isNearError,
+  } = useNearbyMissionSpotsQuery({
+    latitude: currentLocation.lat,
+    longitude: currentLocation.lng,
+  });
   useEffect(() => {
     const state = location.state as MapPageState | null;
 
@@ -131,18 +139,25 @@ export default function MapPage() {
                 {selectedSpot && (
                   <MapCameraController selectedSpot={selectedSpot} />
                 )}
-                {data?.missionSpots.map((spot) => (
-                  <MissionMapMarker
-                    key={spot.districtCode}
-                    spot={spot}
-                    currentLocation={currentLocation}
-                    isSelected={
-                      selectedSpot?.districtCode === spot.districtCode
-                    }
-                    onClick={() => handleSelectSpot(spot.districtCode)}
-                    onRouteClick={() => {}}
-                  />
-                ))}
+                {data?.missionSpots.map((spot) => {
+                  const nearSpot = nearData?.missionSpots.find(
+                    (nearSpot) => nearSpot.districtCode === spot.districtCode,
+                  );
+
+                  return (
+                    <MissionMapMarker
+                      key={spot.districtCode}
+                      spot={spot}
+                      route={nearSpot?.distanceMeters ?? null}
+                      currentLocation={currentLocation}
+                      isSelected={
+                        selectedSpot?.districtCode === spot.districtCode
+                      }
+                      onClick={() => handleSelectSpot(spot.districtCode)}
+                      onRouteClick={() => {}}
+                    />
+                  );
+                })}
 
                 <CurrentLocationMarker currentLocation={currentLocation} />
 
@@ -158,7 +173,7 @@ export default function MapPage() {
               로딩중...
             </div>
           )}
-          {error && (
+          {isError && (
             <div className="absolute inset-0 z-[100] flex items-center justify-center">
               에러가 발생했습니다. 다시 시도해주세요.
             </div>
@@ -201,7 +216,17 @@ export default function MapPage() {
           </div>
 
           <div className="no-scrollbar flex gap-[10px] overflow-x-auto pb-[2px]">
-            {data?.missionSpots.map((spot) => (
+            {isNearLoading && (
+              <div className="w-full flex justify-center items-center">
+                데이터를 불러오는 중 입니다...
+              </div>
+            )}
+            {isNearError && (
+              <div className="w-full flex justify-center items-center">
+                에러가 발생했습니다. 다시 시도해주세요.
+              </div>
+            )}
+            {nearData?.missionSpots.map((spot) => (
               <SpotSummaryCard
                 key={spot.districtCode}
                 spot={spot}
@@ -273,6 +298,7 @@ function MapCameraController({ selectedSpot }: MapCameraControllerProps) {
 
 type MissionMapMarkerProps = {
   spot: MissionSpot;
+  route: number | null;
   currentLocation: LatLng;
   isSelected: boolean;
   onClick: () => void;
@@ -282,6 +308,7 @@ type MissionMapMarkerProps = {
 // 맵에 보이는 스팟 표시
 function MissionMapMarker({
   spot,
+  route,
   isSelected,
   onClick,
   onRouteClick,
@@ -301,6 +328,7 @@ function MissionMapMarker({
         {isSelected ? (
           <SelectedSpotBubble
             spot={spot}
+            route={route}
             side={bubbleSide}
             onRouteClick={onRouteClick}
           />
@@ -328,6 +356,7 @@ function MissionMapMarker({
 
 type SelectedSpotBubbleProps = {
   spot: MissionSpot;
+  route: number | null;
   side: "left" | "right";
   onRouteClick: () => void;
 };
@@ -335,6 +364,7 @@ type SelectedSpotBubbleProps = {
 //지도 구역 눌렀을 때 뜨는 안내 박스
 function SelectedSpotBubble({
   spot,
+  route,
   side,
   onRouteClick,
 }: SelectedSpotBubbleProps) {
@@ -355,11 +385,11 @@ function SelectedSpotBubble({
         {isCompleted ? "완료" : `미션 ${spot.missionCount ?? 0}개`}
       </p>
 
-      <p className="m-0 mt-[4px] text-[12px] font-bold leading-[17px] text-[#A2A9B2]">
-        {spot.distanceMeters != null
-          ? spot.distanceMeters
-          : "위치 정보 허용 시 표시됩니다"}
-      </p>
+      {route != null && (
+        <p className="m-0 mt-[4px] text-[12px] font-bold leading-[17px] text-[#A2A9B2]">
+          {route}M
+        </p>
+      )}
 
       <button
         type="button"
