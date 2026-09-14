@@ -205,11 +205,6 @@ textarea::placeholder {
   letter-spacing: 0 !important;
 }
 
-button {
-  border: 0;
-  cursor: pointer;
-}
-
 a {
   text-decoration: none;
 }
@@ -218,6 +213,9 @@ textarea::placeholder {
   color: #c6d1e0;
 }
 
+button {
+  cursor: pointer;
+}
 @keyframes questyFloat {
   0%,
   100% {

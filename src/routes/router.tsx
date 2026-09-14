@@ -25,7 +25,9 @@ import VerifyPage from "@/pages/mission/verify/VerifyPage";
 import VerifyLoadingPage from "@/pages/mission/verify/VerifyLoadingPage";
 import VerifyResultPage from "@/pages/mission/verify/VerifyResultPage";
 
-import MapPage from "@/pages/MapPage";
+import MapPage from "@/pages/map/MapPage";
+import MapSearchPage from "@/pages/map/MapSearchPage";
+
 import RewardPage from "@/pages/RewardPage";
 import LocalCouponPage from "@/pages/LocalCouponPage";
 import NotificationPage from "@/pages/NotificationPage";
@@ -102,7 +104,7 @@ export const router = createBrowserRouter([
           },
           {
             path: PATH.MAP_SEARCH,
-            element: <Navigate to={PATH.MAP} replace />,
+            element: <MapSearchPage />,
           },
           {
             path: PATH.RECOMMENDED_MISSIONS,

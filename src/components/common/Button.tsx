@@ -39,7 +39,7 @@ export default function Button({
       type={type}
       disabled={disabled || isLoading}
       className={`
-        flex justify-center items-center gap-1 font-bold whitespace-nowrap text-center
+        flex justify-center items-center gap-1 font-bold whitespace-nowrap text-center cursor-pointer
         ${variantStyles[variant]}
         ${sizeStyles[size]}
         ${className}

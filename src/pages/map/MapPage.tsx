@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  ChevronRight,
   MapPin,
   Minus,
   Navigation,
   Plus,
   Search,
+  X,
+  ChevronRight,
 } from "lucide-react";
 import {
   APIProvider,
@@ -15,27 +16,27 @@ import {
   useMap,
 } from "@vis.gl/react-google-maps";
 
-import HomeHeader from "@/components/home/HomeHeader";
 import QuespotPageLayout, {
-  QuespotDivider,
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 import {
   DEFAULT_CURRENT_LOCATION,
-  MAP_SPOTS,
   SEOUL_JONGNO_CENTER,
   type LatLng,
-  type MapSpot,
   type RoutePlace,
 } from "@/data/mapSpots";
 import { PATH } from "@/routes/paths";
-import QuestySvg from "@/assets/icons/Questy.svg";
 import { Header } from "@/components/common/Header";
+import { useMissionSpotsQuery } from "@/hooks/queries/missionSpots/useMissionSpotsQuery";
+import { DistrictMissions, MissionSpot } from "@/apis/missionSpot";
+import { useNearbyMissionSpotsQuery } from "@/hooks/queries/missionSpots/useNearbyMissionSpotsQuery";
+import { useDistrictMissionsQuery } from "@/hooks/queries/missionSpots/useDistrictMissionsQuery";
+import Button from "@/components/common/Button";
 
 type LocationStatus = "loading" | "success" | "error";
 
 type MapPageState = {
-  selectedSpotId?: number;
+  selectedSpotId?: string;
   openPlaceList?: boolean;
 };
 
@@ -43,20 +44,39 @@ export default function MapPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [selectedSpotId, setSelectedSpotId] = useState<number>(3);
+  const [selectedSpotId, setSelectedSpotId] = useState<string>("");
   const [isPlaceListOpen, setIsPlaceListOpen] = useState(false);
+  const [isMissionSheetOpen, setIsMissionSheetOpen] = useState(false);
 
   const { currentLocation, locationStatus } = useCurrentLocation();
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-
+  const { data, isLoading, isError } = useMissionSpotsQuery();
+  const {
+    data: listData,
+    isLoading: isListLoading,
+    isError: isListError,
+  } = useDistrictMissionsQuery(selectedSpotId);
+  console.log(listData?.missions);
+  const {
+    data: nearData,
+    isLoading: isNearLoading,
+    isError: isNearError,
+  } = useNearbyMissionSpotsQuery(
+    locationStatus === "success"
+      ? {
+          latitude: currentLocation.lat,
+          longitude: currentLocation.lng,
+        }
+      : null,
+  );
   useEffect(() => {
     const state = location.state as MapPageState | null;
 
     if (!state?.selectedSpotId) return;
 
-    const hasSelectedSpot = MAP_SPOTS.some(
-      (spot) => spot.id === state.selectedSpotId,
+    const hasSelectedSpot = data?.missionSpots.some(
+      (spot) => spot.districtCode === state.selectedSpotId,
     );
 
     if (!hasSelectedSpot) return;
@@ -65,21 +85,25 @@ export default function MapPage() {
     setIsPlaceListOpen(Boolean(state.openPlaceList));
 
     window.history.replaceState({}, document.title);
-  }, [location.state]);
+  }, [location.state, data]);
+
+  useEffect(() => {
+    if (!selectedSpotId && data?.missionSpots.length) {
+      setSelectedSpotId(data.missionSpots[0].districtCode);
+    }
+  }, [data, selectedSpotId]);
 
   const selectedSpot = useMemo(() => {
-    return MAP_SPOTS.find((spot) => spot.id === selectedSpotId) ?? MAP_SPOTS[0];
-  }, [selectedSpotId]);
+    return data?.missionSpots.find(
+      (spot) => spot.districtCode === selectedSpotId,
+    );
+  }, [selectedSpotId, data]);
 
-  const completedCount = MAP_SPOTS.filter(
-    (spot) => spot.status === "completed",
-  ).length;
-
-  const handleSelectSpot = (spotId: number) => {
+  const handleSelectSpot = (spotId: string) => {
     setSelectedSpotId(spotId);
   };
 
-  const handleSelectSpotCard = (spotId: number) => {
+  const handleSelectSpotCard = (spotId: string) => {
     setSelectedSpotId(spotId);
     setIsPlaceListOpen(true);
   };
@@ -93,11 +117,12 @@ export default function MapPage() {
     });
   };
 
+  console.log(data);
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
       <Header />
 
-      <section className="shrink-0 bg-white px-[16px] pb-[20px] pt-[24px]">
+      {/* <section className="shrink-0 bg-white px-[16px] pb-[20px] pt-[24px]">
         <div className="flex items-center justify-between">
           <h1 className="m-0 text-[24px] font-black leading-[32px] text-[#1C1C3A]">
             미션 지도
@@ -120,10 +145,9 @@ export default function MapPage() {
             지역 · 장소 검색
           </span>
         </button>
-      </section>
-
-      <QuespotPageContent className="bg-[#F4F8FF]">
-        <section className="relative h-[480px] w-full shrink-0 overflow-hidden bg-[#EDF4EC]">
+      </section> */}
+      <QuespotPageContent className="relative bg-[#F4F8FF]">
+        <section className="flex flex-1 relative w-full shrink-0 overflow-hidden bg-[#EDF4EC]">
           {apiKey ? (
             <APIProvider apiKey={apiKey} language="ko" region="KR">
               <Map
@@ -134,23 +158,28 @@ export default function MapPage() {
                 gestureHandling="greedy"
                 className="h-full w-full"
               >
-                <MapCameraController selectedSpot={selectedSpot} />
+                {selectedSpot && (
+                  <MapCameraController selectedSpot={selectedSpot} />
+                )}
+                {data?.missionSpots.map((spot) => {
+                  const nearSpot = nearData?.missionSpots.find(
+                    (nearSpot) => nearSpot.districtCode === spot.districtCode,
+                  );
 
-                {MAP_SPOTS.map((spot) => (
-                  <MissionMapMarker
-                    key={spot.id}
-                    spot={spot}
-                    currentLocation={currentLocation}
-                    isSelected={selectedSpot.id === spot.id}
-                    onClick={() => handleSelectSpot(spot.id)}
-                    onRouteClick={() => {
-                      const firstPlace = spot.places[0];
-                      if (!firstPlace) return;
-
-                      handleMoveRoutePage(firstPlace);
-                    }}
-                  />
-                ))}
+                  return (
+                    <MissionMapMarker
+                      key={spot.districtCode}
+                      spot={spot}
+                      route={nearSpot?.distanceMeters ?? null}
+                      currentLocation={currentLocation}
+                      isSelected={
+                        selectedSpot?.districtCode === spot.districtCode
+                      }
+                      onClick={() => handleSelectSpot(spot.districtCode)}
+                      onListClick={() => setIsMissionSheetOpen(true)}
+                    />
+                  );
+                })}
 
                 <CurrentLocationMarker currentLocation={currentLocation} />
 
@@ -161,24 +190,38 @@ export default function MapPage() {
             <MapApiKeyFallback />
           )}
 
+          {isLoading && (
+            <div className="absolute inset-0 z-[100] flex items-center justify-center">
+              로딩중...
+            </div>
+          )}
+          {isError && (
+            <div className="absolute inset-0 z-[100] flex items-center justify-center">
+              에러가 발생했습니다. 다시 시도해주세요.
+            </div>
+          )}
           <MapLegend />
 
-          <div className="absolute bottom-[58px] right-[18px] rounded-[16px] bg-white px-[16px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]">
+          <div className="absolute bottom-[25px] right-[18px] rounded-[16px] bg-white px-[16px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]">
             <strong className="block text-[14px] font-black leading-[18px] text-[#1C1C3A]">
-              서울 미션
+              {data?.regionName} 미션
             </strong>
 
             <p className="m-0 mt-[4px] text-[14px] font-black leading-[18px]">
-              <span className="text-[#5BB5F8]">{MAP_SPOTS.length}개 스팟</span>
+              <span className="text-[#5BB5F8]">
+                {data?.totalMissionCount}개 스팟
+              </span>
               <span className="mx-[4px] text-[#A2A9B2]">·</span>
-              <span className="text-[#00C950]">{completedCount}완료</span>
+              <span className="text-[#00C950]">
+                {data?.completedMissionCount}완료
+              </span>
             </p>
           </div>
 
           <div className="absolute bottom-[10px] left-1/2 h-[6px] w-[48px] -translate-x-1/2 rounded-full bg-[#C8E8FF]" />
         </section>
 
-        <section className="shrink-0 bg-white px-[16px] pb-[18px] pt-[16px]">
+        <section className="flex flex-col shrink-0 bg-white p-4">
           <div className="mb-[14px] flex items-center justify-between">
             <h2 className="m-0 text-[20px] font-black leading-[28px] text-[#1C1C3A]">
               주변 미션 스팟
@@ -195,24 +238,37 @@ export default function MapPage() {
           </div>
 
           <div className="no-scrollbar flex gap-[10px] overflow-x-auto pb-[2px]">
-            {MAP_SPOTS.map((spot) => (
+            {isNearLoading && (
+              <div className="w-full flex justify-center items-center">
+                데이터를 불러오는 중 입니다...
+              </div>
+            )}
+            {isNearError && (
+              <div className="w-full flex justify-center items-center">
+                에러가 발생했습니다. 다시 시도해주세요.
+              </div>
+            )}
+            {nearData?.missionSpots.map((spot) => (
               <SpotSummaryCard
-                key={spot.id}
+                key={spot.districtCode}
                 spot={spot}
-                selected={selectedSpot.id === spot.id}
-                onClick={() => handleSelectSpotCard(spot.id)}
+                selected={selectedSpot?.districtCode === spot.districtCode}
+                onClick={() => handleSelectSpotCard(spot.districtCode)}
               />
             ))}
           </div>
-
-          {isPlaceListOpen ? (
-            <RecommendedPlaceList
-              spot={selectedSpot}
-              currentLocation={currentLocation}
-              onPlaceClick={handleMoveRoutePage}
-            />
-          ) : null}
         </section>
+        {isMissionSheetOpen && selectedSpot && (
+          <>
+            <MissionListBottomSheet
+              spot={selectedSpot}
+              listData={listData}
+              isLoading={isListLoading}
+              isError={isListError}
+              onClose={() => setIsMissionSheetOpen(false)}
+            />
+          </>
+        )}
       </QuespotPageContent>
     </QuespotPageLayout>
   );
@@ -257,7 +313,7 @@ function useCurrentLocation() {
 }
 
 type MapCameraControllerProps = {
-  selectedSpot: MapSpot;
+  selectedSpot: MissionSpot;
 };
 
 function MapCameraController({ selectedSpot }: MapCameraControllerProps) {
@@ -265,45 +321,39 @@ function MapCameraController({ selectedSpot }: MapCameraControllerProps) {
 
   useEffect(() => {
     map?.panTo({
-      lat: selectedSpot.lat,
-      lng: selectedSpot.lng,
+      lat: selectedSpot.latitude,
+      lng: selectedSpot.longitude,
     });
-  }, [map, selectedSpot.lat, selectedSpot.lng]);
+  }, [map, selectedSpot.latitude, selectedSpot.longitude]);
 
   return null;
 }
 
 type MissionMapMarkerProps = {
-  spot: MapSpot;
+  spot: MissionSpot;
+  route: number | null;
   currentLocation: LatLng;
   isSelected: boolean;
   onClick: () => void;
-  onRouteClick: () => void;
+  onListClick: () => void;
 };
 
+// 맵에 보이는 스팟 표시
 function MissionMapMarker({
   spot,
-  currentLocation,
+  route,
   isSelected,
   onClick,
-  onRouteClick,
+  onListClick,
 }: MissionMapMarkerProps) {
-  const isCompleted = spot.status === "completed";
-  const firstPlace = spot.places[0];
+  const isCompleted = spot.completionStatus === "COMPLETE";
 
-  const routeInfo = firstPlace
-    ? getRouteInfo(currentLocation, firstPlace)
-    : {
-        distance: "1.3km",
-        duration: "도보 약 18분",
-        direction: "북쪽으로",
-      };
-
-  const bubbleSide = spot.lng > SEOUL_JONGNO_CENTER.lng ? "left" : "right";
+  const bubbleSide =
+    spot.longitude > SEOUL_JONGNO_CENTER.lng ? "left" : "right";
 
   return (
     <AdvancedMarker
-      position={{ lat: spot.lat, lng: spot.lng }}
+      position={{ lat: spot.latitude, lng: spot.longitude }}
       onClick={onClick}
       zIndex={isSelected ? 9999 : isCompleted ? 20 : 10}
     >
@@ -311,24 +361,26 @@ function MissionMapMarker({
         {isSelected ? (
           <SelectedSpotBubble
             spot={spot}
-            routeInfo={routeInfo}
+            route={route}
             side={bubbleSide}
-            onRouteClick={onRouteClick}
+            onListClick={onListClick}
           />
         ) : null}
 
-        <div
+        <MapPin
+          size={44}
+          strokeWidth={1.5}
+          fill={isCompleted ? "#22C983" : "#5BB5F8"}
           className={[
-            "relative z-10 grid h-[40px] w-[40px] place-items-center rounded-full border-[3px] border-white text-[20px] shadow-[0_10px_18px_rgba(8,37,95,0.25)] transition",
-            isCompleted ? "bg-[#22C983]" : "bg-[#5BB5F8]",
-            isSelected ? "scale-110" : "scale-100",
+            "relative z-10 text-white drop-shadow-[0_10px_18px_rgba(8,37,95,0.25)] transition",
+            isSelected
+              ? "scale-125 -translate-y-[3px] drop-shadow-[0_12px_18px_rgba(91,181,248,0.45)]"
+              : "scale-100 drop-shadow-[0_6px_10px_rgba(8,37,95,0.22)]",
           ].join(" ")}
-        >
-          {spot.emoji}
-        </div>
+        />
 
         <span className="relative z-10 mt-[5px] rounded-full bg-white px-[10px] py-[4px] text-[11px] font-black leading-[14px] text-[#1C1C3A] shadow-[0_2px_6px_rgba(8,37,95,0.18)]">
-          {spot.shortName}
+          {spot.districtName}
         </span>
       </div>
     </AdvancedMarker>
@@ -336,23 +388,20 @@ function MissionMapMarker({
 }
 
 type SelectedSpotBubbleProps = {
-  spot: MapSpot;
-  routeInfo: {
-    distance: string;
-    duration: string;
-    direction: string;
-  };
+  spot: MissionSpot;
+  route: number | null;
   side: "left" | "right";
-  onRouteClick: () => void;
+  onListClick: () => void;
 };
 
+//지도 구역 눌렀을 때 뜨는 안내 박스
 function SelectedSpotBubble({
   spot,
-  routeInfo,
+  route,
   side,
-  onRouteClick,
+  onListClick,
 }: SelectedSpotBubbleProps) {
-  const isCompleted = spot.status === "completed";
+  const isCompleted = spot.completionStatus === "COMPLETE";
 
   return (
     <div
@@ -362,26 +411,28 @@ function SelectedSpotBubble({
       ].join(" ")}
     >
       <strong className="block text-[15px] font-black leading-[20px] text-[#1C1C3A]">
-        {spot.shortName}
+        {spot.districtName}
       </strong>
 
       <p className="m-0 mt-[6px] text-[12px] font-bold leading-[17px] text-[#A2A9B2]">
         {isCompleted ? "완료" : `미션 ${spot.missionCount ?? 0}개`}
       </p>
 
-      <p className="m-0 mt-[4px] text-[12px] font-bold leading-[17px] text-[#A2A9B2]">
-        {routeInfo.distance}
-      </p>
+      {route != null && (
+        <p className="m-0 mt-[4px] text-[12px] font-bold leading-[17px] text-[#A2A9B2]">
+          {route}M
+        </p>
+      )}
 
       <button
         type="button"
         onClick={(event) => {
           event.stopPropagation();
-          onRouteClick();
+          onListClick();
         }}
         className="mt-[10px] h-[34px] w-full rounded-full bg-[#5BB5F8] text-[13px] font-black leading-none text-white shadow-[0_4px_8px_rgba(91,181,248,0.2)]"
       >
-        길찾기 →
+        미션 확인하기
       </button>
     </div>
   );
@@ -397,12 +448,14 @@ function CurrentLocationMarker({
   return (
     <AdvancedMarker position={currentLocation} zIndex={30}>
       <div className="relative flex flex-col items-center">
-        <div className="grid h-[34px] w-[34px] place-items-center rounded-full border-[5px] border-white bg-[#3BA7F7] shadow-[0_8px_16px_rgba(8,37,95,0.25)]">
-          <span className="h-[12px] w-[12px] rounded-full bg-white" />
+        <div className="relative grid h-[38px] w-[38px] place-items-center">
+          <span className="absolute h-[38px] w-[38px] rounded-full bg-[#5BB5F8]/20" />
+          <span className="relative grid h-[26px] w-[26px] place-items-center rounded-full border-[4px] border-white bg-[#3BA7F7] shadow-[0_4px_12px_rgba(59,167,247,0.45)]">
+            <span className="h-[7px] w-[7px] rounded-full bg-white" />
+          </span>
         </div>
-
-        <span className="mt-[5px] inline-flex items-center gap-[5px] rounded-full bg-white px-[10px] py-[4px] text-[11px] font-black leading-[14px] text-[#5D6A7D] shadow-[0_2px_6px_rgba(8,37,95,0.18)]">
-          <i className="h-[7px] w-[7px] rounded-full bg-[#3BA7F7]" />
+        <span className="mt-[4px] inline-flex items-center gap-[5px] rounded-full border border-[#E2F2FF] bg-white px-[9px] py-[4px] text-[11px] font-bold leading-[14px] text-[#3BA7F7] shadow-[0_3px_8px_rgba(8,37,95,0.14)]">
+          <span className="h-[6px] w-[6px] rounded-full bg-[#3BA7F7]" />
           현재 위치
         </span>
       </div>
@@ -454,7 +507,7 @@ function MapControls({ currentLocation }: MapControlsProps) {
 
 function MapLegend() {
   return (
-    <div className="absolute left-[12px] top-[48px] z-10 rounded-[16px] bg-white px-[14px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]">
+    <div className="absolute left-[12px] top-[25px] z-10 rounded-[16px] bg-white px-[14px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]">
       <LegendItem color="bg-[#5BB5F8]" label="미완료" />
       <LegendItem color="bg-[#22C983]" label="완료" />
       <LegendItem color="bg-[#3BA7F7]" label="내 위치" />
@@ -479,28 +532,39 @@ function LegendItem({ color, label }: LegendItemProps) {
 }
 
 type SpotSummaryCardProps = {
-  spot: MapSpot;
+  spot: MissionSpot;
   selected: boolean;
   onClick: () => void;
 };
 
+//하단 주변 미션 스팟 카드
 function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
-  const isCompleted = spot.status === "completed";
+  const isCompleted = spot.completionStatus === "COMPLETE";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
-        "flex min-w-[82px] flex-col items-center rounded-[16px] border px-[12px] py-[12px] transition active:scale-[0.98]",
+        "flex min-w-[82px] flex-col items-center rounded-[16px] border-2 px-[12px] py-[12px] transition active:scale-[0.98]",
         selected
-          ? "border-[#5BB5F8] bg-[#5BB5F8] text-white"
+          ? "border-[#5BB5F8] bg-primary text-white"
           : isCompleted
             ? "border-[#BBF7D0] bg-[#F0FDF9]"
             : "border-[#C8E8FF] bg-[#EAF5FF]",
       ].join(" ")}
     >
-      <span className="text-[24px] leading-none">{spot.emoji}</span>
+      <span className="text-[24px] leading-none">
+        <MapPin
+          className={
+            selected
+              ? "text-white"
+              : isCompleted
+                ? "text-[#22C983]"
+                : "text-primary"
+          }
+        />
+      </span>
 
       <strong
         className={[
@@ -508,7 +572,7 @@ function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
           selected ? "text-white" : "text-[#1C1C3A]",
         ].join(" ")}
       >
-        {spot.shortName}
+        {spot.districtName}
       </strong>
 
       <span
@@ -524,75 +588,6 @@ function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
         {isCompleted ? "완료" : `${spot.missionCount ?? 0}개`}
       </span>
     </button>
-  );
-}
-
-type RecommendedPlaceListProps = {
-  spot: MapSpot;
-  currentLocation: LatLng;
-  onPlaceClick: (place: RoutePlace) => void;
-};
-
-function RecommendedPlaceList({
-  spot,
-  currentLocation,
-  onPlaceClick,
-}: RecommendedPlaceListProps) {
-  return (
-    <div className="mt-[16px] flex flex-col gap-[10px]">
-      <div className="flex items-center justify-between">
-        <h3 className="m-0 text-[16px] font-black leading-[22px] text-[#1C1C3A]">
-          {spot.shortName} 추천 장소
-        </h3>
-
-        <span className="text-[12px] font-bold leading-[16px] text-[#5BB5F8]">
-          {spot.places.length}개
-        </span>
-      </div>
-
-      {spot.places.map((place) => {
-        const routeInfo = getRouteInfo(currentLocation, place);
-
-        return (
-          <button
-            key={place.id}
-            type="button"
-            onClick={() => onPlaceClick(place)}
-            className="flex min-h-[82px] w-full items-center rounded-[16px] border border-[#EAF5FF] bg-white p-[14px] text-left shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition active:scale-[0.99]"
-          >
-            <div className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-[16px] bg-[#EAF5FF] text-[25px] leading-none">
-              {place.emoji}
-            </div>
-
-            <div className="ml-[14px] min-w-0 flex-1">
-              <strong className="block truncate text-[15px] font-black leading-[21px] text-[#1C1C3A]">
-                {place.name}
-              </strong>
-
-              <p className="m-0 mt-[4px] truncate text-[12px] font-medium leading-[17px] text-[#A2A9B2]">
-                {place.area}
-              </p>
-
-              <div className="mt-[8px] flex items-center gap-[10px]">
-                <span className="text-[11px] font-bold leading-none text-[#F59E0B]">
-                  {routeInfo.duration}
-                </span>
-
-                <span className="text-[11px] font-bold leading-none text-[#FF2D45]">
-                  {routeInfo.distance}
-                </span>
-              </div>
-            </div>
-
-            <ChevronRight
-              size={20}
-              strokeWidth={2.5}
-              className="shrink-0 text-[#C8E8FF]"
-            />
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
@@ -614,79 +609,112 @@ function MapApiKeyFallback() {
   );
 }
 
-function getRouteInfo(origin: LatLng, destination: LatLng) {
-  const distanceKm = getDistanceKm(origin, destination);
-  const distance = formatDistance(distanceKm);
-  const duration = getApproxWalkingDuration(distanceKm);
-  const direction = getDirectionText(origin, destination);
+type MissionListBottomSheetProps = {
+  spot: MissionSpot;
+  listData: DistrictMissions | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  onClose: () => void;
+};
 
-  return {
-    distance,
-    duration,
-    direction,
-  };
-}
+export const missionStatusLabel = {
+  AVAILABLE: "시작가능",
+  IN_PROGRESS: "진행중",
+  COMPLETED: "완료",
+  LOCKED: "잠김",
+} as const;
 
-function getDistanceKm(origin: LatLng, destination: LatLng) {
-  const earthRadiusKm = 6371;
-  const latDistance = toRadians(destination.lat - origin.lat);
-  const lngDistance = toRadians(destination.lng - origin.lng);
+function MissionListBottomSheet({
+  spot,
+  listData,
+  isLoading,
+  isError,
+  onClose,
+}: MissionListBottomSheetProps) {
+  const navigate = useNavigate();
+  return (
+    <div
+      className="absolute inset-0 z-[1000] flex items-end bg-black/20"
+      onClick={onClose}
+    >
+      <section
+        onClick={(event) => event.stopPropagation()}
+        className="relative flex flex-col h-[70%] w-full rounded-t-[28px] bg-white px-[20px] pb-[24px] pt-[12px] shadow-[0_-8px_30px_rgba(8,37,95,0.16)] min-h-0 overflow-hidden"
+      >
+        <div className="mx-auto mb-[12px] h-[5px] w-[44px] rounded-full bg-[#D7DEE8]" />
 
-  const originLat = toRadians(origin.lat);
-  const destinationLat = toRadians(destination.lat);
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="m-0 text-[22px] font-black leading-[30px] text-[#1C1C3A]">
+              {spot.districtName} 미션
+            </h2>
 
-  const a =
-    Math.sin(latDistance / 2) * Math.sin(latDistance / 2) +
-    Math.cos(originLat) *
-      Math.cos(destinationLat) *
-      Math.sin(lngDistance / 2) *
-      Math.sin(lngDistance / 2);
+            <p className="m-0 mt-[3px] text-[13px] font-bold text-[#A2A9B2]">
+              총 {spot.missionCount ?? 0}개
+            </p>
+          </div>
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[#F4F8FF] text-[#5D6A7D] transition active:scale-95"
+            aria-label="미션 목록 닫기"
+          >
+            <X size={20} strokeWidth={2.3} />
+          </button>
+        </div>
 
-  return earthRadiusKm * c;
-}
+        {/* 미션 목록 */}
+        <div className="no-scrollbar mt-[16px] min-h-0 overflow-y-auto flex flex-col gap-2 overscroll-contain">
+          {isLoading && (
+            <div className="w-full flex justify-center items-center">
+              데이터를 불러오는 중 입니다...
+            </div>
+          )}
+          {isError && (
+            <div className="w-full flex justify-center items-center">
+              에러가 발생했습니다. 다시 시도해주십시오.
+            </div>
+          )}
+          {listData?.missions.map((data) => (
+            <div
+              className="rounded-[18px] border border-[#E5EDF7] p-4 flex justify-between"
+              key={data.spotName}
+            >
+              <div className="flex gap-2">
+                <img
+                  src={data.imageUrl}
+                  alt={`${data.spotName} 사진`}
+                  className="size-10 rounded-md"
+                />
+                <div>
+                  <p className="type-body1 !font-black">{data.title}</p>
 
-function toRadians(value: number) {
-  return (value * Math.PI) / 180;
-}
-
-function formatDistance(distanceKm: number) {
-  if (distanceKm < 1) {
-    return `${Math.round(distanceKm * 1000)}m`;
-  }
-
-  return `${distanceKm.toFixed(1)}km`;
-}
-
-function getApproxWalkingDuration(distanceKm: number) {
-  const walkingSpeedKmPerHour = 4.2;
-  const minutes = Math.max(
-    1,
-    Math.round((distanceKm / walkingSpeedKmPerHour) * 60),
+                  <p className="type-body3 text-[#A2A9B2]">
+                    {missionStatusLabel[data.userMissionStatus]} |{" "}
+                    {data.estimatedMinutes}분 | +{data.rewardPoint}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="size-10 p-3!"
+                onClick={() =>
+                  navigate(
+                    PATH.MISSION_DETAIL.replace(
+                      ":missionId",
+                      String(data.missionId),
+                    ),
+                  )
+                }
+              >
+                <ChevronRight />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
-
-  if (minutes < 60) {
-    return `도보 약 ${minutes}분`;
-  }
-
-  const hours = Math.floor(minutes / 60);
-  const remainMinutes = minutes % 60;
-
-  if (remainMinutes === 0) {
-    return `도보 약 ${hours}시간`;
-  }
-
-  return `도보 약 ${hours}시간 ${remainMinutes}분`;
-}
-
-function getDirectionText(origin: LatLng, destination: LatLng) {
-  const latDiff = destination.lat - origin.lat;
-  const lngDiff = destination.lng - origin.lng;
-
-  if (Math.abs(latDiff) > Math.abs(lngDiff)) {
-    return latDiff > 0 ? "북쪽으로" : "남쪽으로";
-  }
-
-  return lngDiff > 0 ? "동쪽으로" : "서쪽으로";
 }
