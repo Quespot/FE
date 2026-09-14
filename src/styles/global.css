@@ -213,6 +213,9 @@ textarea::placeholder {
   color: #c6d1e0;
 }
 
+button {
+  cursor: pointer;
+}
 @keyframes questyFloat {
   0%,
   100% {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MapPin, Minus, Navigation, Plus, Search } from "lucide-react";
+import { MapPin, Minus, Navigation, Plus, Search, X } from "lucide-react";
 import {
   APIProvider,
   AdvancedMarker,
@@ -20,8 +20,10 @@ import {
 import { PATH } from "@/routes/paths";
 import { Header } from "@/components/common/Header";
 import { useMissionSpotsQuery } from "@/hooks/queries/missionSpots/useMissionSpotsQuery";
-import { MissionSpot } from "@/apis/missionSpot";
+import { DistrictMissions, MissionSpot } from "@/apis/missionSpot";
 import { useNearbyMissionSpotsQuery } from "@/hooks/queries/missionSpots/useNearbyMissionSpotsQuery";
+import { useDistrictMissionsQuery } from "@/hooks/queries/missionSpots/useDistrictMissionsQuery";
+import Button from "@/components/common/Button";
 
 type LocationStatus = "loading" | "success" | "error";
 
@@ -36,19 +38,30 @@ export default function MapPage() {
 
   const [selectedSpotId, setSelectedSpotId] = useState<string>("");
   const [isPlaceListOpen, setIsPlaceListOpen] = useState(false);
+  const [isMissionSheetOpen, setIsMissionSheetOpen] = useState(false);
 
-  const { currentLocation } = useCurrentLocation();
+  const { currentLocation, locationStatus } = useCurrentLocation();
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
   const { data, isLoading, isError } = useMissionSpotsQuery();
   const {
+    data: listData,
+    isLoading: isListLoading,
+    isError: isListError,
+  } = useDistrictMissionsQuery(selectedSpotId);
+  console.log(listData?.missions);
+  const {
     data: nearData,
     isLoading: isNearLoading,
     isError: isNearError,
-  } = useNearbyMissionSpotsQuery({
-    latitude: currentLocation.lat,
-    longitude: currentLocation.lng,
-  });
+  } = useNearbyMissionSpotsQuery(
+    locationStatus === "success"
+      ? {
+          latitude: currentLocation.lat,
+          longitude: currentLocation.lng,
+        }
+      : null,
+  );
   useEffect(() => {
     const state = location.state as MapPageState | null;
 
@@ -66,16 +79,17 @@ export default function MapPage() {
     window.history.replaceState({}, document.title);
   }, [location.state, data]);
 
+  useEffect(() => {
+    if (!selectedSpotId && data?.missionSpots.length) {
+      setSelectedSpotId(data.missionSpots[0].districtCode);
+    }
+  }, [data, selectedSpotId]);
+
   const selectedSpot = useMemo(() => {
-    return (
-      data?.missionSpots.find((spot) => spot.districtCode === selectedSpotId) ??
-      data?.missionSpots[0]
+    return data?.missionSpots.find(
+      (spot) => spot.districtCode === selectedSpotId,
     );
   }, [selectedSpotId, data]);
-
-  const completedCount = data?.missionSpots.filter(
-    (spot) => spot.completionStatus === "COMPLETE",
-  ).length;
 
   const handleSelectSpot = (spotId: string) => {
     setSelectedSpotId(spotId);
@@ -124,7 +138,7 @@ export default function MapPage() {
           </span>
         </button>
       </section> */}
-      <QuespotPageContent className="bg-[#F4F8FF]">
+      <QuespotPageContent className="relative bg-[#F4F8FF]">
         <section className="flex flex-1 relative w-full shrink-0 overflow-hidden bg-[#EDF4EC]">
           {apiKey ? (
             <APIProvider apiKey={apiKey} language="ko" region="KR">
@@ -154,7 +168,7 @@ export default function MapPage() {
                         selectedSpot?.districtCode === spot.districtCode
                       }
                       onClick={() => handleSelectSpot(spot.districtCode)}
-                      onRouteClick={() => {}}
+                      onListClick={() => setIsMissionSheetOpen(true)}
                     />
                   );
                 })}
@@ -236,6 +250,17 @@ export default function MapPage() {
             ))}
           </div>
         </section>
+        {isMissionSheetOpen && selectedSpot && (
+          <>
+            <MissionListBottomSheet
+              spot={selectedSpot}
+              listData={listData}
+              isLoading={isListLoading}
+              isError={isListError}
+              onClose={() => setIsMissionSheetOpen(false)}
+            />
+          </>
+        )}
       </QuespotPageContent>
     </QuespotPageLayout>
   );
@@ -302,7 +327,7 @@ type MissionMapMarkerProps = {
   currentLocation: LatLng;
   isSelected: boolean;
   onClick: () => void;
-  onRouteClick: () => void;
+  onListClick: () => void;
 };
 
 // 맵에 보이는 스팟 표시
@@ -311,7 +336,7 @@ function MissionMapMarker({
   route,
   isSelected,
   onClick,
-  onRouteClick,
+  onListClick,
 }: MissionMapMarkerProps) {
   const isCompleted = spot.completionStatus === "COMPLETE";
 
@@ -330,7 +355,7 @@ function MissionMapMarker({
             spot={spot}
             route={route}
             side={bubbleSide}
-            onRouteClick={onRouteClick}
+            onListClick={onListClick}
           />
         ) : null}
 
@@ -358,7 +383,7 @@ type SelectedSpotBubbleProps = {
   spot: MissionSpot;
   route: number | null;
   side: "left" | "right";
-  onRouteClick: () => void;
+  onListClick: () => void;
 };
 
 //지도 구역 눌렀을 때 뜨는 안내 박스
@@ -366,7 +391,7 @@ function SelectedSpotBubble({
   spot,
   route,
   side,
-  onRouteClick,
+  onListClick,
 }: SelectedSpotBubbleProps) {
   const isCompleted = spot.completionStatus === "COMPLETE";
 
@@ -395,7 +420,7 @@ function SelectedSpotBubble({
         type="button"
         onClick={(event) => {
           event.stopPropagation();
-          onRouteClick();
+          onListClick();
         }}
         className="mt-[10px] h-[34px] w-full rounded-full bg-[#5BB5F8] text-[13px] font-black leading-none text-white shadow-[0_4px_8px_rgba(91,181,248,0.2)]"
       >
@@ -572,6 +597,116 @@ function MapApiKeyFallback() {
         <br />
         VITE_GOOGLE_MAPS_API_KEY를 추가해주세요.
       </p>
+    </div>
+  );
+}
+
+type MissionListBottomSheetProps = {
+  spot: MissionSpot;
+  listData: DistrictMissions | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  onClose: () => void;
+};
+
+export const missionStatusLabel = {
+  AVAILABLE: "시작가능",
+  IN_PROGRESS: "진행중",
+  COMPLETED: "완료",
+  LOCKED: "잠김",
+} as const;
+
+function MissionListBottomSheet({
+  spot,
+  listData,
+  isLoading,
+  isError,
+  onClose,
+}: MissionListBottomSheetProps) {
+  const navigate = useNavigate();
+  return (
+    <div
+      className="absolute inset-0 z-[1000] flex items-end bg-black/20"
+      onClick={onClose}
+    >
+      <section
+        onClick={(event) => event.stopPropagation()}
+        className="relative flex flex-col h-[70%] w-full rounded-t-[28px] bg-white px-[20px] pb-[24px] pt-[12px] shadow-[0_-8px_30px_rgba(8,37,95,0.16)] min-h-0 overflow-hidden"
+      >
+        <div className="mx-auto mb-[12px] h-[5px] w-[44px] rounded-full bg-[#D7DEE8]" />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="m-0 text-[22px] font-black leading-[30px] text-[#1C1C3A]">
+              {spot.districtName} 미션
+            </h2>
+
+            <p className="m-0 mt-[3px] text-[13px] font-bold text-[#A2A9B2]">
+              총 {spot.missionCount ?? 0}개
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-[38px] w-[38px] place-items-center rounded-full bg-[#F4F8FF] text-[#5D6A7D] transition active:scale-95"
+            aria-label="미션 목록 닫기"
+          >
+            <X size={20} strokeWidth={2.3} />
+          </button>
+        </div>
+
+        {/* 미션 목록 */}
+        <div className="no-scrollbar mt-[16px] min-h-0 overflow-y-auto flex flex-col gap-2 overscroll-contain">
+          {isLoading && (
+            <div className="w-full flex justify-center items-center">
+              데이터를 불러오는 중 입니다...
+            </div>
+          )}
+          {isError && (
+            <div className="w-full flex justify-center items-center">
+              에러가 발생했습니다. 다시 시도해주십시오.
+            </div>
+          )}
+          {listData?.missions.map((data) => (
+            <div
+              className="rounded-[18px] border border-[#E5EDF7] p-4 flex justify-between"
+              key={data.spotName}
+            >
+              <div className="flex gap-2">
+                <img
+                  src={data.imageUrl}
+                  alt={`${data.spotName} 사진`}
+                  className="size-10 rounded-md"
+                />
+                <div>
+                  <p className="type-body1 !font-black">{data.title}</p>
+
+                  <p className="type-body3 text-[#A2A9B2]">
+                    {missionStatusLabel[data.userMissionStatus]} |{" "}
+                    {data.estimatedMinutes}분 | +{data.rewardPoint}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="size-10 p-3!"
+                onClick={() =>
+                  navigate(
+                    PATH.MISSION_DETAIL.replace(
+                      ":missionId",
+                      String(data.missionId),
+                    ),
+                  )
+                }
+              >
+                <Search />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -37,7 +37,7 @@ export interface DistrictMission {
   distanceMeters: number;
   rewardPoint: number;
   estimatedMinutes: number;
-  userMissionStatus: string;
+  userMissionStatus: "AVAILABLE" | "IN_PROGRESS" | "COMPLETED" | "LOCKED";
   canStart: boolean;
 }
 
