@@ -1,24 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Clock3,
   Coins,
+  Landmark,
+  Leaf,
   Loader2,
   MapPin,
+  Moon,
+  Palette,
   Search,
   SlidersHorizontal,
+  Sparkles,
+  Utensils,
+  type LucideIcon,
 } from "lucide-react";
 
-import HomeHeader from "@/components/home/HomeHeader";
+import { Header } from "@/components/common/Header";
 import QuespotPageLayout, {
   QuespotDivider,
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
-import { useMissions } from "@/hooks/queries/useMissions";
-import type { MissionCategory, MissionItem } from "@/types/mission";
+import { useInfiniteMissions } from "@/hooks/queries/useInfiniteMissions";
+import type {
+  MissionCategory,
+  MissionItem,
+  UserMissionStatus,
+} from "@/types/mission";
 import { PATH } from "@/routes/paths";
-import QuestySvg from "@/assets/icons/Questy.svg";
-import { Header } from "@/components/common/Header";
+import QuestyMainSvg from "@/assets/icons/QuestyMain.svg";
 
 type LatLng = {
   lat: number;
@@ -76,6 +86,24 @@ const MISSION_CATEGORY_VALUES = new Set<MissionCategory>([
   "ETC",
 ]);
 
+const categoryIconMap: Record<MissionCategory, LucideIcon> = {
+  HISTORY: Landmark,
+  CULTURE: Palette,
+  NATURE: Leaf,
+  FOOD: Utensils,
+  NIGHT_VIEW: Moon,
+  ETC: Sparkles,
+};
+
+const categoryLabelMap: Record<MissionCategory, string> = {
+  HISTORY: "역사",
+  CULTURE: "문화",
+  NATURE: "자연",
+  FOOD: "음식",
+  NIGHT_VIEW: "야경·전망",
+  ETC: "기타",
+};
+
 function getMissionCategory(value: string | null) {
   return value && MISSION_CATEGORY_VALUES.has(value as MissionCategory)
     ? (value as MissionCategory)
@@ -85,31 +113,88 @@ function getMissionCategory(value: string | null) {
 export default function MissionPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
   const selectedCategory = getMissionCategory(searchParams.get("category"));
+
   const [keyword, setKeyword] = useState("");
 
   const { currentLocation, locationStatus } = useCurrentLocation();
 
-  const { data, isLoading, isError, refetch, isFetching } = useMissions({
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteMissions({
     category: selectedCategory,
-    keyword,
+    keyword: keyword.trim() || undefined,
     latitude: currentLocation.lat,
     longitude: currentLocation.lng,
     size: 20,
   });
 
-  const missions = data?.result?.missions ?? [];
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const handleMoveMissionDetail = (missionId: number) => {
-    navigate(PATH.MISSION_DETAIL.replace(":missionId", String(missionId)));
+  const missions = useMemo(() => {
+    return data?.pages.flatMap((page) => page.result.missions) ?? [];
+  }, [data]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "180px",
+        threshold: 0.1,
+      },
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  const handleChangeCategory = (category?: MissionCategory) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+
+      if (category) {
+        next.set("category", category);
+      } else {
+        next.delete("category");
+      }
+
+      return next;
+    });
+  };
+
+  const handleMoveMissionDetail = (mission: MissionItem) => {
+    navigate(
+      PATH.MISSION_DETAIL.replace(":missionId", String(mission.missionId)),
+    );
   };
 
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
       <Header />
 
-      <section className="shrink-0 bg-white px-[16px] pb-[18px] pt-[22px]">
-        <div className="flex items-center justify-between">
+      <QuespotDivider />
+
+      <section className="shrink-0 bg-white px-[16px] pb-[20px] pt-[24px]">
+        <div className="flex items-start justify-between">
           <div>
             <h1 className="m-0 text-[24px] font-black leading-[32px] text-[#1C1C3A]">
               미션 탐색
@@ -120,13 +205,13 @@ export default function MissionPage() {
             </p>
           </div>
 
-          <span className="inline-flex h-[32px] items-center gap-[7px] rounded-full bg-[#E8FBF3] px-[13px] text-[12px] font-black text-[#008A3D]">
+          <span className="mt-[2px] inline-flex h-[34px] items-center gap-[7px] rounded-full bg-[#E8FBF3] px-[14px] text-[12px] font-black text-[#008A3D]">
             <i className="h-[8px] w-[8px] rounded-full bg-[#00C950]" />
             {locationStatus === "success" ? "현재 위치" : "서울 기준"}
           </span>
         </div>
 
-        <div className="mt-[18px] flex h-[48px] items-center gap-[10px] rounded-[16px] bg-[#EAF5FF] px-[16px] text-[#A2A9B2]">
+        <label className="mt-[20px] flex h-[48px] w-full items-center gap-[8px] rounded-[16px] bg-[#EAF5FF] px-[16px] text-[#A2A9B2]">
           <Search size={18} strokeWidth={2.2} />
 
           <input
@@ -138,9 +223,9 @@ export default function MissionPage() {
           />
 
           <SlidersHorizontal size={18} strokeWidth={2.2} />
-        </div>
+        </label>
 
-        <div className="no-scrollbar mt-[14px] flex gap-[8px] overflow-x-auto pb-[2px]">
+        <div className="no-scrollbar mt-[14px] flex gap-[10px] overflow-x-auto pb-[2px]">
           {CATEGORY_OPTIONS.map((category) => {
             const isSelected = selectedCategory === category.value;
 
@@ -148,21 +233,11 @@ export default function MissionPage() {
               <button
                 key={category.label}
                 type="button"
-                onClick={() => {
-                  setSearchParams((current) => {
-                    const next = new URLSearchParams(current);
-                    if (category.value) {
-                      next.set("category", category.value);
-                    } else {
-                      next.delete("category");
-                    }
-                    return next;
-                  });
-                }}
+                onClick={() => handleChangeCategory(category.value)}
                 className={[
-                  "h-[36px] shrink-0 rounded-full px-[15px] text-[13px] font-black transition active:scale-[0.98]",
+                  "h-[38px] shrink-0 rounded-full px-[18px] text-[14px] font-bold leading-none transition active:scale-[0.98]",
                   isSelected
-                    ? "bg-[#5BB5F8] text-white shadow-[0_4px_10px_rgba(91,181,248,0.22)]"
+                    ? "bg-[#5BB5F8] text-white shadow-[0_4px_10px_rgba(91,181,248,0.28)]"
                     : "bg-[#F4F8FF] text-[#A2A9B2]",
                 ].join(" ")}
               >
@@ -173,55 +248,66 @@ export default function MissionPage() {
         </div>
       </section>
 
-      <QuespotPageContent className="bg-[#F4F8FF] px-[16px] py-[16px]">
-        <section className="mb-[16px] flex shrink-0 items-center justify-between rounded-[18px] bg-[#DFF3FF] px-[16px] py-[14px]">
+      <QuespotPageContent className="bg-[#F4F8FF] px-[16px] pb-[24px] pt-[16px]">
+        <section className="flex min-h-[82px] shrink-0 items-center justify-between rounded-[16px] bg-[#DFF1FF] px-[16px] py-[14px]">
           <div>
             <p className="m-0 text-[13px] font-black leading-[18px] text-[#5BB5F8]">
               오늘의 추천 미션
             </p>
 
-            <p className="m-0 mt-[4px] text-[12px] font-medium leading-[17px] text-[#7B8794]">
+            <p className="m-0 mt-[4px] text-[12px] font-medium leading-[17px] text-[#5D6A7D]">
               가까운 장소에서 미션을 시작해보세요
             </p>
           </div>
 
           <img
-            src={QuestySvg}
+            src={QuestyMainSvg}
             alt="퀘스티"
-            className="h-[54px] w-[54px] object-contain"
+            className="h-[58px] w-[58px] object-contain"
           />
         </section>
 
-        {isLoading ? <MissionLoading /> : null}
+        <section className="mt-[20px]">
+          <h2 className="m-0 text-[21px] font-black leading-[28px] text-[#1C1C3A]">
+            미션 목록
+          </h2>
+        </section>
 
-        {isError ? <MissionError onRetry={refetch} /> : null}
+        {isLoading ? <MissionListLoading /> : null}
 
-        {!isLoading && !isError ? (
-          missions.length > 0 ? (
-            <>
-              <div className="mb-[12px] flex items-center justify-between">
-                <h2 className="m-0 text-[18px] font-black leading-[25px] text-[#1C1C3A]">
-                  미션 목록
-                </h2>
+        {isError ? <MissionListError onRetry={() => refetch()} /> : null}
 
-                <span className="text-[12px] font-bold leading-[16px] text-[#A2A9B2]">
-                  {isFetching ? "업데이트 중" : `${missions.length}개`}
-                </span>
+        {!isLoading && !isError && missions.length === 0 ? (
+          <MissionListEmpty keyword={keyword} />
+        ) : null}
+
+        {!isLoading && !isError && missions.length > 0 ? (
+          <>
+            <div className="mt-[14px] grid grid-cols-2 gap-x-[12px] gap-y-[14px]">
+              {missions.map((mission) => (
+                <MissionCard
+                  key={mission.missionId}
+                  mission={mission}
+                  onClick={() => handleMoveMissionDetail(mission)}
+                />
+              ))}
+            </div>
+
+            <div ref={loadMoreRef} className="h-[24px] shrink-0" />
+
+            {isFetchingNextPage ? (
+              <div className="flex h-[56px] items-center justify-center gap-[8px] text-[13px] font-bold text-[#5BB5F8]">
+                <Loader2 size={18} strokeWidth={2.4} className="animate-spin" />
+                미션을 더 불러오는 중이에요
               </div>
+            ) : null}
 
-              <div className="grid grid-cols-2 gap-[12px]">
-                {missions.map((mission) => (
-                  <MissionCard
-                    key={mission.missionId}
-                    mission={mission}
-                    onClick={() => handleMoveMissionDetail(mission.missionId)}
-                  />
-                ))}
-              </div>
-            </>
-          ) : (
-            <MissionEmpty keyword={keyword} />
-          )
+            {!hasNextPage ? (
+              <p className="m-0 py-[20px] text-center text-[12px] font-bold leading-[18px] text-[#A2A9B2]">
+                모든 미션을 불러왔어요
+              </p>
+            ) : null}
+          </>
         ) : null}
       </QuespotPageContent>
     </QuespotPageLayout>
@@ -271,8 +357,10 @@ type MissionCardProps = {
 };
 
 function MissionCard({ mission, onClick }: MissionCardProps) {
+  const Icon = categoryIconMap[mission.category] ?? Sparkles;
+  const isLocked = mission.userMissionStatus === "LOCKED";
   const isCompleted = mission.userMissionStatus === "COMPLETED";
-  const isLocked = mission.userMissionStatus === "LOCKED" || !mission.canStart;
+  const statusStyle = getMissionStatusStyle(mission.userMissionStatus);
 
   return (
     <button
@@ -280,13 +368,13 @@ function MissionCard({ mission, onClick }: MissionCardProps) {
       onClick={onClick}
       disabled={isLocked}
       className={[
-        "min-h-[206px] overflow-hidden rounded-[18px] border bg-white text-left shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition active:scale-[0.99]",
+        "min-h-[276px] overflow-hidden rounded-[18px] border bg-white text-left shadow-[0_2px_8px_rgba(8,37,95,0.08)] transition active:scale-[0.99]",
         isLocked
           ? "border-[#EEF2F6] opacity-55"
           : "border-[#EAF5FF] active:border-[#5BB5F8]",
       ].join(" ")}
     >
-      <div className="relative h-[96px] w-full overflow-hidden bg-[#EAF5FF]">
+      <div className="relative h-[104px] overflow-hidden bg-[#EAF5FF]">
         {mission.imageUrl ? (
           <img
             src={mission.imageUrl}
@@ -294,13 +382,14 @@ function MissionCard({ mission, onClick }: MissionCardProps) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="grid h-full w-full place-items-center text-[34px]">
-            {getCategoryEmoji(mission.category)}
+          <div className="grid h-full w-full place-items-center text-[#5BB5F8]">
+            <Icon size={36} strokeWidth={2.2} />
           </div>
         )}
 
-        <span className="absolute left-[10px] top-[10px] rounded-full bg-white/90 px-[9px] py-[5px] text-[10px] font-black leading-none text-[#5BB5F8] backdrop-blur">
-          {getCategoryLabel(mission.category)}
+        <span className="absolute left-[10px] top-[10px] inline-flex h-[24px] items-center gap-[4px] rounded-full bg-white px-[9px] text-[11px] font-black leading-none text-[#5BB5F8] shadow-[0_2px_6px_rgba(8,37,95,0.12)]">
+          <Icon size={12} strokeWidth={2.5} />
+          {categoryLabelMap[mission.category]}
         </span>
 
         {isCompleted ? (
@@ -316,46 +405,44 @@ function MissionCard({ mission, onClick }: MissionCardProps) {
         ) : null}
       </div>
 
-      <div className="p-[12px]">
-        <h3 className="m-0 line-clamp-2 min-h-[40px] text-[14px] font-black leading-[20px] text-[#1C1C3A]">
+      <div className="flex min-h-[172px] flex-col px-[12px] pb-[12px] pt-[12px]">
+        <strong className="line-clamp-2 min-h-[42px] text-[15px] font-black leading-[21px] text-[#1C1C3A]">
           {mission.title}
-        </h3>
+        </strong>
 
-        <p className="m-0 mt-[6px] truncate text-[12px] font-medium leading-[17px] text-[#A2A9B2]">
+        <p className="m-0 mt-[10px] truncate text-[12px] font-bold leading-[17px] text-[#A2A9B2]">
           {mission.spotName}
         </p>
 
-        <p className="m-0 mt-[4px] line-clamp-1 text-[10px] font-medium leading-[14px] text-[#B5BBC4]">
+        <p className="m-0 mt-[3px] truncate text-[11px] font-medium leading-[16px] text-[#A2A9B2]">
           {mission.address}
         </p>
 
         <div className="mt-[10px] flex items-center justify-between">
-          <span className="inline-flex items-center gap-[4px] text-[10px] font-bold leading-none text-[#A2A9B2]">
-            <Clock3 size={12} strokeWidth={2.3} />
+          <span className="inline-flex items-center gap-[4px] text-[11px] font-bold leading-none text-[#A2A9B2]">
+            <Clock3 size={13} strokeWidth={2.3} />약{" "}
             {mission.estimatedMinutes}분
           </span>
 
-          <span className="inline-flex items-center gap-[4px] text-[10px] font-black leading-none text-[#F59E0B]">
-            <Coins size={12} strokeWidth={2.3} />
+          <span className="inline-flex items-center gap-[4px] text-[11px] font-black leading-none text-[#F59E0B]">
+            <Coins size={13} strokeWidth={2.4} />
             {mission.rewardPoint}P
           </span>
         </div>
 
-        <div className="mt-[10px] flex items-center justify-between">
-          <span className="inline-flex items-center gap-[4px] text-[10px] font-bold leading-none text-[#FF2D45]">
-            <MapPin size={12} strokeWidth={2.3} />
+        <div className="mt-auto flex items-center justify-between pt-[12px]">
+          <span className="inline-flex items-center gap-[4px] text-[11px] font-black leading-none text-[#FF2D45]">
+            <MapPin size={13} strokeWidth={2.5} />
             {formatDistance(mission.distanceMeters)}
           </span>
 
           <span
             className={[
-              "rounded-full px-[8px] py-[5px] text-[10px] font-black leading-none",
-              mission.canStart
-                ? "bg-[#EAF5FF] text-[#5BB5F8]"
-                : "bg-[#F1F5F9] text-[#94A3B8]",
+              "h-[24px] rounded-full px-[10px] text-[11px] font-black leading-[24px]",
+              statusStyle,
             ].join(" ")}
           >
-            {mission.canStart ? "시작 가능" : "시작 불가"}
+            {getMissionStatusLabel(mission.userMissionStatus, mission.canStart)}
           </span>
         </div>
       </div>
@@ -363,9 +450,9 @@ function MissionCard({ mission, onClick }: MissionCardProps) {
   );
 }
 
-function MissionLoading() {
+function MissionListLoading() {
   return (
-    <section className="flex flex-1 flex-col items-center justify-center py-[90px] text-center">
+    <section className="flex flex-1 flex-col items-center justify-center py-[120px] text-center">
       <Loader2
         size={34}
         strokeWidth={2.4}
@@ -379,14 +466,14 @@ function MissionLoading() {
   );
 }
 
-type MissionErrorProps = {
+type MissionListErrorProps = {
   onRetry: () => void;
 };
 
-function MissionError({ onRetry }: MissionErrorProps) {
+function MissionListError({ onRetry }: MissionListErrorProps) {
   return (
-    <section className="flex flex-1 flex-col items-center justify-center py-[90px] text-center">
-      <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-[#FFECEF] text-[32px]">
+    <section className="flex flex-1 flex-col items-center justify-center py-[120px] text-center">
+      <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-[#FFECEF] text-[32px] text-[#1C1C3A]">
         !
       </div>
 
@@ -401,7 +488,7 @@ function MissionError({ onRetry }: MissionErrorProps) {
       <button
         type="button"
         onClick={() => onRetry()}
-        className="mt-[20px] h-[42px] rounded-full bg-[#5BB5F8] px-[20px] text-[13px] font-black leading-none text-white"
+        className="mt-[20px] h-[42px] rounded-full bg-[#5BB5F8] px-[22px] text-[13px] font-black leading-none text-white"
       >
         다시 불러오기
       </button>
@@ -409,14 +496,14 @@ function MissionError({ onRetry }: MissionErrorProps) {
   );
 }
 
-type MissionEmptyProps = {
+type MissionListEmptyProps = {
   keyword: string;
 };
 
-function MissionEmpty({ keyword }: MissionEmptyProps) {
+function MissionListEmpty({ keyword }: MissionListEmptyProps) {
   return (
-    <section className="flex flex-1 flex-col items-center justify-center py-[90px] text-center">
-      <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-[#EAF5FF] text-[30px]">
+    <section className="flex flex-1 flex-col items-center justify-center py-[120px] text-center">
+      <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-[#EAF5FF] text-[32px]">
         🔍
       </div>
 
@@ -425,38 +512,12 @@ function MissionEmpty({ keyword }: MissionEmptyProps) {
       </h2>
 
       <p className="m-0 mt-[8px] break-keep text-[13px] font-medium leading-[20px] text-[#A2A9B2]">
-        {keyword
-          ? `"${keyword}"에 해당하는 미션을 찾을 수 없어요.`
+        {keyword.trim()
+          ? `"${keyword.trim()}"에 해당하는 미션을 찾을 수 없어요.`
           : "현재 조건에 해당하는 미션이 없어요."}
       </p>
     </section>
   );
-}
-
-function getCategoryLabel(category: MissionCategory) {
-  const categoryLabelMap: Record<MissionCategory, string> = {
-    HISTORY: "역사",
-    CULTURE: "문화",
-    NATURE: "자연",
-    FOOD: "음식",
-    NIGHT_VIEW: "야경·전망",
-    ETC: "기타",
-  };
-
-  return categoryLabelMap[category];
-}
-
-function getCategoryEmoji(category: MissionCategory) {
-  const categoryEmojiMap: Record<MissionCategory, string> = {
-    HISTORY: "🏯",
-    CULTURE: "🎨",
-    NATURE: "🌳",
-    FOOD: "🍜",
-    NIGHT_VIEW: "🌙",
-    ETC: "✨",
-  };
-
-  return categoryEmojiMap[category];
 }
 
 function formatDistance(distanceMeters: number | null) {
@@ -469,4 +530,29 @@ function formatDistance(distanceMeters: number | null) {
   }
 
   return `${(distanceMeters / 1000).toFixed(1)}km`;
+}
+
+function getMissionStatusLabel(status: UserMissionStatus, canStart: boolean) {
+  if (status === "COMPLETED") return "완료";
+  if (status === "IN_PROGRESS") return "진행중";
+  if (status === "LOCKED") return "잠김";
+  if (canStart) return "시작 가능";
+
+  return "시작 불가";
+}
+
+function getMissionStatusStyle(status: UserMissionStatus) {
+  if (status === "COMPLETED") {
+    return "bg-[#E8FBF3] text-[#00C950]";
+  }
+
+  if (status === "IN_PROGRESS") {
+    return "bg-[#FFF6D9] text-[#F59E0B]";
+  }
+
+  if (status === "LOCKED") {
+    return "bg-[#F1F5F9] text-[#94A3B8]";
+  }
+
+  return "bg-[#EAF5FF] text-[#5BB5F8]";
 }
