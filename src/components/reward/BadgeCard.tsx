@@ -1,10 +1,12 @@
+import { Badge } from "@/apis/reward";
 import type { BadgeItem } from "@/data/reward";
 
 type BadgeCardProps = {
-  badge: BadgeItem;
+  badge: Badge;
+  emoji: string;
 };
 
-export default function BadgeCard({ badge }: BadgeCardProps) {
+export default function BadgeCard({ badge, emoji }: BadgeCardProps) {
   return (
     <article className="relative flex flex-col items-center">
       <div
@@ -15,7 +17,7 @@ export default function BadgeCard({ badge }: BadgeCardProps) {
             : "border-[#EAF5FF] opacity-35",
         ].join(" ")}
       >
-        {badge.emoji}
+        {emoji}
       </div>
 
       <strong
