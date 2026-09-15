@@ -11,10 +11,7 @@ export default function StampRegionCard({
   emoji,
 }: StampRegionCardProps) {
   return (
-    <button
-      type="button"
-      className="flex flex-col items-center bg-transparent p-0 text-center transition active:scale-[0.98]"
-    >
+    <div className="flex flex-col items-center bg-transparent p-0 text-center transition active:scale-[0.98]">
       <div
         className={[
           "grid h-[64px] w-[64px] place-items-center rounded-full border text-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]",
@@ -34,6 +31,6 @@ export default function StampRegionCard({
       >
         {stamp.name}
       </strong>
-    </button>
+    </div>
   );
 }

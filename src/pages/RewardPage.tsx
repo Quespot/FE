@@ -12,24 +12,24 @@ import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 
-import {
-  rewardBadges,
-  rewardHistoryItems,
-  rewardStampRegions,
-  rewardStamps,
-  type RewardTab,
-  type StampItem,
-  type StampRegion,
-} from "@/data/reward";
+import { rewardHistoryItems, type RewardTab } from "@/data/reward";
 
 import { Header } from "@/components/common/Header";
 import {
+  useRewardActivities,
   useUserAchievements,
   useUserBadges,
   useUserPoints,
   useUserStamps,
 } from "@/hooks/queries/useRewards";
-import { Badge, UserBadges, UserStamps } from "@/apis/reward";
+import {
+  Badge,
+  RewardActivities,
+  RewardActivity,
+  UserBadges,
+  UserStamps,
+} from "@/apis/reward";
+import { NotificationCard } from "@/components/common/NotificationCard";
 
 export default function RewardPage() {
   const navigate = useNavigate();
@@ -53,12 +53,18 @@ export default function RewardPage() {
     isError: isStampError,
   } = useUserStamps();
 
+  const {
+    data: rewardData,
+    isLoading: isRewardLoading,
+    isError: isRewardError,
+  } = useRewardActivities();
+
   const { data: achievements } = useUserAchievements();
 
   const handleChangeTab = (tab: RewardTab) => {
     setSelectedTab(tab);
   };
-
+  const activities = rewardData?.pages.flatMap((page) => page.activities) ?? [];
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
       <Header />
@@ -101,7 +107,9 @@ export default function RewardPage() {
             />
           ) : null}
 
-          {selectedTab === "history" ? <HistorySection /> : null}
+          {selectedTab === "history" ? (
+            <HistorySection data={activities} />
+          ) : null}
 
           {/* <button
             type="button"
@@ -171,7 +179,10 @@ function StampRegionSection({
   );
 }
 
-function HistorySection() {
+type HistorySectionProps = {
+  data: RewardActivity[] | undefined;
+};
+function HistorySection({ data }: HistorySectionProps) {
   return (
     <>
       <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
@@ -179,8 +190,18 @@ function HistorySection() {
       </p>
 
       <div className="mt-[16px] flex flex-col gap-[10px]">
-        {rewardHistoryItems.map((item) => (
-          <HistoryCard key={item.id} item={item} />
+        {data?.length === 0 && (
+          <p className="text-center">최근 보상 내역이 없습니다.</p>
+        )}
+        {data?.map((item) => (
+          <NotificationCard
+            key={item.id}
+            id={item.id}
+            type={item.activityType}
+            title={item.title}
+            amount={item.amount}
+            createdAt={item.createdAt}
+          />
         ))}
       </div>
     </>
