@@ -32,6 +32,7 @@ interface NotificationCardProps {
   amount?: number | null;
   createdAt: string;
   read?: boolean;
+  onRead?: (id: number, read: boolean) => void;
 }
 
 export function NotificationCard({
@@ -42,13 +43,14 @@ export function NotificationCard({
   amount,
   createdAt,
   read = false,
+  onRead,
 }: NotificationCardProps) {
   const unread = !read;
   const { icon, iconBg } = notificationStyles[type];
   return (
     <ContentCard
       key={id}
-      //   onClick={() => handleRead(notification.id)}
+      onClick={() => onRead?.(id, read)}
       className={`relative cursor-pointer transition ${unread ? "bg-white" : "!bg-[#F8FAFC]"}`}
     >
       <div className="flex gap-3">
