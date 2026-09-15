@@ -139,7 +139,6 @@ export default function NotificationPage() {
                 />
               );
             })}
-
             {/* 다음 페이지 조회 실패 */}
             {isFetchNextPageError && (
               <p role="alert" className="text-center text-sm text-red-500">
