@@ -6,6 +6,7 @@ import type {
   MissionPhotoRequest,
   MissionPhotoResult,
   MissionReflectionRequest,
+  MissionUnlockCondition,
 } from "@/types/missionAttempt";
 
 const API_BASE_URL = (
@@ -71,6 +72,12 @@ async function missionAttemptRequest<T>(
   }
 
   return payload.result;
+}
+
+export function getMissionUnlockCondition(missionId: number) {
+  return missionAttemptRequest<MissionUnlockCondition>(
+    `/api/missions/${missionId}/unlock-condition`,
+  );
 }
 
 export function startMissionAttempt(missionId: number) {
@@ -163,5 +170,4 @@ export function quitMissionAttempt(attemptId: number) {
       method: "POST",
     },
   );
-  
 }
