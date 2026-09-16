@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { SearchInput } from "@/components/UI";
@@ -26,7 +27,6 @@ import { getEquippedQuestyAsset } from "@/utils/questyAsset";
 import { PATH } from "@/routes/paths";
 import type { MissionCategory } from "@/types/mission";
 
-import QuestySvg from "@/assets/icons/Questy.svg";
 import { Header } from "@/components/common/Header";
 import DefaultQuestySvg from "@/assets/questy.svg";
 
@@ -41,6 +41,7 @@ const HOME_CATEGORY_API_VALUES: Record<string, MissionCategory> = {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [searchKeyword, setSearchKeyword] = useState("");
   const { profileQuery, questyQuery } = useHomeProfile();
   const { toggleMissionLike, pendingMissionId } = useToggleMissionLike();
   const { coordinates, status: locationStatus } = useCurrentCoordinates();
@@ -74,7 +75,18 @@ export default function HomePage() {
           />
 
           <div className="mt-[18px]">
-            <SearchInput placeholder="미션 · 장소 · 지역을 검색해보세요" />
+            <SearchInput
+              onChange={setSearchKeyword}
+              onSearch={(keyword) => {
+                const trimmedKeyword = keyword.trim();
+                if (!trimmedKeyword) return;
+                navigate(
+                  `${PATH.MISSIONS}?keyword=${encodeURIComponent(trimmedKeyword)}`,
+                );
+              }}
+              placeholder="미션 · 장소 · 지역을 검색해보세요"
+              value={searchKeyword}
+            />
           </div>
         </section>
 
@@ -145,7 +157,7 @@ export default function HomePage() {
           </div>
 
           <div className="mb-[16px] mt-[28px]">
-            <BonusBanner mascotSrc={QuestySvg} />
+            <BonusBanner mascotSrc={DefaultQuestySvg} />
           </div>
         </section>
       </QuespotPageContent>

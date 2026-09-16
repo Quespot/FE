@@ -115,8 +115,13 @@ export default function MissionPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedCategory = getMissionCategory(searchParams.get("category"));
+  const searchKeyword = searchParams.get("keyword") ?? "";
 
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeyword] = useState(searchKeyword);
+
+  useEffect(() => {
+    setKeyword(searchKeyword);
+  }, [searchKeyword]);
 
   const { currentLocation, locationStatus } = useCurrentLocation();
 

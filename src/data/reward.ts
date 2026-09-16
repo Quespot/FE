@@ -3,7 +3,6 @@ export type RewardTab = "badges" | "stamps" | "history";
 export type RewardTabItem = {
   id: RewardTab;
   label: string;
-  emoji: string;
 };
 
 export type BadgeItem = {
@@ -45,17 +44,14 @@ export const rewardTabs: RewardTabItem[] = [
   {
     id: "badges",
     label: "배지",
-    emoji: "🏅",
   },
   {
     id: "stamps",
     label: "스탬프",
-    emoji: "✉️",
   },
   {
     id: "history",
     label: "내역",
-    emoji: "📋",
   },
 ];
 
