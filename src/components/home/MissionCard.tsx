@@ -1,4 +1,5 @@
 import { Heart, Loader2, MapPin } from "lucide-react";
+import { categoryToneClasses } from "@/components/home/CategoryGrid";
 
 const missionToneClasses: Record<string, string> = {
   cream: "bg-[linear-gradient(145deg,#fff6cc_0%,#fffef6_100%)]",
@@ -6,6 +7,15 @@ const missionToneClasses: Record<string, string> = {
   mint: "bg-[linear-gradient(145deg,#ddfaee_0%,#fafffd_100%)]",
   peach: "bg-[linear-gradient(145deg,#ffe6d7_0%,#fff9f5_100%)]",
   blue: "bg-[linear-gradient(145deg,#dff1ff_0%,#f7fcff_100%)]",
+};
+
+const missionCategoryToneClasses: Record<string, string> = {
+  역사: categoryToneClasses.violet,
+  문화: categoryToneClasses.pink,
+  자연: categoryToneClasses.green,
+  음식: categoryToneClasses.amber,
+  야경: categoryToneClasses.blue,
+  기타: categoryToneClasses.cyan,
 };
 
 export type RecommendedMissionCardItem = {
@@ -34,6 +44,8 @@ export default function MissionCard({
   isLikePending = false,
 }: MissionCardProps) {
   const toneClass = missionToneClasses[mission.tone] ?? missionToneClasses.blue;
+  const categoryToneClass =
+    missionCategoryToneClasses[mission.category] ?? categoryToneClasses.blue;
 
   return (
     <article
@@ -79,7 +91,9 @@ export default function MissionCard({
       </div>
 
       <div className="px-3 pb-[14px] pt-3">
-        <span className="inline-flex rounded-full bg-[#fff0c9] px-[9px] py-[5px] text-[11px] font-black text-[#f59e0b]">
+        <span
+          className={`inline-flex rounded-full px-[9px] py-[5px] text-[11px] font-black ${categoryToneClass}`}
+        >
           {mission.category}
         </span>
 

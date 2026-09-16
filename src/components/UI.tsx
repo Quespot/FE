@@ -73,12 +73,44 @@ export function WireImage({
   );
 }
 
-export function SearchInput({ placeholder }: { placeholder: string }) {
+type SearchInputProps = {
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSearch: (value: string) => void;
+};
+
+export function SearchInput({
+  placeholder,
+  value,
+  onChange,
+  onSearch,
+}: SearchInputProps) {
   return (
-    <label className="flex items-center gap-2 h-8 p-[0_12px] border-[1px_solid_#dbe8f8] rounded-2xl bg-[var(--sky-50)] h-[46px] rounded-[18px] p-[0_14px] bg-white text-[var(--muted-2)] [box-shadow:0_1px_5px_rgba(8,_37,_95,_0.08)] min-h-11 mt-[-4px] border-[1px_solid_#dce8f5] rounded-[17px] p-[0_18px] text-[#9aa8bb] [box-shadow:0_3px_9px_rgba(8,_37,_95,_0.08)]">
-      <Search size={16} strokeWidth={2.4} />
-      <input className="w-full border-0 bg-transparent text-[var(--navy)] text-[9px] outline-none text-[13px] text-[var(--ink)]" placeholder={placeholder} />
-    </label>
+    <form
+      className="flex items-center gap-2 h-8 p-[0_12px] border-[1px_solid_#dbe8f8] rounded-2xl bg-[var(--sky-50)] h-[46px] rounded-[18px] p-[0_14px] bg-white text-[var(--muted-2)] [box-shadow:0_1px_5px_rgba(8,_37,_95,_0.08)] min-h-11 mt-[-4px] border-[1px_solid_#dce8f5] rounded-[17px] p-[0_18px] text-[#9aa8bb] [box-shadow:0_3px_9px_rgba(8,_37,_95,_0.08)]"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSearch(value);
+      }}
+      role="search"
+    >
+      <button
+        aria-label="검색"
+        className="grid shrink-0 place-items-center text-[#9aa8bb]"
+        type="submit"
+      >
+        <Search size={16} strokeWidth={2.4} />
+      </button>
+      <input
+        aria-label="미션, 장소, 지역 검색"
+        className="w-full border-0 bg-transparent text-[var(--navy)] text-[9px] outline-none text-[13px] text-[var(--ink)]"
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        type="search"
+        value={value}
+      />
+    </form>
   );
 }
 

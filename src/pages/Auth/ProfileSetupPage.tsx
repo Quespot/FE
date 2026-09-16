@@ -155,7 +155,7 @@ export default function ProfileSetupPage() {
 
           {!isEditingDetails ? <label className="grid gap-2"><span className="type-caption3 text-[#556171]">닉네임 <b className="text-[#51aceb]">*</b></span><input className={fieldClass} autoComplete="nickname" maxLength={10} minLength={2} onChange={(event) => setNickname(event.target.value)} placeholder="2~10자로 입력해주세요" required value={nickname} /></label> : null}
 
-          <div className={`${isEditingDetails ? "" : "mt-4"} grid grid-cols-2 gap-[11px] max-[360px]:grid-cols-1`}>
+          <div className={`${isEditingDetails ? "" : "mt-4"} grid gap-4`}>
             <ProfileDatePicker isOpen={openPicker === "birthDate"} max={today} onChange={setBirthDate} onOpenChange={(open) => setOpenPicker(open ? "birthDate" : null)} value={birthDate} />
             <ProfileChoiceSelect groups={regionGroups} isOpen={openPicker === "region"} label="거주 지역" layout="grid" onChange={setRegion} onOpenChange={(open) => setOpenPicker(open ? "region" : null)} placeholder="지역 선택" required title="거주 지역을 선택해주세요" value={region} />
           </div>
