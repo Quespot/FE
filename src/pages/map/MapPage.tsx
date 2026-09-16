@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -47,6 +54,13 @@ export default function MapPage() {
   const [selectedSpotId, setSelectedSpotId] = useState<string>("");
   const [isPlaceListOpen, setIsPlaceListOpen] = useState(false);
   const [isMissionSheetOpen, setIsMissionSheetOpen] = useState(false);
+  const spotScrollDragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    scrollLeft: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressSpotClickRef = useRef(false);
 
   const { currentLocation, locationStatus } = useCurrentLocation();
 
@@ -115,6 +129,45 @@ export default function MapPage() {
         origin: currentLocation,
       },
     });
+  };
+
+  const handleSpotScrollPointerDown = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    spotScrollDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: event.currentTarget.scrollLeft,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleSpotScrollPointerMove = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    const drag = spotScrollDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const distance = event.clientX - drag.startX;
+    if (Math.abs(distance) > 4) drag.moved = true;
+    event.currentTarget.scrollLeft = drag.scrollLeft - distance;
+  };
+
+  const handleSpotScrollPointerEnd = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    const drag = spotScrollDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    suppressSpotClickRef.current = drag.moved;
+    spotScrollDragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    window.setTimeout(() => {
+      suppressSpotClickRef.current = false;
+    }, 0);
   };
 
   console.log(data);
@@ -237,7 +290,17 @@ export default function MapPage() {
             </button>
           </div>
 
-          <div className="no-scrollbar flex gap-[10px] overflow-x-auto pb-[2px]">
+          <div
+            className="no-scrollbar flex cursor-grab touch-none select-none gap-[10px] overflow-x-auto overscroll-x-contain pb-[2px] active:cursor-grabbing"
+            onPointerCancel={handleSpotScrollPointerEnd}
+            onPointerDown={handleSpotScrollPointerDown}
+            onPointerLeave={handleSpotScrollPointerEnd}
+            onPointerMove={handleSpotScrollPointerMove}
+            onPointerUp={handleSpotScrollPointerEnd}
+            onWheel={(event: ReactWheelEvent<HTMLDivElement>) => {
+              event.currentTarget.scrollLeft += event.deltaX || event.deltaY;
+            }}
+          >
             {isNearLoading && (
               <div className="w-full flex justify-center items-center">
                 데이터를 불러오는 중 입니다...
@@ -253,7 +316,10 @@ export default function MapPage() {
                 key={spot.districtCode}
                 spot={spot}
                 selected={selectedSpot?.districtCode === spot.districtCode}
-                onClick={() => handleSelectSpotCard(spot.districtCode)}
+                onClick={() => {
+                  if (suppressSpotClickRef.current) return;
+                  handleSelectSpotCard(spot.districtCode);
+                }}
               />
             ))}
           </div>
@@ -546,7 +612,7 @@ function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
       type="button"
       onClick={onClick}
       className={[
-        "flex min-w-[82px] flex-col items-center rounded-[16px] border-2 px-[12px] py-[12px] transition active:scale-[0.98]",
+        "flex min-w-[82px] shrink-0 flex-col items-center rounded-[16px] border-2 px-[12px] py-[12px] transition active:scale-[0.98]",
         selected
           ? "border-[#5BB5F8] bg-primary text-white"
           : isCompleted
