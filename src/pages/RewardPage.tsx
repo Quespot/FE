@@ -29,7 +29,8 @@ import {
   UserBadges,
   UserStamps,
 } from "@/apis/reward";
-import { NotificationCard } from "@/components/common/NotificationCard";
+import { NotificationCard } from "@/components/common/NotificationCard/NotificationCard";
+import { NotificationCardSkeleton } from "@/components/common/NotificationCard/NotificationCardSkeleton";
 
 export default function RewardPage() {
   const navigate = useNavigate();
@@ -108,7 +109,11 @@ export default function RewardPage() {
           ) : null}
 
           {selectedTab === "history" ? (
-            <HistorySection data={activities} />
+            <HistorySection
+              data={activities}
+              isLoading={isRewardLoading}
+              isError={isRewardError}
+            />
           ) : null}
 
           {/* <button
@@ -181,28 +186,43 @@ function StampRegionSection({
 
 type HistorySectionProps = {
   data: RewardActivity[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
 };
-function HistorySection({ data }: HistorySectionProps) {
+function HistorySection({ data, isLoading, isError }: HistorySectionProps) {
   return (
     <>
       <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
         최근 보상 내역
       </p>
 
-      <div className="mt-[16px] flex flex-col gap-[10px]">
-        {data?.length === 0 && (
-          <p className="text-center">최근 보상 내역이 없습니다.</p>
+      <div className="mt-[16px] flex flex-col gap-[10px]" aria-busy={isLoading}>
+        {isLoading ? (
+          Array.from({ length: 5 }, (_, index) => (
+            <NotificationCardSkeleton key={index} showDescription={false} />
+          ))
+        ) : (
+          <>
+            {isError && (
+              <p role="alert" className="text-center text-sm text-red-500">
+                보상 내역을 불러오지 못했어요. 다시 시도해 주세요.
+              </p>
+            )}
+            {!isError && data?.length === 0 && (
+              <p className="text-center">최근 보상 내역이 없습니다.</p>
+            )}
+            {data?.map((item) => (
+              <NotificationCard
+                key={item.id}
+                id={item.id}
+                type={item.activityType}
+                title={item.title}
+                amount={item.amount}
+                createdAt={item.createdAt}
+              />
+            ))}
+          </>
         )}
-        {data?.map((item) => (
-          <NotificationCard
-            key={item.id}
-            id={item.id}
-            type={item.activityType}
-            title={item.title}
-            amount={item.amount}
-            createdAt={item.createdAt}
-          />
-        ))}
       </div>
     </>
   );

@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { isSupported } from "firebase/messaging";
 import { Bell } from "lucide-react";
 import { SubHeader } from "@/components/DeviceFrame";
-import { NotificationCard } from "@/components/common/NotificationCard";
+import { NotificationCard } from "@/components/common/NotificationCard/NotificationCard";
+import { NotificationCardSkeleton } from "@/components/common/NotificationCard/NotificationCardSkeleton";
 import {
   useNotifications,
   useNotificationSettings,
@@ -281,9 +282,9 @@ export default function NotificationPage() {
         )}
 
         {isNotificationPending ? (
-          <p className="py-10 text-center text-sm text-[#A2A9B2]">
-            알림을 불러오는 중...
-          </p>
+          Array.from({ length: 3 }, (_, index) => (
+            <NotificationCardSkeleton key={index} showAmount={false} />
+          ))
         ) : isNotificationError && !notificationData ? (
           <div className="flex flex-col items-center gap-3 py-10">
             <p role="alert" className="text-sm text-[#A2A9B2]">
