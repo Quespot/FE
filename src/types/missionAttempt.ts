@@ -15,6 +15,11 @@ export type MissionAttempt = {
   earnedPoint: number | null;
 };
 
+export type MissionUnlockCondition = {
+  locked: boolean;
+  message: string;
+};
+
 export type MissionArrivalResult = {
   success: boolean;
   distanceMeters: number;
