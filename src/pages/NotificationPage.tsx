@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { isSupported } from "firebase/messaging";
 import { Bell } from "lucide-react";
 import { SubHeader } from "@/components/DeviceFrame";
-import { NotificationCard } from "@/components/common/NotificationCard";
+import { NotificationCard } from "@/components/common/NotificationCard/NotificationCard";
+import { NotificationCardSkeleton } from "@/components/common/NotificationCard/NotificationCardSkeleton";
 import {
   useNotifications,
   useNotificationSettings,
@@ -145,6 +147,13 @@ export default function NotificationPage() {
   } = useMarkAllNotificationsAsRead();
 
   const isReadUpdating = isReadPending || isReadAllPending;
+  const loadMoreRef = useInfiniteScroll({
+    hasNextPage,
+    isFetching,
+    isError: isNotificationError,
+    fetchNextPage,
+    enabled: !isReadUpdating,
+  });
   const handleRead = (id: number, read: boolean) => {
     if (read || isReadUpdating) return;
     readNotification(id);
@@ -281,9 +290,9 @@ export default function NotificationPage() {
         )}
 
         {isNotificationPending ? (
-          <p className="py-10 text-center text-sm text-[#A2A9B2]">
-            알림을 불러오는 중...
-          </p>
+          Array.from({ length: 3 }, (_, index) => (
+            <NotificationCardSkeleton key={index} showAmount={false} />
+          ))
         ) : isNotificationError && !notificationData ? (
           <div className="flex flex-col items-center gap-3 py-10">
             <p role="alert" className="text-sm text-[#A2A9B2]">
@@ -339,24 +348,15 @@ export default function NotificationPage() {
             {/* 다음 페이지 조회 실패 */}
             {isFetchNextPageError && (
               <p role="alert" className="text-center text-sm text-red-500">
-                다음 알림을 불러오지 못했어요. 더보기를 다시 눌러 주세요.
+                다음 알림을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.
               </p>
             )}
 
-            {/* 더보기 */}
-            {hasNextPage && (
-              <button
-                type="button"
-                onClick={() => void fetchNextPage()}
-                disabled={isFetching || isReadUpdating}
-                className="
-                  mt-4 rounded-xl bg-white py-3
-                  text-sm font-bold text-[#5BB5F8]
-                  disabled:opacity-50
-                "
-              >
-                {isFetchingNextPage ? "불러오는 중..." : "더보기"}
-              </button>
+            {isFetchingNextPage && Array.from({ length: 3 }, (_, index) => (
+              <NotificationCardSkeleton key={`next-${index}`} showAmount={false} />
+            ))}
+            {hasNextPage && !isNotificationError && (
+              <div ref={loadMoreRef} className="h-px shrink-0" aria-hidden="true" />
             )}
           </>
         )}

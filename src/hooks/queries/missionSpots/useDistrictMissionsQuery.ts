@@ -4,7 +4,7 @@ import {
   DistrictMissionsParams,
   getDistrictMissions,
 } from "@/apis/missionSpot";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 export const useDistrictMissionsQuery = (
   districtCode: string,
@@ -15,9 +15,18 @@ export const useDistrictMissionsQuery = (
     size: params.size ?? 20,
   };
 
-  return useQuery({
-    queryKey: ["missionSpots", "missions", districtCode, requestParams],
-    queryFn: () => getDistrictMissions(districtCode, requestParams),
+  return useInfiniteQuery({
+    queryKey: ["missionSpots", "missions", "infinite", districtCode, requestParams],
+    initialPageParam: params.cursor as string | undefined,
+    queryFn: ({ pageParam }) =>
+      getDistrictMissions(districtCode, { ...requestParams, cursor: pageParam }),
+    getNextPageParam: (lastPage, _pages, _lastParam, pageParams) => {
+      const cursor = lastPage.nextCursor;
+      if (!lastPage.hasNext || !cursor || pageParams.includes(cursor)) {
+        return undefined;
+      }
+      return cursor;
+    },
     enabled: districtCode.trim().length > 0,
     staleTime: 1000 * 60 * 60, // 1시간
     gcTime: Infinity, // 무한
