@@ -20,6 +20,9 @@ type VerifyLoadingPageState = {
   missionTitle?: string;
   isDemoMode?: boolean;
   isSuccess?: boolean;
+  failureReason?: "arrival" | "photo";
+  distanceMeters?: number;
+  radiusMeters?: number;
 };
 
 const steps = [
@@ -47,9 +50,10 @@ export default function VerifyLoadingPage() {
   const state = location.state as VerifyLoadingPageState | null;
 
   const [currentStep, setCurrentStep] = useState(0);
+  const visibleSteps = steps;
 
   useEffect(() => {
-    if (currentStep >= steps.length) {
+    if (currentStep >= visibleSteps.length) {
       navigate(PATH.MISSION_VERIFY_RESULT, {
         replace: true,
         state: {
@@ -59,6 +63,9 @@ export default function VerifyLoadingPage() {
           missionTitle: state?.missionTitle,
           isDemoMode: state?.isDemoMode,
           isSuccess: state?.isSuccess ?? true,
+          failureReason: state?.failureReason,
+          distanceMeters: state?.distanceMeters,
+          radiusMeters: state?.radiusMeters,
         },
       });
 
@@ -85,7 +92,7 @@ export default function VerifyLoadingPage() {
       </p>
 
       <div className="w-full mt-8 flex flex-col gap-3">
-        {steps.map((step, index) => {
+        {visibleSteps.map((step, index) => {
           const Icon = step.icon;
 
           const isCompleted = index < currentStep;
