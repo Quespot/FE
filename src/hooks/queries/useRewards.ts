@@ -45,6 +45,10 @@ export const useRewardActivities = (size = 20) =>
         cursor: pageParam,
         size,
       }),
-    getNextPageParam: (lastPage) =>
-      lastPage.hasNext ? (lastPage.nextCursor ?? undefined) : undefined,
+    getNextPageParam: (lastPage, _pages, _lastParam, pageParams) => {
+      const cursor = lastPage.nextCursor;
+      return lastPage.hasNext && cursor != null && !pageParams.includes(cursor)
+        ? cursor
+        : undefined;
+    },
   });

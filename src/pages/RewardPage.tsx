@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useNavigate } from "react-router-dom";
 
 import BadgeCard from "@/components/reward/BadgeCard/BadgeCard";
@@ -53,6 +54,11 @@ export default function RewardPage() {
     data: rewardData,
     isLoading: isRewardLoading,
     isError: isRewardError,
+    hasNextPage,
+    fetchNextPage,
+    isFetching: isRewardFetching,
+    isFetchingNextPage,
+    isFetchNextPageError,
   } = useRewardActivities();
 
   const {
@@ -124,6 +130,11 @@ export default function RewardPage() {
               data={activities}
               isLoading={isRewardLoading}
               isError={isRewardError}
+              hasNextPage={hasNextPage}
+              fetchNextPage={fetchNextPage}
+              isFetching={isRewardFetching}
+              isFetchingNextPage={isFetchingNextPage}
+              isFetchNextPageError={isFetchNextPageError}
             />
           ) : null}
 
@@ -245,22 +256,33 @@ type HistorySectionProps = {
   data: RewardActivity[] | undefined;
   isLoading: boolean;
   isError: boolean;
+  hasNextPage: boolean;
+  fetchNextPage: () => Promise<unknown>;
+  isFetching: boolean;
+  isFetchingNextPage: boolean;
+  isFetchNextPageError: boolean;
 };
-function HistorySection({ data, isLoading, isError }: HistorySectionProps) {
+function HistorySection({
+  data, isLoading, isError, hasNextPage, fetchNextPage,
+  isFetching, isFetchingNextPage, isFetchNextPageError,
+}: HistorySectionProps) {
+  const loadMoreRef = useInfiniteScroll({
+    hasNextPage, isFetching, isError, fetchNextPage,
+  });
   return (
     <>
       <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
         최근 보상 내역
       </p>
 
-      <div className="mt-[16px] flex flex-col gap-[10px]" aria-busy={isLoading}>
+      <div className="mt-[16px] flex flex-col gap-[10px]" aria-busy={isLoading || isFetchingNextPage}>
         {isLoading ? (
           Array.from({ length: 5 }, (_, index) => (
             <NotificationCardSkeleton key={index} showDescription={false} />
           ))
         ) : (
           <>
-            {isError && (
+            {isError && !isFetchNextPageError && (
               <RewardError message="보상 내역을 불러오지 못했어요." />
             )}
             {!isError && data?.length === 0 && (
@@ -276,6 +298,15 @@ function HistorySection({ data, isLoading, isError }: HistorySectionProps) {
                 createdAt={item.createdAt}
               />
             ))}
+            {isFetchingNextPage && Array.from({ length: 5 }, (_, index) => (
+              <NotificationCardSkeleton key={`next-${index}`} showDescription={false} />
+            ))}
+            {isFetchNextPageError && (
+              <RewardError message="다음 보상 내역을 불러오지 못했어요. 잠시 후 다시 확인해 주세요." />
+            )}
+            {hasNextPage && !isError && (
+              <div ref={loadMoreRef} className="h-px shrink-0" aria-hidden="true" />
+            )}
           </>
         )}
       </div>

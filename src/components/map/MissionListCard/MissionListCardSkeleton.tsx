@@ -1,7 +1,7 @@
 export default function MissionListCardSkeleton() {
   return (
     <div
-      className="flex shrink-0 animate-pulse justify-between gap-3 rounded-[18px] border border-[#E5EDF7] p-4 motion-reduce:animate-none"
+      className="flex shrink-0 animate-pulse bg-white justify-between gap-3 rounded-[18px] border border-[#E5EDF7] p-4 motion-reduce:animate-none"
       aria-hidden="true"
     >
       <div className="flex min-w-0 flex-1 gap-2">

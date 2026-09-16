@@ -19,7 +19,7 @@ export default function MissionListCard({
   const navigate = useNavigate();
 
   return (
-    <div className="rounded-[18px] border border-[#E5EDF7] p-4 flex justify-between bg-white">
+    <div className="shrink-0 rounded-[18px] border border-[#E5EDF7] p-4 flex justify-between bg-white">
       <div className="flex gap-2">
         <img
           src={mission.imageUrl}

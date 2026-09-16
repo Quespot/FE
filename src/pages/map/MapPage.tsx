@@ -1,3 +1,4 @@
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import {
   useEffect,
   useMemo,
@@ -27,7 +28,7 @@ import {
 import { PATH } from "@/routes/paths";
 import { Header } from "@/components/common/Header";
 import { useMissionSpotsQuery } from "@/hooks/queries/missionSpots/useMissionSpotsQuery";
-import { DistrictMissions, MissionSpot } from "@/apis/missionSpot";
+import { DistrictMission, MissionSpot } from "@/apis/missionSpot";
 import { useNearbyMissionSpotsQuery } from "@/hooks/queries/missionSpots/useNearbyMissionSpotsQuery";
 import { useDistrictMissionsQuery } from "@/hooks/queries/missionSpots/useDistrictMissionsQuery";
 import MissionListCard from "@/components/map/MissionListCard/MissionListCard";
@@ -65,8 +66,16 @@ export default function MapPage() {
     data: listData,
     isLoading: isListLoading,
     isError: isListError,
+    hasNextPage,
+    fetchNextPage,
+    isFetching: isListFetching,
+    isFetchingNextPage,
+    isFetchNextPageError,
   } = useDistrictMissionsQuery(selectedSpotId);
-  console.log(listData?.missions);
+  const missions = useMemo(() => {
+    const items = listData?.pages.flatMap((page) => page.missions) ?? [];
+    return Array.from(new globalThis.Map(items.map((item) => [item.missionId, item])).values());
+  }, [listData]);
   const {
     data: nearData,
     isLoading: isNearLoading,
@@ -356,10 +365,16 @@ export default function MapPage() {
         {isMissionSheetOpen && selectedSpot && (
           <>
             <MissionListBottomSheet
+              key={selectedSpot.districtCode}
               spot={selectedSpot}
-              listData={listData}
+              missions={missions}
               isLoading={isListLoading}
               isError={isListError}
+              hasNextPage={hasNextPage}
+              fetchNextPage={fetchNextPage}
+              isFetching={isListFetching}
+              isFetchingNextPage={isFetchingNextPage}
+              isFetchNextPageError={isFetchNextPageError}
               onClose={() => setIsMissionSheetOpen(false)}
             />
           </>
@@ -646,7 +661,12 @@ function MapApiKeyFallback() {
 
 type MissionListBottomSheetProps = {
   spot: MissionSpot;
-  listData: DistrictMissions | undefined;
+  missions: DistrictMission[];
+  hasNextPage: boolean;
+  fetchNextPage: () => Promise<unknown>;
+  isFetching: boolean;
+  isFetchingNextPage: boolean;
+  isFetchNextPageError: boolean;
   isLoading: boolean;
   isError: boolean;
   onClose: () => void;
@@ -654,11 +674,24 @@ type MissionListBottomSheetProps = {
 
 function MissionListBottomSheet({
   spot,
-  listData,
+  missions,
+  hasNextPage,
+  fetchNextPage,
+  isFetching,
+  isFetchingNextPage,
+  isFetchNextPageError,
   isLoading,
   isError,
   onClose,
 }: MissionListBottomSheetProps) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useInfiniteScroll({
+    hasNextPage,
+    isFetching,
+    isError,
+    fetchNextPage,
+    rootRef: listRef,
+  });
   return (
     <div
       className="absolute inset-0 z-[1000] flex items-end bg-black/20"
@@ -693,22 +726,35 @@ function MissionListBottomSheet({
 
         {/* 미션 목록 */}
         <div
-          className="no-scrollbar mt-[16px] min-h-0 overflow-y-auto flex flex-col gap-2 overscroll-contain bg-[#f4f8ff] px-5 py-5"
-          aria-busy={isLoading}
+          ref={listRef}
+          className="no-scrollbar mt-[16px] min-h-0 flex-1 overflow-y-auto flex flex-col gap-2 overscroll-contain bg-[#f4f8ff] px-5 py-5"
+          aria-busy={isLoading || isFetchingNextPage}
         >
           {isLoading &&
             Array.from({ length: 3 }, (_, index) => (
               <MissionListCardSkeleton key={index} />
             ))}
-          {isError && (
+          {isError && !isFetchNextPageError && (
             <div className="w-full flex justify-center items-center">
               에러가 발생했습니다. 다시 시도해주십시오.
             </div>
           )}
           {!isLoading &&
-            listData?.missions.map((data) => (
+            missions.map((data) => (
               <MissionListCard key={data.missionId} mission={data} />
             ))}
+          {isFetchingNextPage &&
+            Array.from({ length: 3 }, (_, index) => (
+              <MissionListCardSkeleton key={`next-${index}`} />
+            ))}
+          {isFetchNextPageError && (
+            <p role="alert" className="py-3 text-center text-sm text-red-500">
+              다음 미션을 불러오지 못했어요. 잠시 후 다시 확인해 주세요.
+            </p>
+          )}
+          {hasNextPage && !isError && (
+            <div ref={loadMoreRef} className="h-px shrink-0" aria-hidden="true" />
+          )}
         </div>
       </section>
     </div>

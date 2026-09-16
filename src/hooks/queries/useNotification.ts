@@ -15,7 +15,7 @@ export const notificationKeys = {
   settings: ["notifications", "settings"] as const,
 };
 
-// 알림 목록 조회: 커서 기반 더보기
+// 알림 목록 조회: 커서 기반 무한 스크롤
 export const useNotifications = (size = 20) =>
   useInfiniteQuery({
     queryKey: notificationKeys.list(size),
@@ -25,8 +25,12 @@ export const useNotifications = (size = 20) =>
         size,
       }),
     initialPageParam: undefined as number | undefined,
-    getNextPageParam: (lastPage) =>
-      lastPage.hasNext ? (lastPage.nextCursor ?? undefined) : undefined,
+    getNextPageParam: (lastPage, _pages, _lastParam, pageParams) => {
+      const cursor = lastPage.nextCursor;
+      return lastPage.hasNext && cursor != null && !pageParams.includes(cursor)
+        ? cursor
+        : undefined;
+    },
     staleTime: 30 * 1000,
   });
 
