@@ -1,10 +1,18 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowRight, Lightbulb, Loader2, MapPin, NotebookPen, X } from "lucide-react";
+import {
+  ArrowRight,
+  Lightbulb,
+  Loader2,
+  MapPin,
+  NotebookPen,
+  X,
+} from "lucide-react";
 
 import Button from "@/components/common/Button";
 import { PATH } from "@/routes/paths";
 import { useMissionAttemptResult } from "@/hooks/queries/useMissionAttemptResult";
+import { useMissionAttemptDetail } from "@/hooks/queries/useMissionAttemptDetail";
 import type { MissionDetail } from "@/types/mission";
 
 import Questy from "@/assets/icons/QuestyMain.svg";
@@ -34,28 +42,42 @@ export default function VerifyResultPage() {
     shouldFetchResult ? attemptId : null,
   );
 
-  const [previewStatus, setPreviewStatus] = useState<"success" | "fail">(
+  const {
+    data: attemptDetail,
+    isLoading: isAttemptDetailLoading,
+    isError: isAttemptDetailError,
+  } = useMissionAttemptDetail(attemptId);
+
+  const [previewStatus] = useState<"success" | "fail">(
     state?.isSuccess === false ? "fail" : "success",
   );
 
-  // getMissionAttemptResult()는 payload.result만 반환하므로 data를 그대로 사용
   const result = data;
 
   const resultViewData = useMemo(() => {
     return {
       missionTitle:
         result?.missionTitle ??
+        attemptDetail?.missionTitle ??
         state?.missionTitle ??
         state?.mission?.title ??
         "미션",
-      earnedPoint: result?.earnedPoint ?? state?.mission?.rewardPoint ?? 120,
+      earnedPoint:
+        result?.earnedPoint ??
+        attemptDetail?.earnedPoint ??
+        state?.mission?.rewardPoint ??
+        120,
+      completedAt: result?.completedAt ?? attemptDetail?.completedAt,
       photoUrl: result?.photoUrl,
     };
-  }, [result, state]);
+  }, [result, attemptDetail, state]);
 
   const isSuccess = previewStatus === "success";
 
-  if (shouldFetchResult && isLoading) {
+  if (
+    (shouldFetchResult && isLoading) ||
+    (Boolean(attemptId) && isAttemptDetailLoading && !state?.missionTitle)
+  ) {
     return <ResultLoading />;
   }
 
@@ -70,34 +92,9 @@ export default function VerifyResultPage() {
         }
       `}
     >
-      {/* <div className="bg-white h-12 flex justify-end items-center pr-4">
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            className={
-              isSuccess
-                ? "type-body4"
-                : "!bg-[#EAF5FF] !text-[#A2A9B2] type-body4"
-            }
-            onClick={() => setPreviewStatus("success")}
-          >
-            성공 예시
-          </Button>
-
-          <Button
-            size="sm"
-            variant={isSuccess ? "secondary" : "primary"}
-            className="type-body4"
-            onClick={() => setPreviewStatus("fail")}
-          >
-            실패 예시
-          </Button>
-        </div>
-      </div> */}
-
-      {isError && attemptId ? (
+      {(isError || isAttemptDetailError) && attemptId ? (
         <div className="mx-5 mt-4 rounded-2xl bg-white px-4 py-3 text-center text-[12px] font-bold text-[#F59E0B]">
-          완료 결과 조회 API 응답을 불러오지 못해서 임시 결과를 표시하고 있어요.
+          일부 인증 결과 정보를 불러오지 못해서 가능한 정보만 표시하고 있어요.
         </div>
       ) : null}
 
@@ -131,6 +128,7 @@ type SuccessResultProps = {
   result: {
     missionTitle: string;
     earnedPoint: number;
+    completedAt?: string | null;
     photoUrl?: string;
   };
 };
@@ -151,6 +149,12 @@ function SuccessResult({ navigate, result }: SuccessResultProps) {
           <p className="type-body3 text-[#00A63E]">
             {result.missionTitle} 인증 성공
           </p>
+
+          {result.completedAt ? (
+            <p className="mt-2 text-[11px] font-bold text-[#00A63E]/70">
+              완료 시간 {formatDateTime(result.completedAt)}
+            </p>
+          ) : null}
         </div>
 
         {result.photoUrl ? (
@@ -312,17 +316,26 @@ function FailResult({ navigate, state }: FailResultProps) {
                 <X size={17} />
               </Button>
             </div>
+
             <div className="mx-auto grid h-14 w-14 place-items-center rounded-[18px] bg-[#FFF2E8] text-[#F59E0B]">
               <MapPin size={27} strokeWidth={2.4} />
             </div>
-            <h2 id="verify-hint-title" className="mt-4 text-[18px] font-black text-[#1C1C3A]">
+
+            <h2
+              id="verify-hint-title"
+              className="mt-4 text-[18px] font-black text-[#1C1C3A]"
+            >
               조금 더 가까이 이동해주세요
             </h2>
+
             <p className="mt-3 break-keep text-[13px] leading-6 text-[#6F7B8D]">
-              미션 장소로부터 {formatMeters(state?.distanceMeters)} 떨어져 있어요.
+              미션 장소로부터 {formatMeters(state?.distanceMeters)} 떨어져
+              있어요.
               <br />
-              {formatMeters(state?.radiusMeters)} 안으로 이동한 뒤 다시 시도해주세요.
+              {formatMeters(state?.radiusMeters)} 안으로 이동한 뒤 다시
+              시도해주세요.
             </p>
+
             <Button className="mt-5" onClick={() => setIsHintOpen(false)}>
               확인
             </Button>
@@ -334,5 +347,22 @@ function FailResult({ navigate, state }: FailResultProps) {
 }
 
 function formatMeters(value?: number) {
-  return Number.isFinite(value) ? `${Math.round(value as number)}m` : "거리 정보 없음";
+  return Number.isFinite(value)
+    ? `${Math.round(value as number)}m`
+    : "거리 정보 없음";
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
