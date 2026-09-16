@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, Check, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PATH } from "@/routes/paths";
-import { confirmEmailVerification, requestEmailVerification, signup } from "@/api/auth";
+import { confirmEmailVerification, requestEmailVerification, signup } from "@/apis/auth";
 
 type VerificationState = "idle" | "sent" | "verified";
 

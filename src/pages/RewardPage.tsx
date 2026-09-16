@@ -2,74 +2,72 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Ticket } from "lucide-react";
 
-import HomeHeader from "@/components/home/HomeHeader";
 import BadgeCard from "@/components/reward/BadgeCard";
 import HistoryCard from "@/components/reward/HistoryCard";
-import PointSummaryCard from "@/components/reward/PointSummaryCard";
 import RewardTabs from "@/components/reward/RewardTabs";
 import StampCard from "@/components/reward/StampCard";
 import StampRegionCard from "@/components/reward/StampRegionCard";
 
 import QuespotPageLayout, {
-  QuespotDivider,
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 
-import {
-  rewardBadges,
-  rewardHistoryItems,
-  rewardStampRegions,
-  rewardStamps,
-  type RewardTab,
-  type StampItem,
-  type StampRegion,
-} from "@/data/reward";
+import { rewardHistoryItems, type RewardTab } from "@/data/reward";
 
-import { PATH } from "@/routes/paths";
-import QuestySvg from "@/assets/icons/Questy.svg";
+import { Header } from "@/components/common/Header";
+import {
+  useRewardActivities,
+  useUserAchievements,
+  useUserBadges,
+  useUserPoints,
+  useUserStamps,
+} from "@/hooks/queries/useRewards";
+import {
+  Badge,
+  RewardActivities,
+  RewardActivity,
+  UserBadges,
+  UserStamps,
+} from "@/apis/reward";
+import { NotificationCard } from "@/components/common/NotificationCard";
 
 export default function RewardPage() {
   const navigate = useNavigate();
 
   const [selectedTab, setSelectedTab] = useState<RewardTab>("badges");
-  const [selectedStampRegion, setSelectedStampRegion] =
-    useState<StampRegion | null>(null);
 
-  const acquiredBadgeCount = useMemo(() => {
-    return rewardBadges.filter((badge) => badge.acquired).length;
-  }, []);
+  const {
+    data: pointData,
+    isLoading: isPointLoading,
+    isError: isPointError,
+  } = useUserPoints();
 
-  const acquiredStampRegionCount = useMemo(() => {
-    return rewardStampRegions.filter((region) => region.acquired).length;
-  }, []);
+  const {
+    data: badgeData,
+    isLoading: isBadgeLoading,
+    isError: isBadgeError,
+  } = useUserBadges();
+  const {
+    data: stampData,
+    isLoading: isStampLoading,
+    isError: isStampError,
+  } = useUserStamps();
 
-  const selectedRegionStamps = useMemo(() => {
-    if (!selectedStampRegion) return [];
+  const {
+    data: rewardData,
+    isLoading: isRewardLoading,
+    isError: isRewardError,
+  } = useRewardActivities();
 
-    return rewardStamps.filter(
-      (stamp) => stamp.regionId === selectedStampRegion.id,
-    );
-  }, [selectedStampRegion]);
+  const { data: achievements } = useUserAchievements();
 
   const handleChangeTab = (tab: RewardTab) => {
     setSelectedTab(tab);
-
-    if (tab !== "stamps") {
-      setSelectedStampRegion(null);
-    }
   };
-
+  const activities = rewardData?.pages.flatMap((page) => page.activities) ?? [];
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
-      <HomeHeader
-        mascotSrc={QuestySvg}
-        notificationCount={3}
-        onBellClick={() => {
-          // TODO: 알림함 연결
-        }}
-      />
-
-      <QuespotDivider />
+      <Header />
 
       <QuespotPageContent className="bg-[#F4F8FF]">
         <section className="shrink-0 bg-[linear-gradient(150deg,#C8E8FF_0%,#EAF5FF_100%)] px-[20px] pb-[32px] pt-[24px]">
@@ -82,9 +80,11 @@ export default function RewardPage() {
           </h1>
 
           <PointSummaryCard
-            currentPoint={1240}
-            earnedPoint={1440}
-            usedPoint={200}
+            currentPoint={pointData?.balance ?? 0}
+            earnedPoint={pointData?.totalEarned ?? 0}
+            usedPoint={pointData?.totalSpent ?? 0}
+            isLoading={isPointLoading}
+            isError={isPointError}
           />
         </section>
 
@@ -93,37 +93,32 @@ export default function RewardPage() {
         <section className="flex flex-1 flex-col px-[16px] pb-[24px] pt-[20px]">
           {selectedTab === "badges" ? (
             <BadgeSection
-              acquiredCount={acquiredBadgeCount}
-              totalCount={rewardBadges.length}
+              badge={badgeData || undefined}
+              acquiredCount={achievements?.acquiredBadgeCount ?? 0}
+              totalCount={achievements?.totalBadgeCount ?? 0}
             />
           ) : null}
 
           {selectedTab === "stamps" ? (
-            selectedStampRegion ? (
-              <StampDetailSection
-                region={selectedStampRegion}
-                stamps={selectedRegionStamps}
-                onBack={() => setSelectedStampRegion(null)}
-              />
-            ) : (
-              <StampRegionSection
-                acquiredCount={acquiredStampRegionCount}
-                totalCount={rewardStampRegions.length}
-                onSelectRegion={setSelectedStampRegion}
-              />
-            )
+            <StampRegionSection
+              stamp={stampData ?? undefined}
+              acquiredCount={achievements?.acquiredStampCount ?? 0}
+              totalCount={achievements?.totalStampCount ?? 0}
+            />
           ) : null}
 
-          {selectedTab === "history" ? <HistorySection /> : null}
+          {selectedTab === "history" ? (
+            <HistorySection data={activities} />
+          ) : null}
 
-          <button
+          {/* <button
             type="button"
             onClick={() => navigate(PATH.REWARD_COUPONS)}
             className="mt-[28px] flex h-[50px] w-full shrink-0 items-center justify-center gap-[8px] rounded-[16px] bg-[#EAF5FF] text-[14px] font-black leading-none text-[#5BB5F8] transition active:scale-[0.99]"
           >
             <Ticket size={16} strokeWidth={2.4} />
             로컬 제휴 쿠폰 보기
-          </button>
+          </button> */}
         </section>
       </QuespotPageContent>
     </QuespotPageLayout>
@@ -131,14 +126,18 @@ export default function RewardPage() {
 }
 
 type RewardSectionCountProps = {
+  badge: UserBadges | undefined;
   acquiredCount: number;
   totalCount: number;
 };
 
 function BadgeSection({
+  badge,
   acquiredCount,
   totalCount,
 }: RewardSectionCountProps) {
+  const badgeEmojis = ["🎯", "🗺️", "📸", "🏙️", "🌊", "👑", "👑"];
+
   return (
     <>
       <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
@@ -146,8 +145,8 @@ function BadgeSection({
       </p>
 
       <div className="mt-[20px] grid grid-cols-3 gap-x-[26px] gap-y-[28px]">
-        {rewardBadges.map((badge) => (
-          <BadgeCard key={badge.id} badge={badge} />
+        {badge?.badges.map((badge, i) => (
+          <BadgeCard key={badge.id} badge={badge} emoji={badgeEmojis[i]} />
         ))}
       </div>
     </>
@@ -155,15 +154,15 @@ function BadgeSection({
 }
 
 type StampRegionSectionProps = {
+  stamp: UserStamps | undefined;
   acquiredCount: number;
   totalCount: number;
-  onSelectRegion: (region: StampRegion) => void;
 };
 
 function StampRegionSection({
+  stamp,
   acquiredCount,
   totalCount,
-  onSelectRegion,
 }: StampRegionSectionProps) {
   return (
     <>
@@ -172,80 +171,18 @@ function StampRegionSection({
       </p>
 
       <div className="mt-[20px] grid grid-cols-4 gap-x-[22px] gap-y-[22px]">
-        {rewardStampRegions.map((region) => (
-          <StampRegionCard
-            key={region.id}
-            region={region}
-            onClick={() => onSelectRegion(region)}
-          />
+        {stamp?.stamps.map((stamp) => (
+          <StampRegionCard key={stamp.id} stamp={stamp} emoji="✉️" />
         ))}
       </div>
     </>
   );
 }
 
-type StampDetailSectionProps = {
-  region: StampRegion;
-  stamps: StampItem[];
-  onBack: () => void;
+type HistorySectionProps = {
+  data: RewardActivity[] | undefined;
 };
-
-function StampDetailSection({
-  region,
-  stamps,
-  onBack,
-}: StampDetailSectionProps) {
-  const acquiredCount = stamps.filter((stamp) => stamp.acquired).length;
-
-  return (
-    <>
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex h-[32px] items-center gap-[4px] rounded-full bg-[#EAF5FF] px-[12px] text-[12px] font-black text-[#5BB5F8] transition active:scale-[0.98]"
-        >
-          <ArrowLeft size={14} strokeWidth={2.6} />
-          지역 목록
-        </button>
-
-        <span className="text-[12px] font-bold leading-[16px] text-[#A2A9B2]">
-          {acquiredCount} / {stamps.length} 획득
-        </span>
-      </div>
-
-      <h2 className="m-0 mt-[16px] text-[18px] font-black leading-[25px] text-[#1C1C3A]">
-        {region.name} 스탬프
-      </h2>
-
-      {stamps.length > 0 ? (
-        <div className="mt-[16px] grid grid-cols-2 gap-[12px]">
-          {stamps.map((stamp) => (
-            <StampCard key={stamp.id} stamp={stamp} />
-          ))}
-        </div>
-      ) : (
-        <section className="mt-[60px] flex flex-col items-center text-center">
-          <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-[#EAF5FF] text-[30px]">
-            ✉️
-          </div>
-
-          <h3 className="m-0 mt-[18px] text-[17px] font-black leading-[24px] text-[#1C1C3A]">
-            아직 등록된 스탬프가 없어요
-          </h3>
-
-          <p className="m-0 mt-[8px] text-[13px] font-medium leading-[20px] text-[#A2A9B2]">
-            해당 지역 미션이 추가되면
-            <br />
-            스탬프를 수집할 수 있어요.
-          </p>
-        </section>
-      )}
-    </>
-  );
-}
-
-function HistorySection() {
+function HistorySection({ data }: HistorySectionProps) {
   return (
     <>
       <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
@@ -253,10 +190,77 @@ function HistorySection() {
       </p>
 
       <div className="mt-[16px] flex flex-col gap-[10px]">
-        {rewardHistoryItems.map((item) => (
-          <HistoryCard key={item.id} item={item} />
+        {data?.length === 0 && (
+          <p className="text-center">최근 보상 내역이 없습니다.</p>
+        )}
+        {data?.map((item) => (
+          <NotificationCard
+            key={item.id}
+            id={item.id}
+            type={item.activityType}
+            title={item.title}
+            amount={item.amount}
+            createdAt={item.createdAt}
+          />
         ))}
       </div>
     </>
+  );
+}
+
+type PointSummaryCardProps = {
+  currentPoint: number;
+  earnedPoint: number;
+  usedPoint: number;
+  isLoading: boolean;
+  isError: boolean;
+};
+
+export function PointSummaryCard({
+  currentPoint,
+  earnedPoint,
+  usedPoint,
+  isLoading,
+  isError,
+}: PointSummaryCardProps) {
+  return (
+    <section className="mt-[44px] rounded-[16px] border border-white/80 bg-white/70 p-[16px] shadow-[0_1px_3px_rgba(0,0,0,0.12)] backdrop-blur">
+      <p className="m-0 text-[13px] font-medium leading-[18px] text-[#A2A9B2]">
+        보유 포인트
+      </p>
+      {isLoading && (
+        <div className="w-full flex justify-center items-center">
+          포인트 불러오는중...
+        </div>
+      )}
+      {isError && (
+        <div className="w-full flex justify-center items-center">
+          오류가 발생했습니다. 다시 시도해 주세요.
+        </div>
+      )}
+      {!isError && !isLoading && (
+        <>
+          <div className="mt-[8px] flex items-end gap-[5px]">
+            <strong className="text-[42px] font-black leading-none text-[#5BB5F8]">
+              {currentPoint.toLocaleString()}
+            </strong>
+
+            <span className="pb-[6px] text-[18px] font-black leading-none text-[#9CA3AF]">
+              P
+            </span>
+          </div>
+
+          <div className="mt-[14px] flex items-center gap-[16px]">
+            <span className="text-[13px] font-bold leading-none text-[#7B8794]">
+              획득 <b className="font-black">{earnedPoint.toLocaleString()}P</b>
+            </span>
+
+            <span className="text-[13px] font-bold leading-none text-[#7B8794]">
+              사용 <b className="font-black">{usedPoint.toLocaleString()}P</b>
+            </span>
+          </div>
+        </>
+      )}
+    </section>
   );
 }

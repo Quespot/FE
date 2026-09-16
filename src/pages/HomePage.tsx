@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { SearchInput } from "@/components/UI";
 import HomeHeader from "@/components/home/HomeHeader";
 import HomeHero from "@/components/home/HomeHero";
-import ActivitySummary from "@/components/home/ActivitySummary";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import RecommendedMissionSection from "@/components/home/RecommendedMissionSection";
 import NearbySpotSection from "@/components/home/NearbySpotSection";
@@ -15,95 +14,172 @@ import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 
-import {
-  homeCategories,
-  nearbySpots,
-  recommendedMissions,
-} from "@/data/quespot";
+import { homeCategories } from "@/data/quespot";
+
+import { useNearbyMissionSpots } from "@/hooks/queries/useNearbyMissionSpots";
+import { useHomeProfile } from "@/hooks/queries/useHomeProfile";
+import { useToggleMissionLike } from "@/hooks/mutation/useToggleMissionLike";
+import { useRecommendedMissions } from "@/hooks/queries/useRecommendedMissions";
+import { useCurrentCoordinates } from "@/hooks/useCurrentCoordinates";
+import { toRecommendedMissionCard } from "@/utils/recommendedMission";
+import { getEquippedQuestyAsset } from "@/utils/questyAsset";
 
 import { PATH } from "@/routes/paths";
+import type { MissionCategory } from "@/types/mission";
 
-import QuestySvg from "@/assets/icons/Questy.svg";
-import QuestyMainSvg from "@/assets/icons/QuestyMain.svg";
-import QuestyAirplaneSvg from "@/assets/icons/QuestyAirplane.svg";
+import { Header } from "@/components/common/Header";
+import DefaultQuestySvg from "@/assets/questy.svg";
+
+const HOME_CATEGORY_API_VALUES: Record<string, MissionCategory> = {
+  history: "HISTORY",
+  culture: "CULTURE",
+  nature: "NATURE",
+  food: "FOOD",
+  night: "NIGHT_VIEW",
+  etc: "ETC",
+};
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [showAllMissions, setShowAllMissions] = useState(false);
-
-  const visibleMissions = showAllMissions
-    ? recommendedMissions
-    : recommendedMissions.slice(0, 2);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const { profileQuery, questyQuery } = useHomeProfile();
+  const { toggleMissionLike, pendingMissionId } = useToggleMissionLike();
+  const { coordinates, status: locationStatus } = useCurrentCoordinates();
+  const nickname =
+    profileQuery.data?.nickname || readStoredNickname() || "탐험가";
+  const questySrc =
+    getEquippedQuestyAsset(questyQuery.data?.equippedItems ?? []) ??
+    DefaultQuestySvg;
+  const recommendedMissionQuery = useRecommendedMissions({
+    ...coordinates,
+    size: 2,
+  });
+  const nearbySpotQuery = useNearbyMissionSpots(
+    coordinates ? { ...coordinates, limit: 5 } : undefined,
+  );
+  const recommendedMissions =
+    recommendedMissionQuery.data?.result.missions.map(
+      toRecommendedMissionCard,
+    ) ?? [];
 
   return (
     <QuespotPageLayout className="bg-[#F2F7FF]">
-      <HomeHeader
-        mascotSrc={QuestySvg}
-        notificationCount={3}
-        onBellClick={() => {
-          // TODO: 알림함 페이지 연결
-        }}
-      />
-
-      <QuespotDivider />
+      <Header />
 
       <QuespotPageContent className="bg-[#F2F7FF] pb-[22px]">
-        <section className="shrink-0 bg-[#DFF3FF] px-[18px] pb-[20px] pt-[10px]">
+        <section className="shrink-0 bg-[linear-gradient(180deg,#dff3ff_0%,#eaf7ff_100%)] px-[18px] pb-[22px] pt-[14px]">
           <HomeHero
-            nickname="꿀법"
-            questySrc={QuestyMainSvg}
-            airplaneSrc={QuestyAirplaneSvg}
+            nickname={nickname}
+            questySrc={questySrc}
             onExploreClick={() => navigate(PATH.MISSIONS)}
           />
 
           <div className="mt-[18px]">
-            <SearchInput placeholder="미션 · 장소 · 지역을 검색해보세요" />
+            <SearchInput
+              onChange={setSearchKeyword}
+              onSearch={(keyword) => {
+                const trimmedKeyword = keyword.trim();
+                if (!trimmedKeyword) return;
+                navigate(
+                  `${PATH.MISSIONS}?keyword=${encodeURIComponent(trimmedKeyword)}`,
+                );
+              }}
+              placeholder="미션 · 장소 · 지역을 검색해보세요"
+              value={searchKeyword}
+            />
           </div>
         </section>
 
-        <section className="px-[18px] pt-[28px]">
-          <ActivitySummary
-            items={[
-              { value: "2개", label: "완료 미션" },
-              { value: "350P", label: "보유 포인트" },
-              { value: "2개", label: "획득 배지" },
-              { value: "2개", label: "스탬프" },
-            ]}
-          />
-
-          <div className="mt-[26px]">
-            <CategoryGrid categories={homeCategories} />
+        <section className="px-[18px] pt-[24px]">
+          <div>
+            <CategoryGrid
+              categories={homeCategories}
+              onCategoryClick={(categoryId) => {
+                const category = HOME_CATEGORY_API_VALUES[categoryId];
+                if (category) {
+                  navigate(`${PATH.MISSIONS}?category=${category}`);
+                }
+              }}
+            />
           </div>
 
           <div className="mt-[28px]">
             <RecommendedMissionSection
-              missions={visibleMissions}
-              showAll={showAllMissions}
-              onToggleShowAll={() => setShowAllMissions((value) => !value)}
-              onMissionClick={() => navigate(PATH.MISSION_DETAIL)}
+              missions={recommendedMissions}
+              isLoading={recommendedMissionQuery.isLoading}
+              isError={recommendedMissionQuery.isError}
+              onRetry={() => recommendedMissionQuery.refetch()}
+              onShowAll={() => navigate(PATH.RECOMMENDED_MISSIONS)}
+              pendingLikeMissionId={pendingMissionId}
+              onMissionLikeClick={(mission) =>
+                toggleMissionLike({
+                  missionId: Number(mission.id),
+                  liked: Boolean(mission.liked),
+                })
+              }
+              onMissionClick={(mission) =>
+                navigate(
+                  PATH.MISSION_DETAIL.replace(":missionId", String(mission.id)),
+                )
+              }
             />
           </div>
 
           <div className="mt-[30px]">
             <NearbySpotSection
-              spots={nearbySpots}
+              spots={
+                nearbySpotQuery.data?.missionSpots.map((spot) => ({
+                  id: spot.districtCode,
+                  name: spot.districtName,
+                  distance: formatSpotDistance(spot.distanceMeters),
+                  done: spot.completionStatus === "COMPLETED",
+                  missionCount: spot.missionCount,
+                  completedMissionCount: spot.completedMissionCount,
+                })) ?? []
+              }
+              isLoading={
+                locationStatus === "loading" || nearbySpotQuery.isLoading
+              }
+              isError={locationStatus === "error" || nearbySpotQuery.isError}
+              errorMessage={
+                locationStatus === "error"
+                  ? "주변 스팟을 보려면 위치 권한을 허용해주세요."
+                  : "주변 스팟을 불러오지 못했어요."
+              }
+              onRetry={
+                nearbySpotQuery.isError
+                  ? () => nearbySpotQuery.refetch()
+                  : undefined
+              }
               onMapClick={() => navigate(PATH.MAP)}
-              onSpotClick={(spot) => {
-                if (spot.done) {
-                  navigate(PATH.MISSION_RECORD);
-                  return;
-                }
-
-                navigate(PATH.MISSION_DETAIL);
-              }}
+              onSpotClick={() => navigate(PATH.MAP)}
             />
           </div>
 
           <div className="mb-[16px] mt-[28px]">
-            <BonusBanner mascotSrc={QuestySvg} />
+            <BonusBanner mascotSrc={DefaultQuestySvg} />
           </div>
         </section>
       </QuespotPageContent>
     </QuespotPageLayout>
   );
+}
+
+function formatSpotDistance(distanceMeters: number) {
+  if (distanceMeters < 1000) {
+    return `${Math.round(distanceMeters)}m`;
+  }
+
+  return `${(distanceMeters / 1000).toFixed(1)}km`;
+}
+
+function readStoredNickname() {
+  try {
+    const profile = JSON.parse(
+      localStorage.getItem("quespot-profile") ?? "{}",
+    ) as { nickname?: string };
+    return profile.nickname;
+  } catch {
+    return undefined;
+  }
 }

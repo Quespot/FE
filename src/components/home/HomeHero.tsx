@@ -1,20 +1,44 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Cloud, Plane } from "lucide-react";
 
 type HomeHeroProps = {
   nickname: string;
   questySrc: string;
-  airplaneSrc: string;
   onExploreClick: () => void;
 };
 
 export default function HomeHero({
   nickname,
   questySrc,
-  airplaneSrc,
   onExploreClick,
 }: HomeHeroProps) {
   return (
-    <section className="relative flex min-h-[198px] w-full items-center overflow-hidden">
+    <section className="relative flex min-h-[218px] w-full items-center overflow-hidden rounded-[28px] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.58)_0%,rgba(216,241,255,0.35)_100%)] px-[16px] shadow-[0_12px_35px_rgba(54,145,204,0.10)]">
+      <span className="pointer-events-none absolute -left-8 -top-10 h-24 w-24 rounded-full bg-white/45" />
+      <span className="pointer-events-none absolute bottom-[-36px] right-20 h-28 w-28 rounded-full bg-[#a9ddff]/25" />
+      <div
+        className="pointer-events-none absolute right-0 top-0 z-[1] h-[132px] w-[220px] overflow-hidden"
+        aria-hidden="true"
+      >
+        <svg
+          className="absolute inset-0 h-full w-full overflow-visible"
+          viewBox="0 0 220 132"
+          fill="none"
+        >
+          <path
+            className="animate-home-hero-route"
+            d="M-8 84C38 25 82 68 124 43C157 23 178 13 228 7"
+            stroke="rgba(91,181,248,0.42)"
+            strokeDasharray="5 7"
+            strokeLinecap="round"
+            strokeWidth="2"
+          />
+        </svg>
+        <Cloud className="animate-questy-cloud absolute right-3 top-8 text-white/65 drop-shadow-sm" size={31} strokeWidth={1.7} />
+        <Cloud className="animate-questy-cloud-delayed absolute bottom-3 left-9 text-white/50" size={23} strokeWidth={1.7} />
+        <span className="animate-home-hero-plane absolute left-0 top-0 grid h-8 w-8 place-items-center text-[#3da5eb] drop-shadow-[0_3px_3px_rgba(35,112,164,0.22)]">
+          <Plane size={23} strokeWidth={2.4} fill="rgba(255,255,255,0.5)" />
+        </span>
+      </div>
       <div className="z-10 min-w-0 flex-1 py-[10px]">
         <span className="inline-flex h-[28px] items-center rounded-full bg-white px-[14px] text-[12px] font-black leading-none text-[#5BB5F8] shadow-[0_2px_6px_rgba(91,181,248,0.12)]">
           안녕 {nickname}님!
@@ -27,7 +51,7 @@ export default function HomeHero({
         </h1>
 
         <p className="m-0 mt-[12px] break-keep text-[13px] font-medium leading-[21px] text-[#7B8794]">
-          Questy와 함께 일상을
+          나만의 Questy와 함께 일상을
           <br />
           여행으로 바꿔보세요
         </p>
@@ -42,32 +66,12 @@ export default function HomeHero({
         </button>
       </div>
 
-      <div className="pointer-events-none absolute bottom-[4px] right-[-16px] top-[0px] z-0 w-[248px] overflow-visible">
-        {/* 1) 처음 가만히 떠 있는 퀘스티 */}
+      <div className="pointer-events-none absolute bottom-0 right-[-4px] top-0 z-0 w-[190px] overflow-visible">
         <img
           src={questySrc}
           alt="퀘스티"
-          className="absolute bottom-[8px] right-[48px] z-[2] h-[132px] w-[132px] object-contain animate-questy-wait"
+          className="absolute bottom-[5px] right-[-4px] z-[2] h-[194px] w-[194px] object-contain drop-shadow-[0_14px_18px_rgba(32,104,151,0.18)]"
         />
-
-        {/* 2) 1~2초 뒤 들어오는 비행기 + 탑승 퀘스티 */}
-        <div className="absolute bottom-[2px] right-[-170px] z-[3] h-[150px] w-[240px] animate-plane-enter-and-fly">
-          <img
-            src={airplaneSrc}
-            alt="퀘스티 비행기"
-            className="absolute inset-0 h-full w-full object-contain"
-          />
-
-          <img
-            src={questySrc}
-            alt="비행기를 타는 퀘스티"
-            className="absolute left-[84px] top-[22px] h-[58px] w-[58px] object-contain animate-questy-on-plane"
-          />
-
-          <span className="absolute left-[28px] top-[74px] h-[4px] w-[26px] rounded-full bg-white/80 animate-air-trail-1" />
-          <span className="absolute left-[8px] top-[92px] h-[3px] w-[20px] rounded-full bg-white/65 animate-air-trail-2" />
-          <span className="absolute left-[20px] top-[108px] h-[3px] w-[16px] rounded-full bg-white/55 animate-air-trail-3" />
-        </div>
       </div>
     </section>
   );

@@ -1,4 +1,4 @@
-import { ApiError } from "@/api/auth";
+import { ApiError } from "@/apis/auth";
 import type { TravelStyle } from "@/constants/profile";
 import { getAccessToken } from "@/utils/auth";
 
@@ -24,7 +24,7 @@ export interface UserProfile {
 }
 
 export interface ProfilePayload {
-  profileImageUrl?: string | null;
+  profileImageObjectKey?: string | null;
   nickname: string;
   gender?: string | null;
   birthDate: string;
@@ -34,7 +34,7 @@ export interface ProfilePayload {
 }
 
 export type BasicProfileUpdate = Pick<ProfilePayload, "nickname" | "travelStyles"> & {
-  profileImageUrl?: string | null;
+  profileImageObjectKey?: string | null;
 };
 
 async function profileRequest<T>(method: "GET" | "POST" | "PATCH", body?: unknown): Promise<T> {
