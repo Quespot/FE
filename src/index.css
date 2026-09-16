@@ -126,14 +126,75 @@
   animation: questy-scene-breathe 10s ease-in-out infinite;
 }
 
+@keyframes home-hero-plane-flight {
+  0% {
+    opacity: 0;
+    transform: translate(-20px, 76px) rotate(-26deg) scale(0.84);
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  28% {
+    opacity: 1;
+    transform: translate(48px, 28px) rotate(-18deg) scale(0.96);
+  }
+
+  48% {
+    opacity: 1;
+    transform: translate(98px, 54px) rotate(12deg) scale(1);
+  }
+
+  68% {
+    opacity: 1;
+    transform: translate(151px, 24px) rotate(-20deg) scale(0.96);
+  }
+
+  88%,
+  100% {
+    opacity: 0;
+    transform: translate(220px, -4px) rotate(-14deg) scale(0.84);
+  }
+}
+
+.animate-home-hero-plane {
+  animation: home-hero-plane-flight 7s cubic-bezier(0.42, 0, 0.35, 1) infinite;
+}
+
+@keyframes home-hero-route-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    opacity: 0.85;
+    stroke-dashoffset: -24;
+  }
+}
+
+.animate-home-hero-route {
+  animation: home-hero-route-pulse 3.4s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .animate-questy-float,
   .animate-questy-cloud,
   .animate-questy-cloud-delayed,
   .animate-questy-sparkle,
   .animate-questy-sparkle-delayed,
   .animate-questy-shadow,
-  .animate-questy-scene {
+  .animate-questy-scene,
+  .animate-home-hero-plane,
+  .animate-home-hero-route {
     animation: none;
+  }
+
+  .animate-home-hero-plane {
+    opacity: 0.75;
+    transform: translate(142px, 26px) rotate(-30deg) scale(0.9);
   }
 }
 
