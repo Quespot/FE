@@ -102,17 +102,17 @@ export default function ProfileChoiceSelect({
   ) : null;
 
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2 overflow-hidden">
       <span className="text-[12px] font-bold text-[#556171]">{label} {required ? <b className="text-[#51aceb]">*</b> : <em className="font-medium not-italic text-[#9ba4af]">(선택)</em>}</span>
       <button
-        className={`flex h-[50px] w-full items-center justify-between rounded-[15px] border bg-[#f7faff] px-[15px] text-left outline-none transition focus-visible:border-[#63b8f2] focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-[#5bb5f8]/10 ${selectedOption ? "border-[#d7e8f4] text-[#222b45]" : "border-[#e4edf5] text-[#aab7c5]"}`}
+        className={`flex h-[50px] w-full min-w-0 items-center justify-between rounded-[15px] border bg-[#f7faff] px-3 text-left outline-none transition focus-visible:border-[#63b8f2] focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-[#5bb5f8]/10 ${selectedOption ? "border-[#d7e8f4] text-[#222b45]" : "border-[#e4edf5] text-[#aab7c5]"}`}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-required={required}
         onClick={() => onOpenChange(true)}
         type="button"
       >
-        <span className="type-body2 truncate">{selectedOption?.label ?? placeholder}</span>
+        <span className="type-body2 min-w-0 flex-1 truncate">{selectedOption?.label ?? placeholder}</span>
         <ChevronDown className={`ml-2 shrink-0 text-[#8b99a8] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" size={16} />
       </button>
       {sheet}

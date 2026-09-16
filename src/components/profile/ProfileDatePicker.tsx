@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { createPortal } from "react-dom";
 
 interface ProfileDatePickerProps {
@@ -106,7 +106,7 @@ export default function ProfileDatePicker({ value, onChange, isOpen, onOpenChang
                     const dateValue = toDateValue(visibleYear, visibleMonth, day);
                     const disabled = new Date(visibleYear, visibleMonth, day) > maxDate;
                     const selected = value === dateValue;
-                    return <button className={`relative mx-auto grid h-10 w-10 place-items-center rounded-full text-[12px] font-bold transition disabled:opacity-25 ${selected ? "bg-[#5bb5f8] text-white shadow-[0_4px_10px_rgba(66,164,230,0.28)]" : "text-[#536171] hover:bg-[#edf7ff]"}`} disabled={disabled} key={day} onClick={() => { onChange(dateValue); onOpenChange(false); }} type="button">{day}{selected ? <Check className="absolute -right-0.5 -top-0.5 rounded-full bg-white p-0.5 text-[#46a8eb]" aria-hidden="true" size={13} strokeWidth={3} /> : null}</button>;
+                    return <button className={`relative mx-auto grid h-10 w-10 place-items-center rounded-full text-[12px] font-bold transition disabled:opacity-25 ${selected ? "bg-[#5bb5f8] text-white shadow-[0_4px_10px_rgba(66,164,230,0.28)]" : "text-[#536171] hover:bg-[#edf7ff]"}`} disabled={disabled} key={day} onClick={() => { onChange(dateValue); onOpenChange(false); }} type="button">{day}</button>;
                   })}
                 </div>
               </>
@@ -119,9 +119,9 @@ export default function ProfileDatePicker({ value, onChange, isOpen, onOpenChang
   ) : null;
 
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2 overflow-hidden">
       <span className="type-caption3 text-[#556171]">생년월일 <b className="text-[#51aceb]">*</b></span>
-      <button className={`flex h-[50px] w-full items-center gap-2 rounded-[15px] border bg-[#f7faff] px-[15px] text-left outline-none transition focus-visible:border-[#63b8f2] focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-[#5bb5f8]/10 ${value ? "border-[#d7e8f4] text-[#222b45]" : "border-[#e4edf5] text-[#aab7c5]"}`} aria-expanded={isOpen} aria-haspopup="dialog" aria-required="true" onClick={() => onOpenChange(true)} type="button">
+      <button className={`flex h-[50px] w-full min-w-0 items-center gap-1.5 rounded-[15px] border bg-[#f7faff] px-3 text-left outline-none transition focus-visible:border-[#63b8f2] focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-[#5bb5f8]/10 ${value ? "border-[#d7e8f4] text-[#222b45]" : "border-[#e4edf5] text-[#aab7c5]"}`} aria-expanded={isOpen} aria-haspopup="dialog" aria-required="true" onClick={() => onOpenChange(true)} type="button">
         <CalendarDays className="shrink-0 text-[#68b5e8]" aria-hidden="true" size={17} />
         <span className="type-body2 min-w-0 flex-1 truncate">{formattedValue}</span>
         <ChevronDown className={`shrink-0 text-[#8b99a8] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" size={16} />

@@ -62,6 +62,10 @@ import {
   type AchievementSummary,
 } from "@/apis/achievement";
 import { disconnectPush } from "@/utils/fcm/disconnectPush";
+import { registerFcmToken } from "@/apis/notification";
+import { useNotificationSettings } from "@/hooks/queries/useNotification";
+import { useUpdateNotificationSettings } from "@/hooks/mutation/useNotification";
+import { requestFcmToken } from "@/utils/fcm/fcm";
 
 const PROFILE_KEY = "quespot-profile";
 const DEFAULT_INTEREST_IDS = ["history", "culture", "nature", "food"];
@@ -175,6 +179,14 @@ export default function MyPage() {
   const [achievements, setAchievements] = useState<AchievementSummary | null>(
     null,
   );
+  const {
+    data: notificationSettings,
+    isLoading: isNotificationSettingsLoading,
+    isError: isNotificationSettingsError,
+    refetch: refetchNotificationSettings,
+  } = useNotificationSettings();
+  const { mutateAsync: updateNotificationSettings, isPending: isNotificationUpdating } =
+    useUpdateNotificationSettings();
 
   const selectedCategories = useMemo(() => {
     const selectedIds = profile.interests?.length
@@ -383,6 +395,48 @@ export default function MyPage() {
     } finally {
       clearAuth();
       navigate(PATH.LOGIN, { replace: true });
+    }
+  };
+
+  const handleNotificationToggle = async () => {
+    if (!notificationSettings || isNotificationUpdating) return;
+
+    const nextPushEnabled = !notificationSettings.pushEnabled;
+
+    try {
+      if (nextPushEnabled) {
+        const token = await requestFcmToken();
+
+        await registerFcmToken({
+          token,
+          deviceType: "WEB",
+        });
+
+        try {
+          await updateNotificationSettings({ pushEnabled: true });
+        } catch (settingsError) {
+          // 토큰 등록 후 설정 변경에 실패하면 현재 기기 연결을 되돌린다.
+          await disconnectPush().catch(() => undefined);
+          throw settingsError;
+        }
+
+        setStatusMessage("알림을 켰어요.");
+        return;
+      }
+
+      await updateNotificationSettings({ pushEnabled: false });
+
+      // 서버 설정이 꺼진 뒤 현재 브라우저의 FCM 토큰도 정리한다.
+      await disconnectPush().catch((pushError) => {
+        console.error("푸시 알림 연결 해제에 실패했습니다.", pushError);
+      });
+      setStatusMessage("알림을 껐어요.");
+    } catch (notificationError) {
+      setStatusMessage(
+        notificationError instanceof Error
+          ? notificationError.message
+          : "알림 설정을 변경하지 못했습니다.",
+      );
     }
   };
 
@@ -649,6 +703,86 @@ export default function MyPage() {
             max={achievements?.totalStampCount}
             color="bg-[#55c9a4]"
           />
+        </section>
+
+        <section className={panelClass} aria-labelledby="notification-title">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[15px] bg-[#fff4d9] text-[#e9a42f]">
+              <Bell size={21} strokeWidth={2.3} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2
+                className="text-[14px] font-extrabold"
+                id="notification-title"
+              >
+                알림 설정
+              </h2>
+              <p className="mt-1 text-[9.5px] leading-[1.45] text-[#95a2b0]">
+                새로운 미션과 주요 소식을 푸시 알림으로 받아보세요.
+              </p>
+            </div>
+            {isNotificationSettingsError ? (
+              <button
+                className="h-8 shrink-0 rounded-full bg-[#edf7fe] px-3 text-[9px] font-extrabold text-[#399fdf] transition active:scale-95"
+                onClick={() => void refetchNotificationSettings()}
+                type="button"
+              >
+                다시 시도
+              </button>
+            ) : (
+              <button
+                aria-checked={notificationSettings?.pushEnabled ?? false}
+                aria-label={`푸시 알림 ${notificationSettings?.pushEnabled ? "끄기" : "켜기"}`}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors duration-200 disabled:cursor-wait disabled:opacity-50 ${
+                  notificationSettings?.pushEnabled
+                    ? "bg-[#4dafea]"
+                    : "bg-[#d5dde5]"
+                }`}
+                disabled={
+                  isNotificationSettingsLoading ||
+                  isNotificationUpdating ||
+                  !notificationSettings
+                }
+                onClick={() => void handleNotificationToggle()}
+                role="switch"
+                type="button"
+              >
+                <span
+                  className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-[0_2px_6px_rgba(34,55,76,0.25)] transition-transform duration-200 ${
+                    notificationSettings?.pushEnabled
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
+            )}
+          </div>
+          <div className="mt-3 flex items-center justify-between rounded-[13px] bg-[#f7f9fb] px-3 py-2.5">
+            <span className="text-[9px] font-semibold text-[#8795a5]">
+              {isNotificationSettingsLoading
+                ? "알림 설정을 확인하고 있어요."
+                : isNotificationSettingsError
+                  ? "알림 설정을 불러오지 못했어요."
+                  : isNotificationUpdating
+                    ? "알림 설정을 변경하고 있어요."
+                    : notificationSettings?.pushEnabled
+                      ? "현재 알림을 받고 있어요."
+                      : "현재 알림이 꺼져 있어요."}
+            </span>
+            {!isNotificationSettingsLoading &&
+            !isNotificationSettingsError &&
+            !isNotificationUpdating ? (
+              <strong
+                className={`text-[9px] font-extrabold ${
+                  notificationSettings?.pushEnabled
+                    ? "text-[#3aa879]"
+                    : "text-[#9aa5b1]"
+                }`}
+              >
+                {notificationSettings?.pushEnabled ? "켜짐" : "꺼짐"}
+              </strong>
+            ) : null}
+          </div>
         </section>
 
         <section className={panelClass} aria-labelledby="social-title">
