@@ -1,18 +1,18 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Ticket } from "lucide-react";
 
-import BadgeCard from "@/components/reward/BadgeCard";
-import HistoryCard from "@/components/reward/HistoryCard";
+import BadgeCard from "@/components/reward/BadgeCard/BadgeCard";
+import BadgeCardSkeleton from "@/components/reward/BadgeCard/BadgeCardSkeleton";
 import RewardTabs from "@/components/reward/RewardTabs";
-import StampCard from "@/components/reward/StampCard";
-import StampRegionCard from "@/components/reward/StampRegionCard";
+import RewardError from "@/components/reward/RewardError";
+import StampRegionCard from "@/components/reward/StampRegionCard/StampRegionCard";
+import StampRegionCardSkeleton from "@/components/reward/StampRegionCard/StampRegionCardSkeleton";
 
 import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 
-import { rewardHistoryItems, type RewardTab } from "@/data/reward";
+import { type RewardTab } from "@/data/reward";
 
 import { Header } from "@/components/common/Header";
 import {
@@ -22,15 +22,10 @@ import {
   useUserPoints,
   useUserStamps,
 } from "@/hooks/queries/useRewards";
-import {
-  Badge,
-  RewardActivities,
-  RewardActivity,
-  UserBadges,
-  UserStamps,
-} from "@/apis/reward";
+import { RewardActivity, UserBadges, UserStamps } from "@/apis/reward";
 import { NotificationCard } from "@/components/common/NotificationCard/NotificationCard";
 import { NotificationCardSkeleton } from "@/components/common/NotificationCard/NotificationCardSkeleton";
+import PointSummaryCard from "@/components/reward/PointSummaryCard/PointSummaryCard";
 
 export default function RewardPage() {
   const navigate = useNavigate();
@@ -60,7 +55,11 @@ export default function RewardPage() {
     isError: isRewardError,
   } = useRewardActivities();
 
-  const { data: achievements } = useUserAchievements();
+  const {
+    data: achievements,
+    isLoading: isAchievementsLoading,
+    isError: isAchievementsError,
+  } = useUserAchievements();
 
   const handleChangeTab = (tab: RewardTab) => {
     setSelectedTab(tab);
@@ -86,17 +85,25 @@ export default function RewardPage() {
             usedPoint={pointData?.totalSpent ?? 0}
             isLoading={isPointLoading}
             isError={isPointError}
+            hasData={pointData != null}
           />
         </section>
 
         <RewardTabs selectedTab={selectedTab} onChangeTab={handleChangeTab} />
 
         <section className="flex flex-1 flex-col px-[16px] pb-[24px] pt-[20px]">
+          {selectedTab !== "history" && isAchievementsError && (
+            <RewardError message="획득 현황을 불러오지 못했어요." />
+          )}
           {selectedTab === "badges" ? (
             <BadgeSection
               badge={badgeData || undefined}
               acquiredCount={achievements?.acquiredBadgeCount ?? 0}
               totalCount={achievements?.totalBadgeCount ?? 0}
+              isLoading={isBadgeLoading}
+              isCountLoading={isAchievementsLoading}
+              hasCounts={achievements != null}
+              isError={isBadgeError}
             />
           ) : null}
 
@@ -105,6 +112,10 @@ export default function RewardPage() {
               stamp={stampData ?? undefined}
               acquiredCount={achievements?.acquiredStampCount ?? 0}
               totalCount={achievements?.totalStampCount ?? 0}
+              isLoading={isStampLoading}
+              isCountLoading={isAchievementsLoading}
+              hasCounts={achievements != null}
+              isError={isStampError}
             />
           ) : null}
 
@@ -134,25 +145,48 @@ type RewardSectionCountProps = {
   badge: UserBadges | undefined;
   acquiredCount: number;
   totalCount: number;
+  isLoading: boolean;
+  isCountLoading: boolean;
+  hasCounts: boolean;
+  isError: boolean;
 };
 
 function BadgeSection({
   badge,
   acquiredCount,
   totalCount,
+  isLoading,
+  isCountLoading,
+  hasCounts,
+  isError,
 }: RewardSectionCountProps) {
-  const badgeEmojis = ["🎯", "🗺️", "📸", "🏙️", "🌊", "👑", "👑"];
+  const badgeEmojis = ["🎯", "🗺️", "📸", "🏙️", "👑"];
 
   return (
     <>
-      <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
-        {acquiredCount} / {totalCount} 획득
-      </p>
+      {isLoading || isCountLoading ? (
+        <div className="flex h-[20px] items-center" aria-hidden="true">
+          <div className="h-3.5 w-24 animate-pulse rounded bg-slate-200 motion-reduce:animate-none" />
+        </div>
+      ) : hasCounts ? (
+        <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
+          {acquiredCount} / {totalCount} 획득
+        </p>
+      ) : null}
 
-      <div className="mt-[20px] grid grid-cols-3 gap-x-[26px] gap-y-[28px]">
-        {badge?.badges.map((badge, i) => (
-          <BadgeCard key={badge.id} badge={badge} emoji={badgeEmojis[i]} />
-        ))}
+      {isError && <RewardError message="뱃지를 불러오지 못했어요." />}
+
+      <div
+        className="mt-[20px] grid grid-cols-3 gap-x-[26px] gap-y-[28px]"
+        aria-busy={isLoading}
+      >
+        {isLoading
+          ? Array.from({ length: 6 }, (_, index) => (
+              <BadgeCardSkeleton key={index} />
+            ))
+          : badge?.badges.map((badge, i) => (
+              <BadgeCard key={badge.id} badge={badge} emoji={badgeEmojis[i]} />
+            ))}
       </div>
     </>
   );
@@ -162,23 +196,46 @@ type StampRegionSectionProps = {
   stamp: UserStamps | undefined;
   acquiredCount: number;
   totalCount: number;
+  isLoading: boolean;
+  isCountLoading: boolean;
+  hasCounts: boolean;
+  isError: boolean;
 };
 
 function StampRegionSection({
   stamp,
   acquiredCount,
   totalCount,
+  isLoading,
+  isCountLoading,
+  hasCounts,
+  isError,
 }: StampRegionSectionProps) {
   return (
     <>
-      <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
-        {acquiredCount} / {totalCount} 스탬프 수집
-      </p>
+      {isLoading || isCountLoading ? (
+        <div className="flex h-[20px] items-center" aria-hidden="true">
+          <div className="h-3.5 w-32 animate-pulse rounded bg-slate-200 motion-reduce:animate-none" />
+        </div>
+      ) : hasCounts ? (
+        <p className="m-0 text-[14px] font-medium leading-[20px] text-[#A2A9B2]">
+          {acquiredCount} / {totalCount} 스탬프 수집
+        </p>
+      ) : null}
 
-      <div className="mt-[20px] grid grid-cols-4 gap-x-[22px] gap-y-[22px]">
-        {stamp?.stamps.map((stamp) => (
-          <StampRegionCard key={stamp.id} stamp={stamp} emoji="✉️" />
-        ))}
+      {isError && <RewardError message="스탬프를 불러오지 못했어요." />}
+
+      <div
+        className="mt-[20px] grid grid-cols-4 gap-x-[22px] gap-y-[22px]"
+        aria-busy={isLoading}
+      >
+        {isLoading
+          ? Array.from({ length: 8 }, (_, index) => (
+              <StampRegionCardSkeleton key={index} />
+            ))
+          : stamp?.stamps.map((stamp) => (
+              <StampRegionCard key={stamp.id} stamp={stamp} emoji="✉️" />
+            ))}
       </div>
     </>
   );
@@ -204,9 +261,7 @@ function HistorySection({ data, isLoading, isError }: HistorySectionProps) {
         ) : (
           <>
             {isError && (
-              <p role="alert" className="text-center text-sm text-red-500">
-                보상 내역을 불러오지 못했어요. 다시 시도해 주세요.
-              </p>
+              <RewardError message="보상 내역을 불러오지 못했어요." />
             )}
             {!isError && data?.length === 0 && (
               <p className="text-center">최근 보상 내역이 없습니다.</p>
@@ -225,62 +280,5 @@ function HistorySection({ data, isLoading, isError }: HistorySectionProps) {
         )}
       </div>
     </>
-  );
-}
-
-type PointSummaryCardProps = {
-  currentPoint: number;
-  earnedPoint: number;
-  usedPoint: number;
-  isLoading: boolean;
-  isError: boolean;
-};
-
-export function PointSummaryCard({
-  currentPoint,
-  earnedPoint,
-  usedPoint,
-  isLoading,
-  isError,
-}: PointSummaryCardProps) {
-  return (
-    <section className="mt-[44px] rounded-[16px] border border-white/80 bg-white/70 p-[16px] shadow-[0_1px_3px_rgba(0,0,0,0.12)] backdrop-blur">
-      <p className="m-0 text-[13px] font-medium leading-[18px] text-[#A2A9B2]">
-        보유 포인트
-      </p>
-      {isLoading && (
-        <div className="w-full flex justify-center items-center">
-          포인트 불러오는중...
-        </div>
-      )}
-      {isError && (
-        <div className="w-full flex justify-center items-center">
-          오류가 발생했습니다. 다시 시도해 주세요.
-        </div>
-      )}
-      {!isError && !isLoading && (
-        <>
-          <div className="mt-[8px] flex items-end gap-[5px]">
-            <strong className="text-[42px] font-black leading-none text-[#5BB5F8]">
-              {currentPoint.toLocaleString()}
-            </strong>
-
-            <span className="pb-[6px] text-[18px] font-black leading-none text-[#9CA3AF]">
-              P
-            </span>
-          </div>
-
-          <div className="mt-[14px] flex items-center gap-[16px]">
-            <span className="text-[13px] font-bold leading-none text-[#7B8794]">
-              획득 <b className="font-black">{earnedPoint.toLocaleString()}P</b>
-            </span>
-
-            <span className="text-[13px] font-bold leading-none text-[#7B8794]">
-              사용 <b className="font-black">{usedPoint.toLocaleString()}P</b>
-            </span>
-          </div>
-        </>
-      )}
-    </section>
   );
 }
