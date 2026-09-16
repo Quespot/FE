@@ -92,6 +92,22 @@ export default function VerifyPage() {
         latitude: currentLocation.lat,
         longitude: currentLocation.lng,
       });
+
+      if (!arrivalResult.success) {
+        navigate(PATH.MISSION_VERIFY_LOADING, {
+          state: {
+            missionId: state?.missionId,
+            attemptId,
+            mission,
+            missionTitle,
+            isSuccess: false,
+            failureReason: "arrival",
+            distanceMeters: arrivalResult.distanceMeters,
+            radiusMeters: arrivalResult.radiusMeters,
+          },
+        });
+        return;
+      }
     } catch (error) {
       console.error(error);
       alert("GPS 도착 인증에 실패했어요. 위치 권한을 확인해주세요.");
@@ -314,7 +330,11 @@ export default function VerifyPage() {
           <Button disabled>사진을 먼저 선택해주세요</Button>
         ) : (
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isUploading ? "사진 업로드 중..." : isSubmitting ? "인증 요청 중..." : "제출하기"}
+            {isUploading
+              ? "사진 업로드 중..."
+              : isSubmitting
+                ? "인증 요청 중..."
+                : "제출하기"}
           </Button>
         )}
       </section>
