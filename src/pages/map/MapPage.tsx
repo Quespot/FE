@@ -7,15 +7,7 @@ import {
   type WheelEvent as ReactWheelEvent,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  MapPin,
-  Minus,
-  Navigation,
-  Plus,
-  Search,
-  X,
-  ChevronRight,
-} from "lucide-react";
+import { MapPin, Minus, Navigation, Plus, X, LoaderCircle } from "lucide-react";
 import {
   APIProvider,
   AdvancedMarker,
@@ -38,9 +30,13 @@ import { useMissionSpotsQuery } from "@/hooks/queries/missionSpots/useMissionSpo
 import { DistrictMissions, MissionSpot } from "@/apis/missionSpot";
 import { useNearbyMissionSpotsQuery } from "@/hooks/queries/missionSpots/useNearbyMissionSpotsQuery";
 import { useDistrictMissionsQuery } from "@/hooks/queries/missionSpots/useDistrictMissionsQuery";
-import Button from "@/components/common/Button";
+import MissionListCard from "@/components/map/MissionListCard/MissionListCard";
+import SpotSummaryCard from "@/components/map/SpotSummaryCard/SpotSummaryCard";
+import MapMissionSummarySkeleton from "@/components/map/MapMissionSummarySkeleton";
+import SpotSummaryCardSkeleton from "@/components/map/SpotSummaryCard/SpotSummaryCardSkeleton";
+import MissionListCardSkeleton from "@/components/map/MissionListCard/MissionListCardSkeleton";
 
-type LocationStatus = "loading" | "success" | "error";
+type LocationStatus = "loading" | "success" | "denied" | "error";
 
 type MapPageState = {
   selectedSpotId?: string;
@@ -52,7 +48,6 @@ export default function MapPage() {
   const location = useLocation();
 
   const [selectedSpotId, setSelectedSpotId] = useState<string>("");
-  const [isPlaceListOpen, setIsPlaceListOpen] = useState(false);
   const [isMissionSheetOpen, setIsMissionSheetOpen] = useState(false);
   const spotScrollDragRef = useRef<{
     pointerId: number;
@@ -84,6 +79,7 @@ export default function MapPage() {
         }
       : null,
   );
+  const isNearbyLoading = locationStatus === "loading" || isNearLoading;
   useEffect(() => {
     const state = location.state as MapPageState | null;
 
@@ -96,7 +92,7 @@ export default function MapPage() {
     if (!hasSelectedSpot) return;
 
     setSelectedSpotId(state.selectedSpotId);
-    setIsPlaceListOpen(Boolean(state.openPlaceList));
+    setIsMissionSheetOpen(Boolean(state.openPlaceList));
 
     window.history.replaceState({}, document.title);
   }, [location.state, data]);
@@ -110,8 +106,10 @@ export default function MapPage() {
   const selectedSpot = useMemo(() => {
     return data?.missionSpots.find(
       (spot) => spot.districtCode === selectedSpotId,
+    ) ?? nearData?.missionSpots.find(
+      (spot) => spot.districtCode === selectedSpotId,
     );
-  }, [selectedSpotId, data]);
+  }, [selectedSpotId, data, nearData]);
 
   const handleSelectSpot = (spotId: string) => {
     setSelectedSpotId(spotId);
@@ -119,7 +117,6 @@ export default function MapPage() {
 
   const handleSelectSpotCard = (spotId: string) => {
     setSelectedSpotId(spotId);
-    setIsPlaceListOpen(true);
   };
 
   const handleMoveRoutePage = (place: RoutePlace) => {
@@ -134,13 +131,14 @@ export default function MapPage() {
   const handleSpotScrollPointerDown = (
     event: ReactPointerEvent<HTMLDivElement>,
   ) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    suppressSpotClickRef.current = false;
     spotScrollDragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       scrollLeft: event.currentTarget.scrollLeft,
       moved: false,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handleSpotScrollPointerMove = (
@@ -150,7 +148,11 @@ export default function MapPage() {
     if (!drag || drag.pointerId !== event.pointerId) return;
 
     const distance = event.clientX - drag.startX;
-    if (Math.abs(distance) > 4) drag.moved = true;
+    if (!drag.moved) {
+      if (Math.abs(distance) <= 4) return;
+      drag.moved = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
     event.currentTarget.scrollLeft = drag.scrollLeft - distance;
   };
 
@@ -165,9 +167,6 @@ export default function MapPage() {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    window.setTimeout(() => {
-      suppressSpotClickRef.current = false;
-    }, 0);
   };
 
   console.log(data);
@@ -243,9 +242,19 @@ export default function MapPage() {
             <MapApiKeyFallback />
           )}
 
-          {isLoading && (
-            <div className="absolute inset-0 z-[100] flex items-center justify-center">
-              로딩중...
+          {isLoading && apiKey && (
+            <div className="pointer-events-none absolute inset-0 z-[100] flex items-center justify-center">
+              <div
+                role="status"
+                className="flex items-center gap-2 rounded-2xl border border-sky-100 bg-white/95 px-5 py-4 text-sm font-bold text-[#5D6A7D] shadow-lg"
+              >
+                <LoaderCircle
+                  size={20}
+                  className="animate-spin text-[#5BB5F8] motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                미션 스팟을 불러오는 중이에요
+              </div>
             </div>
           )}
           {isError && (
@@ -255,21 +264,32 @@ export default function MapPage() {
           )}
           <MapLegend />
 
-          <div className="absolute bottom-[25px] right-[18px] rounded-[16px] bg-white px-[16px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]">
-            <strong className="block text-[14px] font-black leading-[18px] text-[#1C1C3A]">
-              {data?.regionName} 미션
-            </strong>
+          {(isLoading || data) && (
+            <div
+              aria-busy={isLoading}
+              className="absolute bottom-[25px] right-[18px] rounded-[16px] bg-white px-[16px] py-[12px] shadow-[0_4px_12px_rgba(8,37,95,0.18)]"
+            >
+              {isLoading ? (
+                <MapMissionSummarySkeleton />
+              ) : (
+                <>
+                  <strong className="block text-[14px] font-black leading-[18px] text-[#1C1C3A]">
+                    {data?.regionName} 미션
+                  </strong>
 
-            <p className="m-0 mt-[4px] text-[14px] font-black leading-[18px]">
-              <span className="text-[#5BB5F8]">
-                {data?.totalMissionCount}개 스팟
-              </span>
-              <span className="mx-[4px] text-[#A2A9B2]">·</span>
-              <span className="text-[#00C950]">
-                {data?.completedMissionCount}완료
-              </span>
-            </p>
-          </div>
+                  <p className="m-0 mt-[4px] text-[14px] font-black leading-[18px]">
+                    <span className="text-[#5BB5F8]">
+                      {data?.totalSpotCount}개 스팟
+                    </span>
+                    <span className="mx-[4px] text-[#A2A9B2]">·</span>
+                    <span className="text-[#00C950]">
+                      {data?.completedMissionCount}완료
+                    </span>
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="absolute bottom-[10px] left-1/2 h-[6px] w-[48px] -translate-x-1/2 rounded-full bg-[#C8E8FF]" />
         </section>
@@ -279,19 +299,18 @@ export default function MapPage() {
             <h2 className="m-0 text-[20px] font-black leading-[28px] text-[#1C1C3A]">
               주변 미션 스팟
             </h2>
-
-            <button
-              type="button"
-              onClick={() => setIsPlaceListOpen((value) => !value)}
-              className="inline-flex items-center gap-[5px] bg-transparent text-[14px] font-bold text-[#5BB5F8]"
-            >
-              <Navigation size={15} strokeWidth={2.4} />
-              {isPlaceListOpen ? "접기" : "추천장소"}
-            </button>
           </div>
 
           <div
             className="no-scrollbar flex cursor-grab touch-none select-none gap-[10px] overflow-x-auto overscroll-x-contain pb-[2px] active:cursor-grabbing"
+            aria-busy={isNearbyLoading}
+            onClickCapture={(event) => {
+              if (event.detail > 0 && suppressSpotClickRef.current) {
+                event.preventDefault();
+                event.stopPropagation();
+                suppressSpotClickRef.current = false;
+              }
+            }}
             onPointerCancel={handleSpotScrollPointerEnd}
             onPointerDown={handleSpotScrollPointerDown}
             onPointerLeave={handleSpotScrollPointerEnd}
@@ -301,27 +320,33 @@ export default function MapPage() {
               event.currentTarget.scrollLeft += event.deltaX || event.deltaY;
             }}
           >
-            {isNearLoading && (
-              <div className="w-full flex justify-center items-center">
-                데이터를 불러오는 중 입니다...
-              </div>
+            {isNearbyLoading &&
+              Array.from({ length: 6 }, (_, index) => (
+                <SpotSummaryCardSkeleton key={index} />
+              ))}
+            {(locationStatus === "denied" || locationStatus === "error") && (
+              <p role="status" className="w-full rounded-xl bg-[#F4F8FF] px-4 py-5 text-center text-sm leading-relaxed text-[#667085]">
+                {locationStatus === "denied"
+                  ? "주변 미션을 보려면 브라우저 설정에서 위치 권한을 허용한 뒤 페이지를 새로고침해 주세요."
+                  : "현재 위치를 확인하지 못했어요. 기기의 위치 설정을 확인한 뒤 페이지를 새로고침해 주세요."}
+              </p>
             )}
             {isNearError && (
               <div className="w-full flex justify-center items-center">
                 에러가 발생했습니다. 다시 시도해주세요.
               </div>
             )}
-            {nearData?.missionSpots.map((spot) => (
-              <SpotSummaryCard
-                key={spot.districtCode}
-                spot={spot}
-                selected={selectedSpot?.districtCode === spot.districtCode}
-                onClick={() => {
-                  if (suppressSpotClickRef.current) return;
-                  handleSelectSpotCard(spot.districtCode);
-                }}
-              />
-            ))}
+            {!isNearbyLoading &&
+              nearData?.missionSpots.map((spot) => (
+                <SpotSummaryCard
+                  key={spot.districtCode}
+                  spot={spot}
+                  selected={selectedSpot?.districtCode === spot.districtCode}
+                  onClick={() => {
+                    handleSelectSpotCard(spot.districtCode);
+                  }}
+                />
+              ))}
           </div>
         </section>
         {isMissionSheetOpen && selectedSpot && (
@@ -361,8 +386,8 @@ function useCurrentLocation() {
         });
         setLocationStatus("success");
       },
-      () => {
-        setLocationStatus("error");
+      (error) => {
+        setLocationStatus(error.code === 1 ? "denied" : "error");
       },
       {
         enableHighAccuracy: true,
@@ -597,66 +622,6 @@ function LegendItem({ color, label }: LegendItemProps) {
   );
 }
 
-type SpotSummaryCardProps = {
-  spot: MissionSpot;
-  selected: boolean;
-  onClick: () => void;
-};
-
-//하단 주변 미션 스팟 카드
-function SpotSummaryCard({ spot, selected, onClick }: SpotSummaryCardProps) {
-  const isCompleted = spot.completionStatus === "COMPLETE";
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "flex min-w-[82px] shrink-0 flex-col items-center rounded-[16px] border-2 px-[12px] py-[12px] transition active:scale-[0.98]",
-        selected
-          ? "border-[#5BB5F8] bg-primary text-white"
-          : isCompleted
-            ? "border-[#BBF7D0] bg-[#F0FDF9]"
-            : "border-[#C8E8FF] bg-[#EAF5FF]",
-      ].join(" ")}
-    >
-      <span className="text-[24px] leading-none">
-        <MapPin
-          className={
-            selected
-              ? "text-white"
-              : isCompleted
-                ? "text-[#22C983]"
-                : "text-primary"
-          }
-        />
-      </span>
-
-      <strong
-        className={[
-          "mt-[8px] text-[13px] font-black leading-[17px]",
-          selected ? "text-white" : "text-[#1C1C3A]",
-        ].join(" ")}
-      >
-        {spot.districtName}
-      </strong>
-
-      <span
-        className={[
-          "mt-[3px] text-[11px] font-bold leading-[15px]",
-          selected
-            ? "text-white/90"
-            : isCompleted
-              ? "text-[#00C950]"
-              : "text-[#A2A9B2]",
-        ].join(" ")}
-      >
-        {isCompleted ? "완료" : `${spot.missionCount ?? 0}개`}
-      </span>
-    </button>
-  );
-}
-
 function MapApiKeyFallback() {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center bg-[#EDF4EC] px-[24px] text-center">
@@ -683,13 +648,6 @@ type MissionListBottomSheetProps = {
   onClose: () => void;
 };
 
-export const missionStatusLabel = {
-  AVAILABLE: "시작가능",
-  IN_PROGRESS: "진행중",
-  COMPLETED: "완료",
-  LOCKED: "잠김",
-} as const;
-
 function MissionListBottomSheet({
   spot,
   listData,
@@ -697,7 +655,6 @@ function MissionListBottomSheet({
   isError,
   onClose,
 }: MissionListBottomSheetProps) {
-  const navigate = useNavigate();
   return (
     <div
       className="absolute inset-0 z-[1000] flex items-end bg-black/20"
@@ -731,54 +688,23 @@ function MissionListBottomSheet({
         </div>
 
         {/* 미션 목록 */}
-        <div className="no-scrollbar mt-[16px] min-h-0 overflow-y-auto flex flex-col gap-2 overscroll-contain">
-          {isLoading && (
-            <div className="w-full flex justify-center items-center">
-              데이터를 불러오는 중 입니다...
-            </div>
-          )}
+        <div
+          className="no-scrollbar mt-[16px] min-h-0 overflow-y-auto flex flex-col gap-2 overscroll-contain"
+          aria-busy={isLoading}
+        >
+          {isLoading &&
+            Array.from({ length: 3 }, (_, index) => (
+              <MissionListCardSkeleton key={index} />
+            ))}
           {isError && (
             <div className="w-full flex justify-center items-center">
               에러가 발생했습니다. 다시 시도해주십시오.
             </div>
           )}
-          {listData?.missions.map((data) => (
-            <div
-              className="rounded-[18px] border border-[#E5EDF7] p-4 flex justify-between"
-              key={data.spotName}
-            >
-              <div className="flex gap-2">
-                <img
-                  src={data.imageUrl}
-                  alt={`${data.spotName} 사진`}
-                  className="size-10 rounded-md"
-                />
-                <div>
-                  <p className="type-body1 !font-black">{data.title}</p>
-
-                  <p className="type-body3 text-[#A2A9B2]">
-                    {missionStatusLabel[data.userMissionStatus]} |{" "}
-                    {data.estimatedMinutes}분 | +{data.rewardPoint}
-                  </p>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="size-10 p-3!"
-                onClick={() =>
-                  navigate(
-                    PATH.MISSION_DETAIL.replace(
-                      ":missionId",
-                      String(data.missionId),
-                    ),
-                  )
-                }
-              >
-                <ChevronRight />
-              </Button>
-            </div>
-          ))}
+          {!isLoading &&
+            listData?.missions.map((data) => (
+              <MissionListCard key={data.missionId} mission={data} />
+            ))}
         </div>
       </section>
     </div>
