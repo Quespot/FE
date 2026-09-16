@@ -6,6 +6,8 @@ export function useMissionAttempts() {
   return useQuery({
     queryKey: ["missionAttempts"],
     queryFn: getMissionAttempts,
-    staleTime: 1000 * 60,
+    staleTime: 0,
+    refetchOnMount: "always",
+    retry: false,
   });
 }

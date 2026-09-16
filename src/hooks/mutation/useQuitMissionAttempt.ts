@@ -1,13 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { startMissionAttempt } from "@/apis/missionAttempt";
+import { quitMissionAttempt } from "@/apis/missionAttempt";
 
-export function useStartMissionAttempt() {
+export function useQuitMissionAttempt() {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: (missionId: number) => startMissionAttempt(missionId),
+    mutationFn: (attemptId: number) => quitMissionAttempt(attemptId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["missionAttempts"] });
+      void queryClient.invalidateQueries({ queryKey: ["missions"] });
     },
   });
 }

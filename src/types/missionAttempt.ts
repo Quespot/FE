@@ -12,7 +12,7 @@ export type MissionAttempt = {
   status: MissionAttemptStatus;
   startedAt: string;
   completedAt: string | null;
-  earnedPoint: number;
+  earnedPoint: number | null;
 };
 
 export type MissionArrivalResult = {
