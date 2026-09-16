@@ -104,10 +104,11 @@ export default function MapPage() {
   }, [data, selectedSpotId]);
 
   const selectedSpot = useMemo(() => {
-    return data?.missionSpots.find(
-      (spot) => spot.districtCode === selectedSpotId,
-    ) ?? nearData?.missionSpots.find(
-      (spot) => spot.districtCode === selectedSpotId,
+    return (
+      data?.missionSpots.find((spot) => spot.districtCode === selectedSpotId) ??
+      nearData?.missionSpots.find(
+        (spot) => spot.districtCode === selectedSpotId,
+      )
     );
   }, [selectedSpotId, data, nearData]);
 
@@ -325,7 +326,10 @@ export default function MapPage() {
                 <SpotSummaryCardSkeleton key={index} />
               ))}
             {(locationStatus === "denied" || locationStatus === "error") && (
-              <p role="status" className="w-full rounded-xl bg-[#F4F8FF] px-4 py-5 text-center text-sm leading-relaxed text-[#667085]">
+              <p
+                role="status"
+                className="w-full rounded-xl bg-[#F4F8FF] px-4 py-5 text-center text-sm leading-relaxed text-[#667085]"
+              >
                 {locationStatus === "denied"
                   ? "주변 미션을 보려면 브라우저 설정에서 위치 권한을 허용한 뒤 페이지를 새로고침해 주세요."
                   : "현재 위치를 확인하지 못했어요. 기기의 위치 설정을 확인한 뒤 페이지를 새로고침해 주세요."}
@@ -662,11 +666,11 @@ function MissionListBottomSheet({
     >
       <section
         onClick={(event) => event.stopPropagation()}
-        className="relative flex flex-col h-[70%] w-full rounded-t-[28px] bg-white px-[20px] pb-[24px] pt-[12px] shadow-[0_-8px_30px_rgba(8,37,95,0.16)] min-h-0 overflow-hidden"
+        className="relative flex flex-col h-[70%] w-full rounded-t-[28px] bg-white pt-[12px] shadow-[0_-8px_30px_rgba(8,37,95,0.16)] min-h-0 overflow-hidden"
       >
         <div className="mx-auto mb-[12px] h-[5px] w-[44px] rounded-full bg-[#D7DEE8]" />
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-5">
           <div>
             <h2 className="m-0 text-[22px] font-black leading-[30px] text-[#1C1C3A]">
               {spot.districtName} 미션
@@ -689,7 +693,7 @@ function MissionListBottomSheet({
 
         {/* 미션 목록 */}
         <div
-          className="no-scrollbar mt-[16px] min-h-0 overflow-y-auto flex flex-col gap-2 overscroll-contain"
+          className="no-scrollbar mt-[16px] min-h-0 overflow-y-auto flex flex-col gap-2 overscroll-contain bg-[#f4f8ff] px-5 py-5"
           aria-busy={isLoading}
         >
           {isLoading &&

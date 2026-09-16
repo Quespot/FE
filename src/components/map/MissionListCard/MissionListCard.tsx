@@ -11,17 +11,26 @@ const missionStatusLabel = {
   LOCKED: "잠김",
 } as const;
 
-export default function MissionListCard({ mission }: { mission: DistrictMission }) {
+export default function MissionListCard({
+  mission,
+}: {
+  mission: DistrictMission;
+}) {
   const navigate = useNavigate();
 
   return (
-    <div className="rounded-[18px] border border-[#E5EDF7] p-4 flex justify-between">
+    <div className="rounded-[18px] border border-[#E5EDF7] p-4 flex justify-between bg-white">
       <div className="flex gap-2">
-        <img src={mission.imageUrl} alt={`${mission.spotName} 사진`} className="size-10 rounded-md" />
+        <img
+          src={mission.imageUrl}
+          alt={`${mission.spotName} 사진`}
+          className="size-10 rounded-md"
+        />
         <div>
           <p className="type-body1 !font-black">{mission.title}</p>
           <p className="type-body3 text-[#A2A9B2]">
-            {missionStatusLabel[mission.userMissionStatus]} | {mission.estimatedMinutes}분 | +{mission.rewardPoint}
+            {missionStatusLabel[mission.userMissionStatus]} |{" "}
+            {mission.estimatedMinutes}분 | +{mission.rewardPoint}
           </p>
         </div>
       </div>
@@ -30,7 +39,14 @@ export default function MissionListCard({ mission }: { mission: DistrictMission 
         variant="secondary"
         className="size-10 p-3!"
         aria-label={`${mission.title} 상세 보기`}
-        onClick={() => navigate(PATH.MISSION_DETAIL.replace(":missionId", String(mission.missionId)))}
+        onClick={() =>
+          navigate(
+            PATH.MISSION_DETAIL.replace(
+              ":missionId",
+              String(mission.missionId),
+            ),
+          )
+        }
       >
         <ChevronRight />
       </Button>
