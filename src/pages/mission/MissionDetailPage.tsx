@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowLeft,
   Building2,
   Check,
@@ -30,6 +31,7 @@ import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 import { useMissionDetail } from "@/hooks/queries/useMissionDetail";
+import { useMissionUnlockCondition } from "@/hooks/queries/useMissionUnlockCondition";
 import { useStartMissionAttempt } from "@/hooks/mutation/useStartMissionAttempt";
 import { useLikeMission } from "@/hooks/mutation/useLikeMission";
 import { useUnlikeMission } from "@/hooks/mutation/useUnlikeMission";
@@ -168,7 +170,28 @@ export default function MissionDetailPage() {
     longitude: currentLocation.lng,
   });
 
+  const {
+    data: unlockCondition,
+    isLoading: isUnlockConditionLoading,
+    isError: isUnlockConditionError,
+    refetch: refetchUnlockCondition,
+  } = useMissionUnlockCondition(missionId);
+
   const mission = data?.result;
+  const isLockedByCondition = Boolean(unlockCondition?.locked);
+  const unlockMessage =
+    unlockCondition?.message ||
+    "진행 중인 코스에서 이전 순서의 미션을 먼저 완료해주세요.";
+
+  const isMissionCompleted = mission?.userMissionStatus === "COMPLETED";
+  const isMissionStartBlocked =
+    !isMissionCompleted &&
+    (isLockedByCondition || mission?.userMissionStatus === "LOCKED");
+
+  const canStartMission =
+    Boolean(mission?.canStart) &&
+    !isMissionStartBlocked &&
+    !isUnlockConditionLoading;
 
   useEffect(() => {
     if (!mission) return;
@@ -236,7 +259,21 @@ export default function MissionDetailPage() {
   };
 
   const handleStartMission = () => {
-    if (!mission || !mission.canStart || isStartingMission) return;
+    if (!mission || isStartingMission) return;
+
+    if (isUnlockConditionLoading) {
+      return;
+    }
+
+    if (isMissionStartBlocked) {
+      alert(unlockMessage);
+      return;
+    }
+
+    if (!mission.canStart) {
+      alert("현재 이 미션을 시작할 수 없어요.");
+      return;
+    }
 
     startMission(mission.missionId, {
       onSuccess: (attempt) => {
@@ -319,6 +356,7 @@ export default function MissionDetailPage() {
             mission={mission}
             isLiked={isLiked}
             isLikePending={isLikePending}
+            isLockedByCondition={isMissionStartBlocked}
             onBack={() => navigate(-1)}
             onToggleLike={handleToggleLike}
             onOpenImage={() => setIsImagePreviewOpen(true)}
@@ -348,6 +386,27 @@ export default function MissionDetailPage() {
               />
             </div>
 
+            {isUnlockConditionLoading ? (
+              <MissionUnlockNotice
+                type="checking"
+                message="코스 진행 조건을 확인하는 중이에요."
+              />
+            ) : null}
+
+            {!isUnlockConditionLoading && isMissionStartBlocked ? (
+              <MissionUnlockNotice type="locked" message={unlockMessage} />
+            ) : null}
+
+            {!isUnlockConditionLoading && isUnlockConditionError ? (
+              <MissionUnlockNotice
+                type="error"
+                message="코스 잠금 조건을 확인하지 못했어요. 잠시 후 다시 시도해주세요."
+                onRetry={() => {
+                  void refetchUnlockCondition();
+                }}
+              />
+            ) : null}
+
             <div className="rounded-[16px] border border-[#EAF5FF] bg-white px-[15px] py-[13px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
               <p className="m-0 text-[12px] font-medium leading-[16px] text-[#A2A9B2]">
                 미션 설명
@@ -375,23 +434,25 @@ export default function MissionDetailPage() {
                 {missionSteps.map((step, index) => {
                   const isLinked = Boolean(step.targetPath);
                   const isVerifyStep = step.targetPath === PATH.MISSION_VERIFY;
+                  const isVerifyStepDisabled =
+                    isVerifyStep &&
+                    (isStartingMission ||
+                      isUnlockConditionLoading ||
+                      isMissionStartBlocked ||
+                      !mission.canStart);
 
                   return (
                     <li key={step.label}>
                       <button
                         type="button"
                         onClick={() => handleStepClick(step)}
-                        disabled={
-                          !isLinked || (isVerifyStep && isStartingMission)
-                        }
+                        disabled={!isLinked || isVerifyStepDisabled}
                         className={[
                           "grid w-full grid-cols-[31px_minmax(0,1fr)_23px] items-center gap-[11px] rounded-[12px] bg-transparent p-0 text-left transition",
-                          isLinked
+                          isLinked && !isVerifyStepDisabled
                             ? "cursor-pointer active:scale-[0.99]"
                             : "cursor-default",
-                          isVerifyStep && isStartingMission
-                            ? "opacity-60"
-                            : "opacity-100",
+                          isVerifyStepDisabled ? "opacity-55" : "opacity-100",
                         ].join(" ")}
                       >
                         <span className="grid h-[27px] w-[27px] place-items-center rounded-full bg-[#E8FBF3] text-[#00C950]">
@@ -416,7 +477,10 @@ export default function MissionDetailPage() {
 
             <MissionRewardCard
               mission={mission}
+              canStartMission={canStartMission}
               isStartingMission={isStartingMission}
+              isCheckingUnlockCondition={isUnlockConditionLoading}
+              isMissionStartBlocked={isMissionStartBlocked}
               onStartMission={handleStartMission}
               onMoveRecordPage={handleMoveRecordPage}
             />
@@ -434,19 +498,20 @@ export default function MissionDetailPage() {
               <button
                 type="button"
                 onClick={handleStartMission}
-                disabled={!mission.canStart || isStartingMission}
+                disabled={!canStartMission || isStartingMission}
                 className={[
                   "flex h-[50px] items-center justify-center rounded-[16px] text-[13px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition",
-                  mission.canStart && !isStartingMission
+                  canStartMission && !isStartingMission
                     ? "bg-[#5BB5F8] active:scale-[0.99]"
                     : "bg-[#CBD5E1]",
                 ].join(" ")}
               >
-                {isStartingMission
-                  ? "시작 중..."
-                  : mission.canStart
-                    ? "미션 인증하기"
-                    : "시작 불가"}
+                {getStartButtonLabel({
+                  isStartingMission,
+                  isCheckingUnlockCondition: isUnlockConditionLoading,
+                  isMissionStartBlocked,
+                  canStartMission,
+                })}
               </button>
             </div>
           </section>
@@ -505,6 +570,7 @@ type MissionHeroProps = {
   mission: MissionDetail;
   isLiked: boolean;
   isLikePending: boolean;
+  isLockedByCondition: boolean;
   onBack: () => void;
   onToggleLike: () => void;
   onOpenImage: () => void;
@@ -514,6 +580,7 @@ function MissionHero({
   mission,
   isLiked,
   isLikePending,
+  isLockedByCondition,
   onBack,
   onToggleLike,
   onOpenImage,
@@ -521,7 +588,11 @@ function MissionHero({
   const Icon = categoryIconMap[mission.category] ?? Building2;
   const style = CATEGORY_STYLE[mission.category] ?? DEFAULT_CATEGORY_STYLE;
   const isCompleted = mission.userMissionStatus === "COMPLETED";
-  const isLocked = mission.userMissionStatus === "LOCKED" || !mission.canStart;
+  const isLocked =
+    !isCompleted &&
+    (isLockedByCondition ||
+      mission.userMissionStatus === "LOCKED" ||
+      !mission.canStart);
 
   return (
     <section className="relative h-[354px] min-h-[354px] w-full shrink-0 overflow-hidden bg-[#F4F8FF]">
@@ -678,16 +749,111 @@ function InfoCard({ icon, iconClassName, value, label }: InfoCardProps) {
   );
 }
 
+type MissionUnlockNoticeProps = {
+  type: "checking" | "locked" | "error";
+  message: string;
+  onRetry?: () => void;
+};
+
+function MissionUnlockNotice({
+  type,
+  message,
+  onRetry,
+}: MissionUnlockNoticeProps) {
+  const isLocked = type === "locked";
+  const isError = type === "error";
+
+  return (
+    <section
+      className={[
+        "flex items-start gap-[10px] rounded-[16px] border px-[14px] py-[13px]",
+        isLocked
+          ? "border-[#FDE68A] bg-[#FFFBEB]"
+          : isError
+            ? "border-[#FECACA] bg-[#FEF2F2]"
+            : "border-[#C8E8FF] bg-white",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full",
+          isLocked
+            ? "bg-[#FEF3C7] text-[#D97706]"
+            : isError
+              ? "bg-[#FEE2E2] text-[#EF4444]"
+              : "bg-[#EAF5FF] text-[#5BB5F8]",
+        ].join(" ")}
+      >
+        {isLocked ? (
+          <Lock size={15} strokeWidth={2.6} />
+        ) : isError ? (
+          <AlertCircle size={16} strokeWidth={2.4} />
+        ) : (
+          <Loader2 size={15} strokeWidth={2.4} className="animate-spin" />
+        )}
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <strong
+          className={[
+            "block text-[13px] font-black leading-[18px]",
+            isLocked
+              ? "text-[#92400E]"
+              : isError
+                ? "text-[#B91C1C]"
+                : "text-[#1C1C3A]",
+          ].join(" ")}
+        >
+          {isLocked
+            ? "아직 시작할 수 없는 미션이에요"
+            : isError
+              ? "잠금 조건 확인 실패"
+              : "잠금 조건 확인 중"}
+        </strong>
+
+        <p
+          className={[
+            "m-0 mt-[4px] break-keep text-[12px] font-medium leading-[18px]",
+            isLocked
+              ? "text-[#B45309]"
+              : isError
+                ? "text-[#DC2626]"
+                : "text-[#6B7280]",
+          ].join(" ")}
+        >
+          {message}
+        </p>
+
+        {isError && onRetry ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-[8px] h-[30px] rounded-full bg-white px-[12px] text-[11px] font-black text-[#EF4444]"
+          >
+            다시 확인하기
+          </button>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 type MissionRewardCardProps = {
   mission: MissionDetail;
+  canStartMission: boolean;
   isStartingMission: boolean;
+  isCheckingUnlockCondition: boolean;
+  isMissionStartBlocked: boolean;
   onStartMission: () => void;
   onMoveRecordPage: () => void;
 };
 
 function MissionRewardCard({
   mission,
+  canStartMission,
   isStartingMission,
+  isCheckingUnlockCondition,
+  isMissionStartBlocked,
   onStartMission,
   onMoveRecordPage,
 }: MissionRewardCardProps) {
@@ -744,18 +910,55 @@ function MissionRewardCard({
       <button
         type="button"
         onClick={onStartMission}
-        disabled={!mission.canStart || isStartingMission}
+        disabled={!canStartMission || isStartingMission}
         className={[
           "flex h-[31px] min-w-[74px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-[12px] font-sans text-[10px] font-black leading-none text-white",
-          mission.canStart && !isStartingMission
+          canStartMission && !isStartingMission
             ? "bg-[#5BB5F8]"
             : "bg-[#CBD5E1]",
         ].join(" ")}
       >
-        {isStartingMission ? "시작 중" : "시작하기"}
+        {getStartButtonLabel({
+          isStartingMission,
+          isCheckingUnlockCondition,
+          isMissionStartBlocked,
+          canStartMission,
+        })}
       </button>
     </section>
   );
+}
+
+type GetStartButtonLabelParams = {
+  isStartingMission: boolean;
+  isCheckingUnlockCondition: boolean;
+  isMissionStartBlocked: boolean;
+  canStartMission: boolean;
+};
+
+function getStartButtonLabel({
+  isStartingMission,
+  isCheckingUnlockCondition,
+  isMissionStartBlocked,
+  canStartMission,
+}: GetStartButtonLabelParams) {
+  if (isStartingMission) {
+    return "시작 중";
+  }
+
+  if (isCheckingUnlockCondition) {
+    return "확인 중";
+  }
+
+  if (isMissionStartBlocked) {
+    return "잠김";
+  }
+
+  if (!canStartMission) {
+    return "시작 불가";
+  }
+
+  return "시작하기";
 }
 
 type MissionImagePreviewProps = {
