@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Check,
   Clock3,
+  Heart,
   Loader2,
   MapPin,
   Route,
@@ -19,6 +20,8 @@ import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 import { useCreateMissionCourse } from "@/hooks/mutation/useCreateMissionCourse";
+import { useLikeMissionCourse } from "@/hooks/mutation/useLikeMissionCourse";
+import { useUnlikeMissionCourse } from "@/hooks/mutation/useUnlikeMissionCourse";
 import type { MissionDetail } from "@/types/mission";
 import type {
   MissionCourseDetail,
@@ -51,11 +54,21 @@ export default function MissionCourseCreatePage() {
   const [createdCourse, setCreatedCourse] =
     useState<MissionCourseDetail | null>(null);
 
+  const [isCourseLiked, setIsCourseLiked] = useState(false);
+
   const {
     mutate: createCourse,
     isPending: isCreatingCourse,
     error,
   } = useCreateMissionCourse();
+
+  const { mutate: likeCourse, isPending: isLikingCourse } =
+    useLikeMissionCourse();
+
+  const { mutate: unlikeCourse, isPending: isUnlikingCourse } =
+    useUnlikeMissionCourse();
+
+  const isCourseLikePending = isLikingCourse || isUnlikingCourse;
 
   const errorMessage = useMemo(() => {
     if (!error) return "";
@@ -77,9 +90,28 @@ export default function MissionCourseCreatePage() {
       {
         onSuccess: (course) => {
           setCreatedCourse(course);
+          setIsCourseLiked(false);
         },
       },
     );
+  };
+
+  const handleToggleCourseLike = () => {
+    if (!createdCourse || isCourseLikePending) return;
+
+    const nextLiked = !isCourseLiked;
+
+    setIsCourseLiked(nextLiked);
+
+    const mutation = nextLiked ? likeCourse : unlikeCourse;
+
+    mutation(createdCourse.courseId, {
+      onError: (error) => {
+        console.error(error);
+        setIsCourseLiked(!nextLiked);
+        alert("코스 좋아요 처리에 실패했어요. 잠시 후 다시 시도해주세요.");
+      },
+    });
   };
 
   const handleMoveMissionDetail = (missionId: number) => {
@@ -185,6 +217,9 @@ export default function MissionCourseCreatePage() {
             ) : (
               <CreatedCourseSection
                 course={createdCourse}
+                isCourseLiked={isCourseLiked}
+                isCourseLikePending={isCourseLikePending}
+                onToggleCourseLike={handleToggleCourseLike}
                 onMoveMissionDetail={handleMoveMissionDetail}
               />
             )}
@@ -292,11 +327,17 @@ function CourseCreateReadySection({
 
 type CreatedCourseSectionProps = {
   course: MissionCourseDetail;
+  isCourseLiked: boolean;
+  isCourseLikePending: boolean;
+  onToggleCourseLike: () => void;
   onMoveMissionDetail: (missionId: number) => void;
 };
 
 function CreatedCourseSection({
   course,
+  isCourseLiked,
+  isCourseLikePending,
+  onToggleCourseLike,
   onMoveMissionDetail,
 }: CreatedCourseSectionProps) {
   const firstAvailableMission =
@@ -306,25 +347,61 @@ function CreatedCourseSection({
   return (
     <>
       <section className="mt-[16px] rounded-[22px] border border-[#BBF7D0] bg-[#E8FBF3] p-[18px] shadow-[0_4px_14px_rgba(8,37,95,0.08)]">
-        <div className="flex items-center gap-[12px]">
-          <span className="grid h-[48px] w-[48px] place-items-center rounded-full bg-[#C6F7D9] text-[#00C950]">
-            <Check size={26} strokeWidth={3} />
-          </span>
+        <div className="flex items-start justify-between gap-[12px]">
+          <div className="flex min-w-0 items-center gap-[12px]">
+            <span className="grid h-[48px] w-[48px] shrink-0 place-items-center rounded-full bg-[#C6F7D9] text-[#00C950]">
+              <Check size={26} strokeWidth={3} />
+            </span>
 
-          <div>
-            <p className="m-0 text-[13px] font-black leading-[18px] text-[#00A63E]">
-              코스 생성 완료
-            </p>
+            <div className="min-w-0">
+              <p className="m-0 text-[13px] font-black leading-[18px] text-[#00A63E]">
+                코스 생성 완료
+              </p>
 
-            <h2 className="m-0 mt-[3px] text-[20px] font-black leading-[27px] text-[#1C1C3A]">
-              {course.name}
-            </h2>
+              <h2 className="m-0 mt-[3px] break-keep text-[20px] font-black leading-[27px] text-[#1C1C3A]">
+                {course.name}
+              </h2>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={onToggleCourseLike}
+            disabled={isCourseLikePending}
+            className={[
+              "grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full bg-white shadow-[0_3px_10px_rgba(8,37,95,0.12)] transition active:scale-[0.94]",
+              isCourseLikePending ? "opacity-70" : "opacity-100",
+            ].join(" ")}
+            aria-label={isCourseLiked ? "코스 좋아요 해제" : "코스 좋아요 등록"}
+          >
+            {isCourseLikePending ? (
+              <Loader2
+                size={20}
+                strokeWidth={2.5}
+                className="animate-spin text-[#A2A9B2]"
+              />
+            ) : (
+              <Heart
+                size={22}
+                strokeWidth={2.5}
+                fill={isCourseLiked ? "#FF4D67" : "transparent"}
+                className={
+                  isCourseLiked ? "text-[#FF4D67]" : "text-[#A2A9B2]"
+                }
+              />
+            )}
+          </button>
         </div>
 
         <p className="m-0 mt-[12px] break-keep text-[13px] font-medium leading-[21px] text-[#008A3D]">
           {course.description || "선택한 미션을 기준으로 코스가 생성됐어요."}
         </p>
+
+        {isCourseLiked ? (
+          <p className="m-0 mt-[10px] inline-flex rounded-full bg-white px-[10px] py-[6px] text-[11px] font-black leading-none text-[#FF4D67] shadow-[0_2px_8px_rgba(8,37,95,0.08)]">
+            좋아요한 코스에 저장됐어요
+          </p>
+        ) : null}
       </section>
 
       <div className="mt-[14px] grid grid-cols-3 gap-[10px]">
