@@ -3,11 +3,20 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getRecommendedMissions } from "@/apis/mission";
 import type { GetRecommendedMissionsParams } from "@/types/mission";
 
-export function useRecommendedMissions(params: GetRecommendedMissionsParams) {
+type UseRecommendedMissionsOptions = {
+  enabled?: boolean;
+};
+
+export function useRecommendedMissions(
+  params: GetRecommendedMissionsParams,
+  options: UseRecommendedMissionsOptions = {},
+) {
   return useQuery({
     queryKey: ["recommended-missions", params],
     queryFn: () => getRecommendedMissions(params),
+    enabled: options.enabled ?? true,
     staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }
@@ -25,6 +34,7 @@ export function useInfiniteRecommendedMissions(
         ? (lastPage.result.nextCursor ?? undefined)
         : undefined,
     staleTime: 1000 * 60,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }
