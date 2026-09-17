@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
@@ -43,7 +49,7 @@ const DEFAULT_LOCATION: LatLng = {
   lng: 126.9812,
 };
 
-const FALLBACK_RADIUS_METERS = 50;
+const FALLBACK_RADIUS_METERS = 500;
 
 export default function VerifyPage() {
   const navigate = useNavigate();
@@ -166,7 +172,9 @@ export default function VerifyPage() {
       }
     } catch (error) {
       console.error(error);
-      alert("GPS 도착 인증에 실패했어요. 위치 권한 또는 현재 위치를 확인해주세요.");
+      alert(
+        "GPS 도착 인증에 실패했어요. 위치 권한 또는 현재 위치를 확인해주세요.",
+      );
       return;
     }
 
