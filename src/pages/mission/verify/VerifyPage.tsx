@@ -18,7 +18,6 @@ import { ContentCard } from "@/components/common/ContentCard";
 import { PATH } from "@/routes/paths";
 import { useVerifyMissionArrival } from "@/hooks/mutation/useVerifyMissionArrival";
 import { useCreateMissionPhoto } from "@/hooks/mutation/useCreateMissionPhoto";
-import { useMissionAttemptDetail } from "@/hooks/queries/useMissionAttemptDetail";
 import { useMissionVerificationGuide } from "@/hooks/queries/useMissionVerificationGuide";
 import type { MissionDetail } from "@/types/mission";
 import type { MissionVerificationGuide } from "@/types/missionAttempt";
@@ -65,46 +64,40 @@ export default function VerifyPage() {
   const attemptId = state?.attemptId ?? null;
 
   const {
-    data: attemptDetail,
-    isLoading: isAttemptDetailLoading,
-    isError: isAttemptDetailError,
-    refetch: refetchAttemptDetail,
-  } = useMissionAttemptDetail(attemptId);
-
-  const {
     data: verificationGuide,
     isLoading: isVerificationGuideLoading,
     isError: isVerificationGuideError,
     refetch: refetchVerificationGuide,
   } = useMissionVerificationGuide(attemptId);
 
-  const fallbackVerificationGuide = useMemo<MissionVerificationGuide | undefined>(
-    () => {
-      if (!mission) return undefined;
+  const fallbackVerificationGuide = useMemo<
+    MissionVerificationGuide | undefined
+  >(() => {
+    if (!mission) return undefined;
 
-      if (
-        !Number.isFinite(mission.latitude) ||
-        !Number.isFinite(mission.longitude)
-      ) {
-        return undefined;
-      }
+    if (
+      !Number.isFinite(mission.latitude) ||
+      !Number.isFinite(mission.longitude)
+    ) {
+      return undefined;
+    }
 
-      return {
-        attemptId: attemptId ?? 0,
-        targetLatitude: mission.latitude,
-        targetLongitude: mission.longitude,
-        radiusMeters: FALLBACK_RADIUS_METERS,
-      };
-    },
-    [attemptId, mission],
-  );
+    return {
+      attemptId: attemptId ?? 0,
+      targetLatitude: mission.latitude,
+      targetLongitude: mission.longitude,
+      radiusMeters: FALLBACK_RADIUS_METERS,
+    };
+  }, [attemptId, mission]);
 
   const guideForDisplay =
     verificationGuide ??
     (!isVerificationGuideLoading ? fallbackVerificationGuide : undefined);
 
   const isUsingFallbackGuide =
-    Boolean(guideForDisplay) && !verificationGuide && Boolean(fallbackVerificationGuide);
+    Boolean(guideForDisplay) &&
+    !verificationGuide &&
+    Boolean(fallbackVerificationGuide);
 
   const { mutateAsync: verifyArrival, isPending: isVerifyingArrival } =
     useVerifyMissionArrival();
@@ -112,23 +105,11 @@ export default function VerifyPage() {
   const { mutateAsync: createPhoto, isPending: isCreatingPhoto } =
     useCreateMissionPhoto();
 
-  const missionTitle =
-    attemptDetail?.missionTitle ?? state?.missionTitle ?? mission?.title ?? "미션";
-
+  const missionTitle = state?.missionTitle ?? mission?.title ?? "미션";
   const spotName = mission?.spotName ?? missionTitle;
+  const missionId = state?.missionId ?? mission?.missionId;
 
-  const missionId =
-    attemptDetail?.missionId ?? state?.missionId ?? mission?.missionId;
-
-  const attemptStatus = attemptDetail?.status;
-
-  const isAttemptFinished =
-    attemptStatus === "COMPLETED" ||
-    attemptStatus === "FAILED" ||
-    attemptStatus === "QUIT";
-
-  const isSubmitting =
-    isVerifyingArrival || isUploading || isCreatingPhoto || isAttemptDetailLoading;
+  const isSubmitting = isVerifyingArrival || isUploading || isCreatingPhoto;
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -143,11 +124,6 @@ export default function VerifyPage() {
 
   const handleSubmit = async () => {
     if (!imageFile || !previewUrl) return;
-
-    if (isAttemptFinished) {
-      alert("이미 종료된 미션 시도예요. 미션 목록에서 다시 시작해주세요.");
-      return;
-    }
 
     if (!attemptId) {
       navigate(PATH.MISSION_VERIFY_LOADING, {
@@ -312,16 +288,9 @@ export default function VerifyPage() {
           />
 
           {attemptId ? (
-            <AttemptDetailNotice
-              attemptId={attemptId}
-              status={attemptStatus}
-              startedAt={attemptDetail?.startedAt}
-              isLoading={isAttemptDetailLoading}
-              isError={isAttemptDetailError}
-              onRetry={() => {
-                void refetchAttemptDetail();
-              }}
-            />
+            <p className="mt-2 rounded-xl bg-[#F4F8FF] px-3 py-2 text-[11px] font-bold text-[#5BB5F8]">
+              현재 미션 시도 번호: {attemptId}
+            </p>
           ) : (
             <p className="mt-2 rounded-xl bg-[#FFF6D9] px-3 py-2 text-[11px] font-bold text-[#F59E0B]">
               attemptId가 없어 데모 인증 모드로 진행돼요.
@@ -398,7 +367,6 @@ export default function VerifyPage() {
                 size="sm"
                 icon={<Camera size={14} strokeWidth={2.4} />}
                 onClick={() => cameraInputRef.current?.click()}
-                disabled={isAttemptFinished}
               >
                 촬영하기
               </Button>
@@ -407,7 +375,6 @@ export default function VerifyPage() {
                 size="sm"
                 variant="secondary"
                 onClick={() => galleryInputRef.current?.click()}
-                disabled={isAttemptFinished}
               >
                 <ImageUp size={14} strokeWidth={2.4} />
                 갤러리
@@ -433,19 +400,15 @@ export default function VerifyPage() {
           </div>
         </ContentCard>
 
-        {isAttemptFinished ? (
-          <Button disabled>{getFinishedAttemptButtonLabel(attemptStatus)}</Button>
-        ) : !previewUrl ? (
+        {!previewUrl ? (
           <Button disabled>사진을 먼저 선택해주세요</Button>
         ) : (
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isAttemptDetailLoading
-              ? "미션 상태 확인 중..."
-              : isUploading
-                ? "사진 업로드 중..."
-                : isSubmitting
-                  ? "인증 요청 중..."
-                  : "제출하기"}
+            {isUploading
+              ? "사진 업로드 중..."
+              : isSubmitting
+                ? "인증 요청 중..."
+                : "제출하기"}
           </Button>
         )}
       </section>
@@ -544,77 +507,6 @@ function VerificationGuideNotice({
           ? "서버 인증 가이드를 불러오지 못해 미션 장소 좌표 기준으로 안내하고 있어요."
           : "미션 장소 근처에서 위치 인증 후, 장소가 식별되는 사진을 제출해주세요."}
       </p>
-    </div>
-  );
-}
-
-type AttemptDetailNoticeProps = {
-  attemptId: number;
-  status?: string;
-  startedAt?: string;
-  isLoading: boolean;
-  isError: boolean;
-  onRetry: () => void;
-};
-
-function AttemptDetailNotice({
-  attemptId,
-  status,
-  startedAt,
-  isLoading,
-  isError,
-  onRetry,
-}: AttemptDetailNoticeProps) {
-  if (isLoading) {
-    return (
-      <div className="mt-2 flex items-center gap-2 rounded-xl bg-[#EAF5FF] px-3 py-2 text-[11px] font-bold text-[#5BB5F8]">
-        <Loader2 size={13} className="animate-spin" />
-        미션 시도 정보를 불러오는 중이에요.
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="mt-2 rounded-xl bg-[#FFF7ED] px-3 py-2">
-        <div className="flex items-center gap-2 text-[11px] font-bold text-[#F59E0B]">
-          <AlertCircle size={13} />
-          미션 상태를 다시 확인하지 못했어요.
-        </div>
-
-        <p className="m-0 mt-1 break-keep text-[10px] font-medium leading-[15px] text-[#9A6A00]">
-          전달받은 미션 정보로 인증을 계속 진행할 수 있어요.
-        </p>
-
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-2 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[10px] font-black text-[#F59E0B]"
-        >
-          <RefreshCw size={11} />
-          다시 확인하기
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-2 rounded-xl bg-[#F4F8FF] px-3 py-2">
-      <p className="m-0 text-[11px] font-bold text-[#5BB5F8]">
-        현재 미션 시도 번호: {attemptId}
-      </p>
-
-      {status ? (
-        <p className="m-0 mt-1 text-[11px] font-bold text-[#6F7B8D]">
-          상태: {getAttemptStatusLabel(status)}
-        </p>
-      ) : null}
-
-      {startedAt ? (
-        <p className="m-0 mt-1 text-[10px] font-medium text-[#9BAFC8]">
-          시작 시간: {formatDateTime(startedAt)}
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -724,7 +616,9 @@ function VerificationGuideModal({
               위치 인증을 진행해주세요.
               <br />
               인증 가능 반경은{" "}
-              <strong className={isFallback ? "text-[#F59E0B]" : "text-[#5BB5F8]"}>
+              <strong
+                className={isFallback ? "text-[#F59E0B]" : "text-[#5BB5F8]"}
+              >
                 {Math.round(guide.radiusMeters)}m
               </strong>
               입니다.
@@ -766,47 +660,4 @@ function VerificationGuideModal({
       </section>
     </div>
   );
-}
-
-function getAttemptStatusLabel(status?: string) {
-  switch (status) {
-    case "IN_PROGRESS":
-      return "진행 중";
-    case "COMPLETED":
-      return "완료";
-    case "FAILED":
-      return "실패";
-    case "QUIT":
-      return "포기";
-    default:
-      return status ?? "상태 확인 전";
-  }
-}
-
-function getFinishedAttemptButtonLabel(status?: string) {
-  switch (status) {
-    case "COMPLETED":
-      return "이미 완료된 미션이에요";
-    case "FAILED":
-      return "실패 처리된 미션이에요";
-    case "QUIT":
-      return "포기한 미션이에요";
-    default:
-      return "종료된 미션이에요";
-  }
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
 }
