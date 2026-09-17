@@ -10,8 +10,9 @@ export function useMissionAttemptDetail(attemptId?: number | null) {
     queryKey: ["missionAttempt", attemptId],
     queryFn: () => getMissionAttemptDetail(attemptId as number),
     enabled: isValidAttemptId,
-    staleTime: 0,
+    staleTime: 1000 * 10,
     refetchOnMount: "always",
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }
