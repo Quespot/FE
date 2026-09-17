@@ -12,6 +12,7 @@ export function useMissionVerificationGuide(attemptId?: number | null) {
     enabled: isValidAttemptId,
     staleTime: 1000 * 30,
     refetchOnMount: "always",
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }
