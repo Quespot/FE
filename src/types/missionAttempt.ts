@@ -20,6 +20,13 @@ export type MissionUnlockCondition = {
   message: string;
 };
 
+export type MissionVerificationGuide = {
+  attemptId: number;
+  targetLatitude: number;
+  targetLongitude: number;
+  radiusMeters: number;
+};
+
 export type MissionArrivalResult = {
   success: boolean;
   distanceMeters: number;
