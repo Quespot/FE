@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
@@ -44,6 +44,8 @@ const DEFAULT_LOCATION: LatLng = {
   lng: 126.9812,
 };
 
+const FALLBACK_RADIUS_METERS = 50;
+
 export default function VerifyPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,6 +77,34 @@ export default function VerifyPage() {
     isError: isVerificationGuideError,
     refetch: refetchVerificationGuide,
   } = useMissionVerificationGuide(attemptId);
+
+  const fallbackVerificationGuide = useMemo<MissionVerificationGuide | undefined>(
+    () => {
+      if (!mission) return undefined;
+
+      if (
+        !Number.isFinite(mission.latitude) ||
+        !Number.isFinite(mission.longitude)
+      ) {
+        return undefined;
+      }
+
+      return {
+        attemptId: attemptId ?? 0,
+        targetLatitude: mission.latitude,
+        targetLongitude: mission.longitude,
+        radiusMeters: FALLBACK_RADIUS_METERS,
+      };
+    },
+    [attemptId, mission],
+  );
+
+  const guideForDisplay =
+    verificationGuide ??
+    (!isVerificationGuideLoading ? fallbackVerificationGuide : undefined);
+
+  const isUsingFallbackGuide =
+    Boolean(guideForDisplay) && !verificationGuide && Boolean(fallbackVerificationGuide);
 
   const { mutateAsync: verifyArrival, isPending: isVerifyingArrival } =
     useVerifyMissionArrival();
@@ -160,7 +190,7 @@ export default function VerifyPage() {
       }
     } catch (error) {
       console.error(error);
-      alert("GPS 도착 인증에 실패했어요. 위치 권한을 확인해주세요.");
+      alert("GPS 도착 인증에 실패했어요. 위치 권한 또는 현재 위치를 확인해주세요.");
       return;
     }
 
@@ -272,9 +302,10 @@ export default function VerifyPage() {
 
           <VerificationGuideNotice
             attemptId={attemptId}
-            guide={verificationGuide}
-            isLoading={isVerificationGuideLoading}
-            isError={isVerificationGuideError}
+            guide={guideForDisplay}
+            isLoading={isVerificationGuideLoading && !guideForDisplay}
+            isError={isVerificationGuideError && !guideForDisplay}
+            isFallback={isUsingFallbackGuide}
             onRetry={() => {
               void refetchVerificationGuide();
             }}
@@ -422,9 +453,10 @@ export default function VerifyPage() {
       {isGuideOpen ? (
         <VerificationGuideModal
           spotName={spotName}
-          guide={verificationGuide}
-          isLoading={isVerificationGuideLoading}
-          isError={isVerificationGuideError}
+          guide={guideForDisplay}
+          isLoading={isVerificationGuideLoading && !guideForDisplay}
+          isError={isVerificationGuideError && !guideForDisplay}
+          isFallback={isUsingFallbackGuide}
           hasAttemptId={Boolean(attemptId)}
           onRetry={() => {
             void refetchVerificationGuide();
@@ -441,6 +473,7 @@ type VerificationGuideNoticeProps = {
   guide?: MissionVerificationGuide;
   isLoading: boolean;
   isError: boolean;
+  isFallback: boolean;
   onRetry: () => void;
 };
 
@@ -449,6 +482,7 @@ function VerificationGuideNotice({
   guide,
   isLoading,
   isError,
+  isFallback,
   onRetry,
 }: VerificationGuideNoticeProps) {
   if (!attemptId) {
@@ -489,14 +523,26 @@ function VerificationGuideNotice({
   }
 
   return (
-    <div className="mt-2 rounded-xl bg-[#EAF5FF] px-3 py-2">
-      <div className="flex items-center gap-2 text-[11px] font-bold text-[#5BB5F8]">
+    <div
+      className={[
+        "mt-2 rounded-xl px-3 py-2",
+        isFallback ? "bg-[#FFF7ED]" : "bg-[#EAF5FF]",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          "flex items-center gap-2 text-[11px] font-bold",
+          isFallback ? "text-[#F59E0B]" : "text-[#5BB5F8]",
+        ].join(" ")}
+      >
         <Target size={13} />
         인증 가능 반경 {Math.round(guide.radiusMeters)}m
       </div>
 
       <p className="m-0 mt-1 break-keep text-[10px] font-medium leading-[15px] text-[#6F7B8D]">
-        미션 장소 근처에서 위치 인증 후, 장소가 식별되는 사진을 제출해주세요.
+        {isFallback
+          ? "서버 인증 가이드를 불러오지 못해 미션 장소 좌표 기준으로 안내하고 있어요."
+          : "미션 장소 근처에서 위치 인증 후, 장소가 식별되는 사진을 제출해주세요."}
       </p>
     </div>
   );
@@ -530,19 +576,23 @@ function AttemptDetailNotice({
 
   if (isError) {
     return (
-      <div className="mt-2 rounded-xl bg-[#FFF1F2] px-3 py-2">
-        <div className="flex items-center gap-2 text-[11px] font-bold text-[#E54855]">
+      <div className="mt-2 rounded-xl bg-[#FFF7ED] px-3 py-2">
+        <div className="flex items-center gap-2 text-[11px] font-bold text-[#F59E0B]">
           <AlertCircle size={13} />
-          미션 시도 정보를 불러오지 못했어요.
+          미션 상태를 다시 확인하지 못했어요.
         </div>
+
+        <p className="m-0 mt-1 break-keep text-[10px] font-medium leading-[15px] text-[#9A6A00]">
+          전달받은 미션 정보로 인증을 계속 진행할 수 있어요.
+        </p>
 
         <button
           type="button"
           onClick={onRetry}
-          className="mt-2 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[10px] font-black text-[#E54855]"
+          className="mt-2 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[10px] font-black text-[#F59E0B]"
         >
           <RefreshCw size={11} />
-          다시 불러오기
+          다시 확인하기
         </button>
       </div>
     );
@@ -574,6 +624,7 @@ type VerificationGuideModalProps = {
   guide?: MissionVerificationGuide;
   isLoading: boolean;
   isError: boolean;
+  isFallback: boolean;
   hasAttemptId: boolean;
   onRetry: () => void;
   onClose: () => void;
@@ -584,6 +635,7 @@ function VerificationGuideModal({
   guide,
   isLoading,
   isError,
+  isFallback,
   hasAttemptId,
   onRetry,
   onClose,
@@ -614,7 +666,14 @@ function VerificationGuideModal({
           </Button>
         </div>
 
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-[18px] bg-[#EAF5FF] text-[#5BB5F8]">
+        <div
+          className={[
+            "mx-auto grid h-14 w-14 place-items-center rounded-[18px]",
+            isFallback
+              ? "bg-[#FFF7ED] text-[#F59E0B]"
+              : "bg-[#EAF5FF] text-[#5BB5F8]",
+          ].join(" ")}
+        >
           {isLoading ? (
             <Loader2 size={27} strokeWidth={2.4} className="animate-spin" />
           ) : isError ? (
@@ -665,11 +724,18 @@ function VerificationGuideModal({
               위치 인증을 진행해주세요.
               <br />
               인증 가능 반경은{" "}
-              <strong className="text-[#5BB5F8]">
+              <strong className={isFallback ? "text-[#F59E0B]" : "text-[#5BB5F8]"}>
                 {Math.round(guide.radiusMeters)}m
               </strong>
               입니다.
             </p>
+
+            {isFallback ? (
+              <p className="mt-3 rounded-[14px] bg-[#FFF7ED] px-3 py-2 break-keep text-[11px] font-bold leading-5 text-[#9A6A00]">
+                서버 인증 가이드 응답이 없어 미션 상세 좌표 기준으로 안내하고
+                있어요.
+              </p>
+            ) : null}
 
             <div className="mt-4 rounded-[16px] bg-[#F4F8FF] px-4 py-3 text-left">
               <p className="m-0 text-[11px] font-black text-[#5BB5F8]">
