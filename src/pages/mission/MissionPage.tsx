@@ -23,6 +23,7 @@ import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 import { useInfiniteMissions } from "@/hooks/queries/useInfiniteMissions";
+import { useRecommendedMissions } from "@/hooks/queries/useRecommendedMissions";
 import type {
   MissionCategory,
   MissionItem,
@@ -123,6 +124,7 @@ export default function MissionPage() {
 
   const [keyword, setKeyword] = useState(searchKeyword);
   const [activeTab, setActiveTab] = useState<MissionTab>("explore");
+
   const {
     data: attemptData,
     isLoading: isAttemptsLoading,
@@ -130,6 +132,7 @@ export default function MissionPage() {
     error: attemptsError,
     refetch: refetchAttempts,
   } = useMissionAttempts();
+
   const attempts =
     attemptData?.attempts.filter(
       (attempt) => attempt.status === "IN_PROGRESS",
@@ -140,6 +143,15 @@ export default function MissionPage() {
   }, [searchKeyword]);
 
   const { currentLocation, locationStatus } = useCurrentLocation();
+
+  const {
+    refetch: refetchRecommendedMissions,
+    isFetching: isFetchingRecommendedMissions,
+  } = useRecommendedMissions({
+    latitude: currentLocation.lat,
+    longitude: currentLocation.lng,
+    size: 5,
+  });
 
   const {
     data,
@@ -214,6 +226,35 @@ export default function MissionPage() {
     );
   };
 
+  const handleMoveRecommendedMission = async () => {
+    if (isFetchingRecommendedMissions) return;
+
+    try {
+      const result = await refetchRecommendedMissions();
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      const recommendedMission = result.data?.result.missions[0];
+
+      if (!recommendedMission) {
+        alert("현재 추천 가능한 미션이 없어요. 미션 목록에서 직접 선택해주세요.");
+        return;
+      }
+
+      navigate(
+        PATH.MISSION_DETAIL.replace(
+          ":missionId",
+          String(recommendedMission.missionId),
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+      alert("추천 미션을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+    }
+  };
+
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
       <Header />
@@ -259,7 +300,7 @@ export default function MissionPage() {
               void refetchAttempts();
             }}
             className={[
-              "relative h-[42px] rounded-[11px] text-[14px] font-black transition flex justify-center items-center",
+              "relative flex h-[42px] items-center justify-center rounded-[11px] text-[14px] font-black transition",
               activeTab === "inProgress"
                 ? "bg-white text-[#1C1C3A] shadow-[0_3px_10px_rgba(8,37,95,0.08)]"
                 : "text-[#A2A9B2]",
@@ -317,14 +358,25 @@ export default function MissionPage() {
 
       {activeTab === "explore" ? (
         <QuespotPageContent className="bg-[#F4F8FF] px-[16px] pb-[24px] pt-[16px]">
-          <section className="flex min-h-[82px] shrink-0 items-center justify-between rounded-[16px] bg-[#DFF1FF] px-[16px] py-[14px]">
+          <button
+            type="button"
+            onClick={handleMoveRecommendedMission}
+            disabled={isFetchingRecommendedMissions}
+            className={[
+              "flex min-h-[82px] w-full shrink-0 items-center justify-between rounded-[16px] bg-[#DFF1FF] px-[16px] py-[14px] text-left transition active:scale-[0.99]",
+              isFetchingRecommendedMissions ? "opacity-80" : "opacity-100",
+            ].join(" ")}
+            aria-label="오늘의 추천 미션 보기"
+          >
             <div>
               <p className="m-0 text-[13px] font-black leading-[18px] text-[#5BB5F8]">
                 오늘의 추천 미션
               </p>
 
               <p className="m-0 mt-[4px] text-[12px] font-medium leading-[17px] text-[#5D6A7D]">
-                가까운 장소에서 미션을 시작해보세요
+                {isFetchingRecommendedMissions
+                  ? "가까운 추천 미션을 찾는 중이에요"
+                  : "가까운 장소에서 미션을 시작해보세요"}
               </p>
             </div>
 
@@ -334,10 +386,19 @@ export default function MissionPage() {
             >
               <span className="relative grid h-[60px] w-[60px] place-items-center rounded-full border border-white bg-white/65 text-[#50AAE8] shadow-[0_6px_16px_rgba(58,139,197,0.11)]">
                 <span className="absolute inset-[6px] rounded-full border border-dashed border-[#B9DDF5]" />
-                <MapPinned className="relative" size={30} strokeWidth={2} />
+
+                {isFetchingRecommendedMissions ? (
+                  <Loader2
+                    className="relative animate-spin"
+                    size={28}
+                    strokeWidth={2.2}
+                  />
+                ) : (
+                  <MapPinned className="relative" size={30} strokeWidth={2} />
+                )}
               </span>
             </div>
-          </section>
+          </button>
 
           <section className="mt-[20px]">
             <h2 className="m-0 text-[21px] font-black leading-[28px] text-[#1C1C3A]">

@@ -24,7 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import HomeHeader from "@/components/home/HomeHeader";
+import { Header } from "@/components/common/Header";
 import QuespotPageLayout, {
   QuespotDivider,
   QuespotPageContent,
@@ -35,7 +35,6 @@ import { useLikeMission } from "@/hooks/mutation/useLikeMission";
 import { useUnlikeMission } from "@/hooks/mutation/useUnlikeMission";
 import type { MissionCategory, MissionDetail } from "@/types/mission";
 import { PATH } from "@/routes/paths";
-import QuestySvg from "@/assets/icons/Questy.svg";
 
 type LatLng = {
   lat: number;
@@ -299,13 +298,7 @@ export default function MissionDetailPage() {
 
   return (
     <QuespotPageLayout>
-      <HomeHeader
-        mascotSrc={QuestySvg}
-        notificationCount={3}
-        onBellClick={() => {
-          navigate(PATH.NOTIFICATION);
-        }}
-      />
+      <Header />
 
       <QuespotDivider />
 
