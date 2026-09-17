@@ -56,6 +56,11 @@ export default function VerifyResultPage() {
 
   const resultViewData = useMemo(() => {
     return {
+      missionId:
+        attemptDetail?.missionId ?? state?.missionId ?? state?.mission?.missionId,
+      attemptId,
+      mission:
+        state?.mission,
       missionTitle:
         result?.missionTitle ??
         attemptDetail?.missionTitle ??
@@ -70,7 +75,7 @@ export default function VerifyResultPage() {
       completedAt: result?.completedAt ?? attemptDetail?.completedAt,
       photoUrl: result?.photoUrl,
     };
-  }, [result, attemptDetail, state]);
+  }, [result, attemptDetail, state, attemptId]);
 
   const isSuccess = previewStatus === "success";
 
@@ -126,6 +131,9 @@ function ResultLoading() {
 type SuccessResultProps = {
   navigate: ReturnType<typeof useNavigate>;
   result: {
+    missionId?: number;
+    attemptId?: number | null;
+    mission?: MissionDetail;
     missionTitle: string;
     earnedPoint: number;
     completedAt?: string | null;
@@ -134,6 +142,17 @@ type SuccessResultProps = {
 };
 
 function SuccessResult({ navigate, result }: SuccessResultProps) {
+  const handleMoveRecordPage = () => {
+    navigate(PATH.MISSION_RECORD, {
+      state: {
+        missionId: result.missionId,
+        attemptId: result.attemptId,
+        mission: result.mission,
+        missionTitle: result.missionTitle,
+      },
+    });
+  };
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6">
       <img
@@ -179,7 +198,7 @@ function SuccessResult({ navigate, result }: SuccessResultProps) {
           <Button
             variant="greenSecondary"
             size="md"
-            onClick={() => navigate(PATH.MISSION_RECORD)}
+            onClick={handleMoveRecordPage}
           >
             <NotebookPen size={16} />
             감상 기록하기
