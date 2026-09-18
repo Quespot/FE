@@ -12,7 +12,19 @@ export type MissionAttempt = {
   status: MissionAttemptStatus;
   startedAt: string;
   completedAt: string | null;
-  earnedPoint: number;
+  earnedPoint: number | null;
+};
+
+export type MissionUnlockCondition = {
+  locked: boolean;
+  message: string;
+};
+
+export type MissionVerificationGuide = {
+  attemptId: number;
+  targetLatitude: number;
+  targetLongitude: number;
+  radiusMeters: number;
 };
 
 export type MissionArrivalResult = {

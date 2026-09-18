@@ -6,6 +6,8 @@ import type {
   MissionPhotoRequest,
   MissionPhotoResult,
   MissionReflectionRequest,
+  MissionUnlockCondition,
+  MissionVerificationGuide,
 } from "@/types/missionAttempt";
 
 const API_BASE_URL = (
@@ -73,6 +75,12 @@ async function missionAttemptRequest<T>(
   return payload.result;
 }
 
+export function getMissionUnlockCondition(missionId: number) {
+  return missionAttemptRequest<MissionUnlockCondition>(
+    `/api/missions/${missionId}/unlock-condition`,
+  );
+}
+
 export function startMissionAttempt(missionId: number) {
   return missionAttemptRequest<MissionAttempt>(
     `/api/missions/${missionId}/start`,
@@ -95,12 +103,9 @@ export function getMissionAttemptDetail(attemptId: number) {
 }
 
 export function getMissionVerificationGuide(attemptId: number) {
-  return missionAttemptRequest<{
-    attemptId: number;
-    targetLatitude: number;
-    targetLongitude: number;
-    radiusMeters: number;
-  }>(`/api/mission-attempts/${attemptId}/verification-guide`);
+  return missionAttemptRequest<MissionVerificationGuide>(
+    `/api/mission-attempts/${attemptId}/verification-guide`,
+  );
 }
 
 export function verifyMissionArrival(params: {
@@ -163,5 +168,4 @@ export function quitMissionAttempt(attemptId: number) {
       method: "POST",
     },
   );
-  
 }

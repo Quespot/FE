@@ -1,5 +1,5 @@
 import { RewardActivityType } from "@/apis/reward";
-import { ContentCard } from "./ContentCard";
+import { ContentCard } from "../ContentCard";
 import { Target, Wallet, Award, Mail, MapPin, Medal } from "lucide-react";
 
 const notificationStyles = {

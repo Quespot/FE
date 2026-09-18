@@ -23,12 +23,15 @@ import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 import { useInfiniteMissions } from "@/hooks/queries/useInfiniteMissions";
+import { useRecommendedMissions } from "@/hooks/queries/useRecommendedMissions";
 import type {
   MissionCategory,
   MissionItem,
   UserMissionStatus,
 } from "@/types/mission";
 import { PATH } from "@/routes/paths";
+import { useMissionAttempts } from "@/hooks/queries/useMissionAttempts";
+import InProgressMissionView from "./InProgressMissionView";
 
 type LatLng = {
   lat: number;
@@ -36,6 +39,8 @@ type LatLng = {
 };
 
 type LocationStatus = "loading" | "success" | "error";
+
+type MissionTab = "explore" | "inProgress";
 
 type CategoryOption = {
   label: string;
@@ -118,12 +123,35 @@ export default function MissionPage() {
   const searchKeyword = searchParams.get("keyword") ?? "";
 
   const [keyword, setKeyword] = useState(searchKeyword);
+  const [activeTab, setActiveTab] = useState<MissionTab>("explore");
+
+  const {
+    data: attemptData,
+    isLoading: isAttemptsLoading,
+    isError: isAttemptsError,
+    error: attemptsError,
+    refetch: refetchAttempts,
+  } = useMissionAttempts();
+
+  const attempts =
+    attemptData?.attempts.filter(
+      (attempt) => attempt.status === "IN_PROGRESS",
+    ) ?? [];
 
   useEffect(() => {
     setKeyword(searchKeyword);
   }, [searchKeyword]);
 
   const { currentLocation, locationStatus } = useCurrentLocation();
+
+  const {
+    refetch: refetchRecommendedMissions,
+    isFetching: isFetchingRecommendedMissions,
+  } = useRecommendedMissions({
+    latitude: currentLocation.lat,
+    longitude: currentLocation.lng,
+    size: 5,
+  });
 
   const {
     data,
@@ -170,7 +198,13 @@ export default function MissionPage() {
     return () => {
       observer.disconnect();
     };
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [
+    activeTab,
+    missions.length,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  ]);
 
   const handleChangeCategory = (category?: MissionCategory) => {
     setSearchParams((current) => {
@@ -192,6 +226,35 @@ export default function MissionPage() {
     );
   };
 
+  const handleMoveRecommendedMission = async () => {
+    if (isFetchingRecommendedMissions) return;
+
+    try {
+      const result = await refetchRecommendedMissions();
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      const recommendedMission = result.data?.result.missions[0];
+
+      if (!recommendedMission) {
+        alert("현재 추천 가능한 미션이 없어요. 미션 목록에서 직접 선택해주세요.");
+        return;
+      }
+
+      navigate(
+        PATH.MISSION_DETAIL.replace(
+          ":missionId",
+          String(recommendedMission.missionId),
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+      alert("추천 미션을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+    }
+  };
+
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
       <Header />
@@ -202,11 +265,11 @@ export default function MissionPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="m-0 text-[24px] font-black leading-[32px] text-[#1C1C3A]">
-              미션 탐색
+              미션
             </h1>
 
             <p className="m-0 mt-[4px] text-[13px] font-medium leading-[18px] text-[#A2A9B2]">
-              지금 주변에서 시작할 수 있는 미션이에요
+              새로운 장소를 발견하고 미션을 완료해보세요
             </p>
           </div>
 
@@ -216,106 +279,201 @@ export default function MissionPage() {
           </span>
         </div>
 
-        <label className="mt-[20px] flex h-[48px] w-full items-center gap-[8px] rounded-[16px] bg-[#EAF5FF] px-[16px] text-[#A2A9B2]">
-          <Search size={18} strokeWidth={2.2} />
+        <div className="mt-[20px] grid grid-cols-2 rounded-[14px] bg-[#F4F8FF] p-[4px]">
+          <button
+            type="button"
+            onClick={() => setActiveTab("explore")}
+            className={[
+              "h-[42px] rounded-[11px] text-[14px] font-black transition",
+              activeTab === "explore"
+                ? "bg-white text-[#1C1C3A] shadow-[0_3px_10px_rgba(8,37,95,0.08)]"
+                : "text-[#A2A9B2]",
+            ].join(" ")}
+          >
+            미션 탐색
+          </button>
 
-          <input
-            type="text"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="지역 · 장소 · 미션 검색"
-            className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium leading-[20px] text-[#1C1C3A] outline-none placeholder:text-[#A2A9B2]"
-          />
-
-          <SlidersHorizontal size={18} strokeWidth={2.2} />
-        </label>
-
-        <div className="no-scrollbar mt-[14px] flex gap-[10px] overflow-x-auto pb-[2px]">
-          {CATEGORY_OPTIONS.map((category) => {
-            const isSelected = selectedCategory === category.value;
-
-            return (
-              <button
-                key={category.label}
-                type="button"
-                onClick={() => handleChangeCategory(category.value)}
-                className={[
-                  "h-[38px] shrink-0 rounded-full px-[18px] text-[14px] font-bold leading-none transition active:scale-[0.98]",
-                  isSelected
-                    ? "bg-[#5BB5F8] text-white shadow-[0_4px_10px_rgba(91,181,248,0.28)]"
-                    : "bg-[#F4F8FF] text-[#A2A9B2]",
-                ].join(" ")}
-              >
-                {category.label}
-              </button>
-            );
-          })}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("inProgress");
+              void refetchAttempts();
+            }}
+            className={[
+              "relative flex h-[42px] items-center justify-center rounded-[11px] text-[14px] font-black transition",
+              activeTab === "inProgress"
+                ? "bg-white text-[#1C1C3A] shadow-[0_3px_10px_rgba(8,37,95,0.08)]"
+                : "text-[#A2A9B2]",
+            ].join(" ")}
+          >
+            진행 중
+            {!isAttemptsLoading && !isAttemptsError ? (
+              <span className="ml-[6px] inline-flex h-[19px] min-w-[19px] items-center justify-center rounded-full bg-[#5BB5F8] px-[5px] text-[10px] font-black text-white">
+                {attempts.length}
+              </span>
+            ) : null}
+          </button>
         </div>
-      </section>
 
-      <QuespotPageContent className="bg-[#F4F8FF] px-[16px] pb-[24px] pt-[16px]">
-        <section className="flex min-h-[82px] shrink-0 items-center justify-between rounded-[16px] bg-[#DFF1FF] px-[16px] py-[14px]">
-          <div>
-            <p className="m-0 text-[13px] font-black leading-[18px] text-[#5BB5F8]">
-              오늘의 추천 미션
-            </p>
-
-            <p className="m-0 mt-[4px] text-[12px] font-medium leading-[17px] text-[#5D6A7D]">
-              가까운 장소에서 미션을 시작해보세요
-            </p>
-          </div>
-
-          <div className="flex h-[62px] w-[68px] shrink-0 items-center justify-end" aria-hidden="true">
-            <span className="relative grid h-[60px] w-[60px] place-items-center rounded-full border border-white bg-white/65 text-[#50AAE8] shadow-[0_6px_16px_rgba(58,139,197,0.11)]">
-              <span className="absolute inset-[6px] rounded-full border border-dashed border-[#B9DDF5]" />
-              <MapPinned className="relative" size={30} strokeWidth={2} />
-            </span>
-          </div>
-        </section>
-
-        <section className="mt-[20px]">
-          <h2 className="m-0 text-[21px] font-black leading-[28px] text-[#1C1C3A]">
-            미션 목록
-          </h2>
-        </section>
-
-        {isLoading ? <MissionListLoading /> : null}
-
-        {isError ? <MissionListError onRetry={() => refetch()} /> : null}
-
-        {!isLoading && !isError && missions.length === 0 ? (
-          <MissionListEmpty keyword={keyword} />
-        ) : null}
-
-        {!isLoading && !isError && missions.length > 0 ? (
+        {activeTab === "explore" ? (
           <>
-            <div className="mt-[14px] grid grid-cols-2 gap-x-[12px] gap-y-[14px]">
-              {missions.map((mission) => (
-                <MissionCard
-                  key={mission.missionId}
-                  mission={mission}
-                  onClick={() => handleMoveMissionDetail(mission)}
-                />
-              ))}
+            <label className="mt-[16px] flex h-[48px] w-full items-center gap-[8px] rounded-[16px] bg-[#EAF5FF] px-[16px] text-[#A2A9B2]">
+              <Search size={18} strokeWidth={2.2} />
+
+              <input
+                type="text"
+                value={keyword}
+                onChange={(event) => setKeyword(event.target.value)}
+                placeholder="지역 · 장소 · 미션 검색"
+                className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium leading-[20px] text-[#1C1C3A] outline-none placeholder:text-[#A2A9B2]"
+              />
+
+              <SlidersHorizontal size={18} strokeWidth={2.2} />
+            </label>
+
+            <div className="no-scrollbar mt-[14px] flex gap-[10px] overflow-x-auto pb-[2px]">
+              {CATEGORY_OPTIONS.map((category) => {
+                const isSelected = selectedCategory === category.value;
+
+                return (
+                  <button
+                    key={category.label}
+                    type="button"
+                    onClick={() => handleChangeCategory(category.value)}
+                    className={[
+                      "h-[38px] shrink-0 rounded-full px-[18px] text-[14px] font-bold leading-none transition active:scale-[0.98]",
+                      isSelected
+                        ? "bg-[#5BB5F8] text-white shadow-[0_4px_10px_rgba(91,181,248,0.28)]"
+                        : "bg-[#F4F8FF] text-[#A2A9B2]",
+                    ].join(" ")}
+                  >
+                    {category.label}
+                  </button>
+                );
+              })}
             </div>
-
-            <div ref={loadMoreRef} className="h-[24px] shrink-0" />
-
-            {isFetchingNextPage ? (
-              <div className="flex h-[56px] items-center justify-center gap-[8px] text-[13px] font-bold text-[#5BB5F8]">
-                <Loader2 size={18} strokeWidth={2.4} className="animate-spin" />
-                미션을 더 불러오는 중이에요
-              </div>
-            ) : null}
-
-            {!hasNextPage ? (
-              <p className="m-0 py-[20px] text-center text-[12px] font-bold leading-[18px] text-[#A2A9B2]">
-                모든 미션을 불러왔어요
-              </p>
-            ) : null}
           </>
         ) : null}
-      </QuespotPageContent>
+      </section>
+
+      {activeTab === "explore" ? (
+        <QuespotPageContent className="bg-[#F4F8FF] px-[16px] pb-[24px] pt-[16px]">
+          <button
+            type="button"
+            onClick={handleMoveRecommendedMission}
+            disabled={isFetchingRecommendedMissions}
+            className={[
+              "flex min-h-[82px] w-full shrink-0 items-center justify-between rounded-[16px] bg-[#DFF1FF] px-[16px] py-[14px] text-left transition active:scale-[0.99]",
+              isFetchingRecommendedMissions ? "opacity-80" : "opacity-100",
+            ].join(" ")}
+            aria-label="오늘의 추천 미션 보기"
+          >
+            <div>
+              <p className="m-0 text-[13px] font-black leading-[18px] text-[#5BB5F8]">
+                오늘의 추천 미션
+              </p>
+
+              <p className="m-0 mt-[4px] text-[12px] font-medium leading-[17px] text-[#5D6A7D]">
+                {isFetchingRecommendedMissions
+                  ? "가까운 추천 미션을 찾는 중이에요"
+                  : "가까운 장소에서 미션을 시작해보세요"}
+              </p>
+            </div>
+
+            <div
+              className="flex h-[62px] w-[68px] shrink-0 items-center justify-end"
+              aria-hidden="true"
+            >
+              <span className="relative grid h-[60px] w-[60px] place-items-center rounded-full border border-white bg-white/65 text-[#50AAE8] shadow-[0_6px_16px_rgba(58,139,197,0.11)]">
+                <span className="absolute inset-[6px] rounded-full border border-dashed border-[#B9DDF5]" />
+
+                {isFetchingRecommendedMissions ? (
+                  <Loader2
+                    className="relative animate-spin"
+                    size={28}
+                    strokeWidth={2.2}
+                  />
+                ) : (
+                  <MapPinned className="relative" size={30} strokeWidth={2} />
+                )}
+              </span>
+            </div>
+          </button>
+
+          <section className="mt-[20px]">
+            <h2 className="m-0 text-[21px] font-black leading-[28px] text-[#1C1C3A]">
+              미션 목록
+            </h2>
+          </section>
+
+          {isLoading ? <MissionListLoading /> : null}
+
+          {isError ? <MissionListError onRetry={() => refetch()} /> : null}
+
+          {!isLoading && !isError && missions.length === 0 ? (
+            <MissionListEmpty keyword={keyword} />
+          ) : null}
+
+          {!isLoading && !isError && missions.length > 0 ? (
+            <>
+              <div className="mt-[14px] grid grid-cols-2 gap-x-[12px] gap-y-[14px]">
+                {missions.map((mission) => (
+                  <MissionCard
+                    key={mission.missionId}
+                    mission={mission}
+                    onClick={() => handleMoveMissionDetail(mission)}
+                  />
+                ))}
+              </div>
+
+              <div ref={loadMoreRef} className="h-[24px] shrink-0" />
+
+              {isFetchingNextPage ? (
+                <div className="flex h-[56px] items-center justify-center gap-[8px] text-[13px] font-bold text-[#5BB5F8]">
+                  <Loader2
+                    size={18}
+                    strokeWidth={2.4}
+                    className="animate-spin"
+                  />
+                  미션을 더 불러오는 중이에요
+                </div>
+              ) : null}
+
+              {!hasNextPage ? (
+                <p className="m-0 py-[20px] text-center text-[12px] font-bold leading-[18px] text-[#A2A9B2]">
+                  모든 미션을 불러왔어요
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </QuespotPageContent>
+      ) : (
+        <InProgressMissionView
+          attempts={attempts}
+          isLoading={isAttemptsLoading}
+          isError={isAttemptsError}
+          error={attemptsError}
+          onRetry={() => void refetchAttempts()}
+          onExplore={() => setActiveTab("explore")}
+          onViewDetail={(attempt) =>
+            navigate(
+              PATH.MISSION_DETAIL.replace(
+                ":missionId",
+                String(attempt.missionId),
+              ),
+            )
+          }
+          onContinue={(attempt) =>
+            navigate(PATH.MISSION_VERIFY, {
+              state: {
+                missionId: attempt.missionId,
+                attemptId: attempt.attemptId,
+                missionTitle: attempt.missionTitle,
+              },
+            })
+          }
+        />
+      )}
     </QuespotPageLayout>
   );
 }
@@ -426,8 +584,8 @@ function MissionCard({ mission, onClick }: MissionCardProps) {
 
         <div className="mt-[10px] flex items-center justify-between">
           <span className="inline-flex items-center gap-[4px] text-[11px] font-bold leading-none text-[#A2A9B2]">
-            <Clock3 size={13} strokeWidth={2.3} />약{" "}
-            {mission.estimatedMinutes}분
+            <Clock3 size={13} strokeWidth={2.3} />약 {mission.estimatedMinutes}
+            분
           </span>
 
           <span className="inline-flex items-center gap-[4px] text-[11px] font-black leading-none text-[#F59E0B]">
