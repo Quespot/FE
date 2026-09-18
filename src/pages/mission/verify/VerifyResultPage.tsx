@@ -57,10 +57,11 @@ export default function VerifyResultPage() {
   const resultViewData = useMemo(() => {
     return {
       missionId:
-        attemptDetail?.missionId ?? state?.missionId ?? state?.mission?.missionId,
+        attemptDetail?.missionId ??
+        state?.missionId ??
+        state?.mission?.missionId,
       attemptId,
-      mission:
-        state?.mission,
+      mission: state?.mission,
       missionTitle:
         result?.missionTitle ??
         attemptDetail?.missionTitle ??
@@ -99,7 +100,8 @@ export default function VerifyResultPage() {
     >
       {(isError || isAttemptDetailError) && attemptId ? (
         <div className="mx-5 mt-4 rounded-2xl bg-white px-4 py-3 text-center text-[12px] font-bold text-[#F59E0B]">
-          일부 인증 결과 정보를 불러오지 못해서 가능한 정보만 표시하고 있어요.
+          일부 인증 결과 정보를 불러오지 못해서 가능한 정보만 표시하고
+          있어요.
         </div>
       ) : null}
 
@@ -199,6 +201,7 @@ function SuccessResult({ navigate, result }: SuccessResultProps) {
             variant="greenSecondary"
             size="md"
             onClick={handleMoveRecordPage}
+            className="!border !border-[#22C55E] !bg-[#BBF7D0] !text-[#007A3D] !shadow-[0_4px_12px_rgba(34,197,94,0.18)]"
           >
             <NotebookPen size={16} />
             감상 기록하기
