@@ -294,16 +294,17 @@ function FailResult({ navigate, state }: FailResultProps) {
 
           <div className="mt-3 flex w-full gap-3">
             <Button
-              variant="redSecondary"
+              variant="secondary"
               size="md"
               onClick={() => setIsHintOpen(true)}
+              className="!border !border-[#FDE68A] !bg-[#FEF3C7] !text-[#D97706] !shadow-none"
             >
               <Lightbulb size={15} />
               힌트 보기
             </Button>
 
             <Button
-              variant="secondary"
+              variant="redSecondary"
               size="md"
               onClick={() => navigate(PATH.MISSIONS)}
             >
