@@ -14,6 +14,11 @@ import { connectExistingPush } from "@/utils/fcm/connectExistingPush";
 
 const pendingExchanges = new Map<string, Promise<LoginResult>>();
 
+const oauthErrorMessages: Record<string, string> = {
+  AUTH_409_004:
+    "이미 다른 Quespot 계정에 연결된 소셜 계정이에요. 해당 계정으로 로그인하거나 다른 소셜 계정을 이용해주세요.",
+};
+
 const exchangeOnce = (code: string) => {
   const pending = pendingExchanges.get(code);
   if (pending) return pending;
@@ -27,14 +32,22 @@ export default function OAuthCallbackPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState("");
+  const isAccountLinkConflict = searchParams.get("error") === "AUTH_409_004";
 
   useEffect(() => {
     const oauthError = searchParams.get("error") || searchParams.get("message");
+    const linkedProvider = searchParams.get("linkedProvider");
     const code = searchParams.get("code");
 
     if (oauthError) {
       cancelSocialLogin();
-      setError(oauthError);
+      setError(oauthErrorMessages[oauthError] || oauthError);
+      return;
+    }
+    if (linkedProvider) {
+      completeSocialLogin("");
+      const redirectPath = takeLoginRedirect();
+      navigate(redirectPath || PATH.MY, { replace: true });
       return;
     }
     if (!code) {
@@ -78,7 +91,11 @@ export default function OAuthCallbackPage() {
       <section className="w-full max-w-[320px] rounded-[24px] bg-white px-6 py-10 shadow-[0_8px_30px_rgba(62,102,142,0.08)]">
         {error ? (
           <>
-            <h1 className="type-label1">로그인하지 못했어요</h1>
+            <h1 className="type-label1">
+              {isAccountLinkConflict
+                ? "계정을 연결하지 못했어요"
+                : "로그인하지 못했어요"}
+            </h1>
             <p
               className="type-caption2 mb-6 mt-3 break-keep text-[#e46f6f]"
               role="alert"
@@ -87,10 +104,16 @@ export default function OAuthCallbackPage() {
             </p>
             <button
               className="type-body6 h-11 w-full rounded-xl bg-[#5bb5f8] text-white"
-              onClick={() => navigate(PATH.LOGIN, { replace: true })}
+              onClick={() =>
+                navigate(isAccountLinkConflict ? PATH.MY : PATH.LOGIN, {
+                  replace: true,
+                })
+              }
               type="button"
             >
-              로그인으로 돌아가기
+              {isAccountLinkConflict
+                ? "마이페이지로 돌아가기"
+                : "로그인으로 돌아가기"}
             </button>
           </>
         ) : (

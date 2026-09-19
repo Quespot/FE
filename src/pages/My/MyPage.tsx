@@ -17,6 +17,7 @@ import {
   Link2,
   Pencil,
   Plane,
+  RotateCcw,
   Settings2,
   ShieldCheck,
   Sparkles,
@@ -168,6 +169,7 @@ export default function MyPage() {
   );
   const [draftProfileImageFile, setDraftProfileImageFile] =
     useState<File | null>(null);
+  const [shouldResetProfileImage, setShouldResetProfileImage] = useState(false);
   const [draftInterests, setDraftInterests] = useState<string[]>(
     profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS,
   );
@@ -287,10 +289,14 @@ export default function MyPage() {
     try {
       const profileImageObjectKey = draftProfileImageFile
         ? await uploadFile(draftProfileImageFile, "PROFILE")
-        : undefined;
+        : shouldResetProfileImage
+          ? ""
+          : undefined;
       const updatedProfile = await updateBasicProfile({
         nickname,
-        ...(profileImageObjectKey ? { profileImageObjectKey } : {}),
+        ...(profileImageObjectKey !== undefined
+          ? { profileImageObjectKey }
+          : {}),
         travelStyles: categoryIdsToTravelStyles(
           profile.interests?.length ? profile.interests : DEFAULT_INTEREST_IDS,
         ),
@@ -306,6 +312,7 @@ export default function MyPage() {
         JSON.stringify({ ...readProfile(), ...next }),
       );
       setDraftProfileImageFile(null);
+      setShouldResetProfileImage(false);
       setEditing(false);
       setStatusMessage("프로필을 수정했어요.");
     } catch (profileError) {
@@ -323,6 +330,7 @@ export default function MyPage() {
     setDraftNickname(profile.nickname || "Quespot 탐험가");
     setDraftProfileImage(profile.profileImageUrl || questyProfile);
     setDraftProfileImageFile(null);
+    setShouldResetProfileImage(false);
     setEditing(true);
   };
 
@@ -330,11 +338,21 @@ export default function MyPage() {
     const file = event.target.files?.[0];
     if (!file) return;
     setDraftProfileImageFile(file);
+    setShouldResetProfileImage(false);
     const reader = new FileReader();
     reader.onload = () =>
       typeof reader.result === "string" && setDraftProfileImage(reader.result);
     reader.readAsDataURL(file);
     event.target.value = "";
+  };
+
+  const handleResetProfileImage = () => {
+    setDraftProfileImage(questyProfile);
+    setDraftProfileImageFile(null);
+    setShouldResetProfileImage(true);
+    if (profileImageInputRef.current) {
+      profileImageInputRef.current.value = "";
+    }
   };
 
   const openTravelEditor = () => {
@@ -1049,6 +1067,11 @@ export default function MyPage() {
                   className="h-full w-full rounded-full object-cover"
                   src={draftProfileImage}
                   alt="선택한 프로필 사진"
+                  onError={() => {
+                    if (draftProfileImage !== questyProfile) {
+                      setDraftProfileImage(questyProfile);
+                    }
+                  }}
                 />
                 <span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border-[3px] border-white bg-[#50ace9] text-white">
                   <Camera size={14} />
@@ -1061,9 +1084,26 @@ export default function MyPage() {
                 onChange={handleProfileImageChange}
                 type="file"
               />
-              <span className="mt-2 text-[9px] font-bold text-[#8495a5]">
-                사진 변경
-              </span>
+              <div className="mt-2 flex items-center gap-2 text-[9px] font-bold">
+                <button
+                  className="rounded-full px-2 py-1 text-[#8495a5] transition-colors hover:bg-[#f2f7fb] hover:text-[#50ace9] disabled:opacity-50"
+                  disabled={isSaving}
+                  onClick={() => profileImageInputRef.current?.click()}
+                  type="button"
+                >
+                  사진 변경
+                </button>
+                <span className="h-3 w-px bg-[#dce6ee]" aria-hidden="true" />
+                <button
+                  className="flex items-center gap-1 rounded-full px-2 py-1 text-[#8495a5] transition-colors hover:bg-[#f2f7fb] hover:text-[#50ace9] disabled:opacity-50"
+                  disabled={isSaving || shouldResetProfileImage}
+                  onClick={handleResetProfileImage}
+                  type="button"
+                >
+                  <RotateCcw size={10} />
+                  기본 이미지로 변경
+                </button>
+              </div>
             </div>
             <label className="grid gap-2 text-[11px] font-bold text-[#536071]">
               닉네임

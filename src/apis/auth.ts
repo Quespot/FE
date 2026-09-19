@@ -115,7 +115,7 @@ export const getSocialLoginUrl = (provider: SocialProvider) =>
 export const exchangeSocialLoginCode = (code: string) =>
   post<LoginResult>("/api/auth/login/oauth2/exchange", { code });
 
-const requestLoginMethods = async <T,>(method: "GET" | "POST" | "PATCH", path = ""): Promise<T> => {
+const requestLoginMethods = async <T,>(method: "GET" | "POST" | "DELETE", path = ""): Promise<T> => {
   const accessToken = getAccessToken();
   if (!accessToken) throw new ApiError("로그인이 필요합니다.", 401);
 
@@ -150,7 +150,7 @@ export const connectLoginMethod = async (provider: SocialLoginMethodProvider): P
 };
 
 export const unlinkLoginMethod = (provider: SocialLoginMethodProvider) =>
-  requestLoginMethods<null>("PATCH", `/${provider}`);
+  requestLoginMethods<null>("DELETE", `/${provider}`);
 
 export const logout = async (): Promise<void> => {
   const accessToken = getAccessToken();
