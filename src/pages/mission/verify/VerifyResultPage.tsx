@@ -211,6 +211,7 @@ function SuccessResult({ navigate, result }: SuccessResultProps) {
             variant="primary"
             size="md"
             onClick={() => navigate(PATH.MISSIONS)}
+            className="!border !border-[#3BA8F2] !shadow-[0_4px_12px_rgba(91,181,248,0.22)]"
           >
             다음 미션
             <ArrowRight size={17} />
@@ -288,6 +289,7 @@ function FailResult({ navigate, state }: FailResultProps) {
                 },
               })
             }
+            className="!border !border-[#DC2626] !shadow-[0_4px_12px_rgba(239,68,68,0.22)]"
           >
             다시 촬영하기
           </Button>
@@ -307,6 +309,7 @@ function FailResult({ navigate, state }: FailResultProps) {
               variant="redSecondary"
               size="md"
               onClick={() => navigate(PATH.MISSIONS)}
+              className="!border !border-[#FCA5A5] !bg-[#FFE4E4] !text-[#EF4444] !shadow-none"
             >
               나중에 다시 도전
             </Button>
