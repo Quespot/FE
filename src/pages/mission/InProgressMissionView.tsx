@@ -20,10 +20,13 @@ type InProgressMissionViewProps = {
   isLoading: boolean;
   isError: boolean;
   error: unknown;
+  isQuitting: boolean;
+  quittingAttemptId: number | null;
   onRetry: () => void;
   onExplore: () => void;
   onViewDetail: (attempt: MissionAttempt) => void;
   onContinue: (attempt: MissionAttempt) => void;
+  onQuit: (attempt: MissionAttempt) => void;
 };
 
 export default function InProgressMissionView({
@@ -31,10 +34,13 @@ export default function InProgressMissionView({
   isLoading,
   isError,
   error,
+  isQuitting,
+  quittingAttemptId,
   onRetry,
   onExplore,
   onViewDetail,
   onContinue,
+  onQuit,
 }: InProgressMissionViewProps) {
   if (isLoading) {
     return (
@@ -136,8 +142,10 @@ export default function InProgressMissionView({
             <InProgressMissionCard
               key={attempt.attemptId}
               attempt={attempt}
+              isQuitting={isQuitting && quittingAttemptId === attempt.attemptId}
               onViewDetail={() => onViewDetail(attempt)}
               onContinue={() => onContinue(attempt)}
+              onQuit={() => onQuit(attempt)}
             />
           ))}
         </div>
@@ -148,14 +156,18 @@ export default function InProgressMissionView({
 
 type InProgressMissionCardProps = {
   attempt: MissionAttempt;
+  isQuitting: boolean;
   onViewDetail: () => void;
   onContinue: () => void;
+  onQuit: () => void;
 };
 
 function InProgressMissionCard({
   attempt,
+  isQuitting,
   onViewDetail,
   onContinue,
+  onQuit,
 }: InProgressMissionCardProps) {
   return (
     <article className="overflow-hidden rounded-[24px] border border-[#EAF5FF] bg-white shadow-[0_4px_16px_rgba(8,37,95,0.08)]">
@@ -200,24 +212,42 @@ function InProgressMissionCard({
         <button
           type="button"
           onClick={onViewDetail}
-          className="mt-[12px] flex h-[44px] w-full items-center justify-between rounded-[14px] border border-[#EAF5FF] bg-white px-[14px] text-[13px] font-black text-[#6F7B8D] shadow-[0_2px_8px_rgba(8,37,95,0.04)] transition active:scale-[0.99]"
+          disabled={isQuitting}
+          className={[
+            "mt-[12px] flex h-[44px] w-full items-center justify-between rounded-[14px] border border-[#EAF5FF] bg-white px-[14px] text-[13px] font-black text-[#6F7B8D] shadow-[0_2px_8px_rgba(8,37,95,0.04)] transition active:scale-[0.99]",
+            isQuitting ? "cursor-not-allowed opacity-60" : "",
+          ].join(" ")}
         >
           미션 상세 확인하기
           <ChevronRight size={17} strokeWidth={2.6} />
         </button>
 
-        <div className="mt-[16px] grid grid-cols-[78px_minmax(0,1fr)] gap-[9px]">
+        <div className="mt-[16px] grid grid-cols-[88px_minmax(0,1fr)] gap-[9px]">
           <button
             type="button"
-            className="h-[48px] rounded-[15px] border border-[#FFCCD4] bg-[#FFF6F8] text-[13px] font-black text-[#FF4D67] transition active:scale-[0.98]"
+            onClick={onQuit}
+            disabled={isQuitting}
+            className={[
+              "flex h-[48px] items-center justify-center gap-[4px] rounded-[15px] border border-[#FFCCD4] bg-[#FFF6F8] text-[13px] font-black text-[#FF4D67] transition active:scale-[0.98]",
+              isQuitting ? "cursor-wait opacity-60" : "",
+            ].join(" ")}
           >
-            포기하기
+            {isQuitting ? (
+              <Loader2 size={14} strokeWidth={2.4} className="animate-spin" />
+            ) : (
+              <Trash2 size={14} strokeWidth={2.4} />
+            )}
+            {isQuitting ? "포기 중" : "포기"}
           </button>
 
           <button
             type="button"
             onClick={onContinue}
-            className="flex h-[48px] items-center justify-center gap-[5px] rounded-[15px] bg-[#5BB5F8] text-[14px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.25)] transition active:scale-[0.98]"
+            disabled={isQuitting}
+            className={[
+              "flex h-[48px] items-center justify-center gap-[5px] rounded-[15px] bg-[#5BB5F8] text-[14px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.25)] transition active:scale-[0.98]",
+              isQuitting ? "cursor-not-allowed opacity-60" : "",
+            ].join(" ")}
           >
             인증 계속하기
             <ChevronRight size={17} strokeWidth={2.6} />
@@ -229,10 +259,9 @@ function InProgressMissionCard({
 }
 
 function formatStartedAt(value: string) {
-  const normalizedValue = normalizeServerDateTime(value);
-  const date = new Date(normalizedValue);
+  const date = parseServerStartedAt(value);
 
-  if (Number.isNaN(date.getTime())) {
+  if (!date || Number.isNaN(date.getTime())) {
     return value;
   }
 
@@ -245,12 +274,35 @@ function formatStartedAt(value: string) {
   }).format(date);
 }
 
-function normalizeServerDateTime(value: string) {
-  const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(value);
+function parseServerStartedAt(value: string) {
+  const trimmedValue = value.trim();
+
+  const hasTimezone = /([zZ]|[+-]\d{2}:\d{2})$/.test(trimmedValue);
 
   if (hasTimezone) {
-    return value;
+    return new Date(trimmedValue);
   }
 
-  return `${value}Z`;
+  const matched = trimmedValue.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?$/,
+  );
+
+  if (!matched) {
+    return new Date(trimmedValue);
+  }
+
+  const [, year, month, day, hour, minute, second = "0", millisecond = "0"] =
+    matched;
+
+  const utcTime = Date.UTC(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second),
+    Number(millisecond.padEnd(3, "0").slice(0, 3)),
+  );
+
+  return new Date(utcTime);
 }
