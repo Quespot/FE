@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowLeft,
   Building2,
   Check,
@@ -30,6 +31,7 @@ import QuespotPageLayout, {
   QuespotPageContent,
 } from "@/layouts/QuespotPageLayout";
 import { useMissionDetail } from "@/hooks/queries/useMissionDetail";
+import { useMissionUnlockCondition } from "@/hooks/queries/useMissionUnlockCondition";
 import { useStartMissionAttempt } from "@/hooks/mutation/useStartMissionAttempt";
 import { useLikeMission } from "@/hooks/mutation/useLikeMission";
 import { useUnlikeMission } from "@/hooks/mutation/useUnlikeMission";
@@ -40,8 +42,6 @@ type LatLng = {
   lat: number;
   lng: number;
 };
-
-type LocationStatus = "loading" | "success" | "error";
 
 type MissionStep = {
   label: string;
@@ -133,9 +133,6 @@ const missionSteps: MissionStep[] = [
     targetPath: PATH.MISSION_VERIFY,
   },
   {
-    label: "AI 자동 검증",
-  },
-  {
     label: "보상 수령",
     targetPath: PATH.REWARDS,
   },
@@ -167,7 +164,30 @@ export default function MissionDetailPage() {
     longitude: currentLocation.lng,
   });
 
+  const {
+    data: unlockCondition,
+    isLoading: isUnlockConditionLoading,
+    isError: isUnlockConditionError,
+    refetch: refetchUnlockCondition,
+  } = useMissionUnlockCondition(missionId);
+
   const mission = data?.result;
+
+  const isLockedByCondition = unlockCondition?.locked ?? false;
+  const unlockMessage =
+    unlockCondition?.message || "이전 미션을 먼저 완료해야 시작할 수 있어요.";
+  const isMissionCompleted = mission?.userMissionStatus === "COMPLETED";
+  const isMissionLocked = mission?.userMissionStatus === "LOCKED";
+  const canStartMission = Boolean(
+    mission?.canStart &&
+      !isLockedByCondition &&
+      !isMissionCompleted &&
+      !isMissionLocked,
+  );
+
+  const isMissionStartBlocked = Boolean(
+    !canStartMission || isUnlockConditionLoading,
+  );
 
   useEffect(() => {
     if (!mission) return;
@@ -235,7 +255,22 @@ export default function MissionDetailPage() {
   };
 
   const handleStartMission = () => {
-    if (!mission || !mission.canStart || isStartingMission) return;
+    if (!mission || isStartingMission) return;
+
+    if (isUnlockConditionLoading) {
+      alert("미션 시작 가능 여부를 확인하고 있어요. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
+    if (isLockedByCondition) {
+      alert(unlockMessage);
+      return;
+    }
+
+    if (!canStartMission) {
+      alert("현재 이 미션은 시작할 수 없어요.");
+      return;
+    }
 
     startMission(mission.missionId, {
       onSuccess: (attempt) => {
@@ -312,6 +347,7 @@ export default function MissionDetailPage() {
             mission={mission}
             isLiked={isLiked}
             isLikePending={isLikePending}
+            isLockedByCondition={isLockedByCondition}
             onBack={() => navigate(-1)}
             onToggleLike={handleToggleLike}
             onOpenImage={() => setIsImagePreviewOpen(true)}
@@ -340,6 +376,16 @@ export default function MissionDetailPage() {
                 label="예상 시간"
               />
             </div>
+
+            <MissionUnlockNotice
+              isLoading={isUnlockConditionLoading}
+              isError={isUnlockConditionError}
+              isLocked={isLockedByCondition}
+              message={unlockMessage}
+              onRetry={() => {
+                void refetchUnlockCondition();
+              }}
+            />
 
             <div className="rounded-[16px] border border-[#EAF5FF] bg-white px-[15px] py-[13px] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
               <p className="m-0 text-[12px] font-medium leading-[16px] text-[#A2A9B2]">
@@ -410,6 +456,8 @@ export default function MissionDetailPage() {
             <MissionRewardCard
               mission={mission}
               isStartingMission={isStartingMission}
+              isCheckingUnlockCondition={isUnlockConditionLoading}
+              canStartMission={canStartMission}
               onStartMission={handleStartMission}
               onMoveRecordPage={handleMoveRecordPage}
             />
@@ -427,19 +475,21 @@ export default function MissionDetailPage() {
               <button
                 type="button"
                 onClick={handleStartMission}
-                disabled={!mission.canStart || isStartingMission}
+                disabled={isMissionStartBlocked || isStartingMission}
                 className={[
                   "flex h-[50px] items-center justify-center rounded-[16px] text-[13px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition",
-                  mission.canStart && !isStartingMission
+                  !isMissionStartBlocked && !isStartingMission
                     ? "bg-[#5BB5F8] active:scale-[0.99]"
                     : "bg-[#CBD5E1]",
                 ].join(" ")}
               >
-                {isStartingMission
-                  ? "시작 중..."
-                  : mission.canStart
-                    ? "미션 인증하기"
-                    : "시작 불가"}
+                {getStartButtonLabel({
+                  isStartingMission,
+                  isCheckingUnlockCondition: isUnlockConditionLoading,
+                  isCompleted: isMissionCompleted,
+                  isLocked: isLockedByCondition || isMissionLocked,
+                  canStartMission,
+                })}
               </button>
             </div>
           </section>
@@ -460,14 +510,9 @@ export default function MissionDetailPage() {
 function useCurrentLocation() {
   const [currentLocation, setCurrentLocation] =
     useState<LatLng>(DEFAULT_LOCATION);
-  const [locationStatus, setLocationStatus] =
-    useState<LocationStatus>("loading");
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocationStatus("error");
-      return;
-    }
+    if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -475,10 +520,9 @@ function useCurrentLocation() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
-        setLocationStatus("success");
       },
       () => {
-        setLocationStatus("error");
+        setCurrentLocation(DEFAULT_LOCATION);
       },
       {
         enableHighAccuracy: true,
@@ -490,7 +534,6 @@ function useCurrentLocation() {
 
   return {
     currentLocation,
-    locationStatus,
   };
 }
 
@@ -498,6 +541,7 @@ type MissionHeroProps = {
   mission: MissionDetail;
   isLiked: boolean;
   isLikePending: boolean;
+  isLockedByCondition: boolean;
   onBack: () => void;
   onToggleLike: () => void;
   onOpenImage: () => void;
@@ -507,6 +551,7 @@ function MissionHero({
   mission,
   isLiked,
   isLikePending,
+  isLockedByCondition,
   onBack,
   onToggleLike,
   onOpenImage,
@@ -514,7 +559,10 @@ function MissionHero({
   const Icon = categoryIconMap[mission.category] ?? Building2;
   const style = CATEGORY_STYLE[mission.category] ?? DEFAULT_CATEGORY_STYLE;
   const isCompleted = mission.userMissionStatus === "COMPLETED";
-  const isLocked = mission.userMissionStatus === "LOCKED" || !mission.canStart;
+  const isLocked =
+    mission.userMissionStatus === "LOCKED" ||
+    !mission.canStart ||
+    isLockedByCondition;
 
   return (
     <section className="relative h-[354px] min-h-[354px] w-full shrink-0 overflow-hidden bg-[#F4F8FF]">
@@ -671,9 +719,79 @@ function InfoCard({ icon, iconClassName, value, label }: InfoCardProps) {
   );
 }
 
+type MissionUnlockNoticeProps = {
+  isLoading: boolean;
+  isError: boolean;
+  isLocked: boolean;
+  message: string;
+  onRetry: () => void;
+};
+
+function MissionUnlockNotice({
+  isLoading,
+  isError,
+  isLocked,
+  message,
+  onRetry,
+}: MissionUnlockNoticeProps) {
+  if (isLoading) {
+    return (
+      <section className="flex items-center gap-[10px] rounded-[16px] border border-[#C8E8FF] bg-white px-[15px] py-[13px] text-[#5BB5F8] shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <Loader2 size={17} strokeWidth={2.5} className="animate-spin" />
+
+        <p className="m-0 text-[12px] font-black leading-[18px]">
+          미션 시작 가능 여부를 확인하고 있어요.
+        </p>
+      </section>
+    );
+  }
+
+  if (isLocked) {
+    return (
+      <section className="flex items-start gap-[10px] rounded-[16px] border border-[#E2E8F0] bg-[#F8FAFC] px-[15px] py-[13px] text-[#64748B] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+        <Lock size={17} strokeWidth={2.5} className="mt-[1px] shrink-0" />
+
+        <p className="m-0 break-keep text-[12px] font-bold leading-[19px]">
+          {message}
+        </p>
+      </section>
+    );
+  }
+
+  if (isError) {
+    return (
+      <section className="flex items-start justify-between gap-[10px] rounded-[16px] border border-[#FED7AA] bg-[#FFF7ED] px-[15px] py-[13px] text-[#EA580C] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+        <div className="flex items-start gap-[9px]">
+          <AlertCircle
+            size={17}
+            strokeWidth={2.5}
+            className="mt-[1px] shrink-0"
+          />
+
+          <p className="m-0 break-keep text-[12px] font-bold leading-[19px]">
+            미션 시작 조건을 확인하지 못했어요.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onRetry}
+          className="shrink-0 rounded-full bg-white px-[10px] py-[6px] text-[10px] font-black leading-none text-[#EA580C]"
+        >
+          재시도
+        </button>
+      </section>
+    );
+  }
+
+  return null;
+}
+
 type MissionRewardCardProps = {
   mission: MissionDetail;
   isStartingMission: boolean;
+  isCheckingUnlockCondition: boolean;
+  canStartMission: boolean;
   onStartMission: () => void;
   onMoveRecordPage: () => void;
 };
@@ -681,6 +799,8 @@ type MissionRewardCardProps = {
 function MissionRewardCard({
   mission,
   isStartingMission,
+  isCheckingUnlockCondition,
+  canStartMission,
   onStartMission,
   onMoveRecordPage,
 }: MissionRewardCardProps) {
@@ -737,15 +857,21 @@ function MissionRewardCard({
       <button
         type="button"
         onClick={onStartMission}
-        disabled={!mission.canStart || isStartingMission}
+        disabled={!canStartMission || isStartingMission || isCheckingUnlockCondition}
         className={[
           "flex h-[31px] min-w-[74px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-[12px] font-sans text-[10px] font-black leading-none text-white",
-          mission.canStart && !isStartingMission
+          canStartMission && !isStartingMission && !isCheckingUnlockCondition
             ? "bg-[#5BB5F8]"
             : "bg-[#CBD5E1]",
         ].join(" ")}
       >
-        {isStartingMission ? "시작 중" : "시작하기"}
+        {isCheckingUnlockCondition
+          ? "확인 중"
+          : isStartingMission
+            ? "시작 중"
+            : canStartMission
+              ? "시작하기"
+              : "시작 불가"}
       </button>
     </section>
   );
@@ -857,6 +983,28 @@ function MissionDetailError({ onRetry }: MissionDetailErrorProps) {
       </section>
     </QuespotPageContent>
   );
+}
+
+function getStartButtonLabel({
+  isStartingMission,
+  isCheckingUnlockCondition,
+  isCompleted,
+  isLocked,
+  canStartMission,
+}: {
+  isStartingMission: boolean;
+  isCheckingUnlockCondition: boolean;
+  isCompleted: boolean;
+  isLocked: boolean;
+  canStartMission: boolean;
+}) {
+  if (isCheckingUnlockCondition) return "확인 중...";
+  if (isStartingMission) return "시작 중...";
+  if (isCompleted) return "완료";
+  if (isLocked) return "잠김";
+  if (canStartMission) return "미션 인증하기";
+
+  return "시작 불가";
 }
 
 function getCategoryLabel(category: MissionCategory) {
