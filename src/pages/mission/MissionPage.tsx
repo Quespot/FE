@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Clock3,
@@ -11,7 +17,6 @@ import {
   Moon,
   Palette,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Utensils,
   type LucideIcon,
@@ -147,11 +152,16 @@ export default function MissionPage() {
   const {
     refetch: refetchRecommendedMissions,
     isFetching: isFetchingRecommendedMissions,
-  } = useRecommendedMissions({
-    latitude: currentLocation.lat,
-    longitude: currentLocation.lng,
-    size: 5,
-  });
+  } = useRecommendedMissions(
+    {
+      latitude: currentLocation.lat,
+      longitude: currentLocation.lng,
+      size: 5,
+    },
+    {
+      enabled: false,
+    },
+  );
 
   const {
     data,
@@ -170,6 +180,12 @@ export default function MissionPage() {
   });
 
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const categoryScrollRef = useRef<HTMLDivElement | null>(null);
+  const isDraggingCategoryRef = useRef(false);
+  const hasDraggedCategoryRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartScrollLeftRef = useRef(0);
 
   const missions = useMemo(() => {
     return data?.pages.flatMap((page) => page.result.missions) ?? [];
@@ -206,6 +222,38 @@ export default function MissionPage() {
     isFetchingNextPage,
   ]);
 
+  const handleCategoryDragStart = (event: MouseEvent<HTMLDivElement>) => {
+    const target = categoryScrollRef.current;
+
+    if (!target) return;
+
+    isDraggingCategoryRef.current = true;
+    hasDraggedCategoryRef.current = false;
+    dragStartXRef.current = event.pageX - target.offsetLeft;
+    dragStartScrollLeftRef.current = target.scrollLeft;
+  };
+
+  const handleCategoryDragMove = (event: MouseEvent<HTMLDivElement>) => {
+    const target = categoryScrollRef.current;
+
+    if (!target || !isDraggingCategoryRef.current) return;
+
+    event.preventDefault();
+
+    const currentX = event.pageX - target.offsetLeft;
+    const distance = currentX - dragStartXRef.current;
+
+    if (Math.abs(distance) > 5) {
+      hasDraggedCategoryRef.current = true;
+    }
+
+    target.scrollLeft = dragStartScrollLeftRef.current - distance;
+  };
+
+  const handleCategoryDragEnd = () => {
+    isDraggingCategoryRef.current = false;
+  };
+
   const handleChangeCategory = (category?: MissionCategory) => {
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
@@ -218,6 +266,15 @@ export default function MissionPage() {
 
       return next;
     });
+  };
+
+  const handleClickCategory = (category?: MissionCategory) => {
+    if (hasDraggedCategoryRef.current) {
+      hasDraggedCategoryRef.current = false;
+      return;
+    }
+
+    handleChangeCategory(category);
   };
 
   const handleMoveMissionDetail = (mission: MissionItem) => {
@@ -327,30 +384,37 @@ export default function MissionPage() {
                 placeholder="지역 · 장소 · 미션 검색"
                 className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium leading-[20px] text-[#1C1C3A] outline-none placeholder:text-[#A2A9B2]"
               />
-
-              <SlidersHorizontal size={18} strokeWidth={2.2} />
             </label>
 
-            <div className="no-scrollbar mt-[14px] flex gap-[10px] overflow-x-auto pb-[2px]">
-              {CATEGORY_OPTIONS.map((category) => {
-                const isSelected = selectedCategory === category.value;
+            <div
+              ref={categoryScrollRef}
+              onMouseDown={handleCategoryDragStart}
+              onMouseMove={handleCategoryDragMove}
+              onMouseUp={handleCategoryDragEnd}
+              onMouseLeave={handleCategoryDragEnd}
+              className="-mx-[16px] mt-[14px] cursor-grab select-none overflow-x-auto px-[16px] pb-[2px] active:cursor-grabbing [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              <div className="flex w-max min-w-full gap-[10px]">
+                {CATEGORY_OPTIONS.map((category) => {
+                  const isSelected = selectedCategory === category.value;
 
-                return (
-                  <button
-                    key={category.label}
-                    type="button"
-                    onClick={() => handleChangeCategory(category.value)}
-                    className={[
-                      "h-[38px] shrink-0 rounded-full px-[18px] text-[14px] font-bold leading-none transition active:scale-[0.98]",
-                      isSelected
-                        ? "bg-[#5BB5F8] text-white shadow-[0_4px_10px_rgba(91,181,248,0.28)]"
-                        : "bg-[#F4F8FF] text-[#A2A9B2]",
-                    ].join(" ")}
-                  >
-                    {category.label}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={category.label}
+                      type="button"
+                      onClick={() => handleClickCategory(category.value)}
+                      className={[
+                        "h-[38px] shrink-0 rounded-full px-[18px] text-[14px] font-bold leading-none transition active:scale-[0.98]",
+                        isSelected
+                          ? "bg-[#5BB5F8] text-white shadow-[0_4px_10px_rgba(91,181,248,0.28)]"
+                          : "bg-[#F4F8FF] text-[#A2A9B2]",
+                      ].join(" ")}
+                    >
+                      {category.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </>
         ) : null}
