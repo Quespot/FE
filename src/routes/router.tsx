@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: PATH.LANDING,
-        element: <Navigate to={PATH.HOME} replace />,
+        element: <Navigate to={PATH.LOGIN} replace />,
       },
       {
         path: PATH.LOGIN,
@@ -172,7 +172,7 @@ export const router = createBrowserRouter([
           },
           {
             path: PATH.NOT_FOUND,
-            element: <Navigate to={PATH.HOME} replace />,
+            element: <Navigate to={PATH.LOGIN} replace />,
           },
         ],
       },
