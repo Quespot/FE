@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  AlertCircle,
   Clock3,
   Coins,
   Landmark,
@@ -18,7 +19,9 @@ import {
   Palette,
   Search,
   Sparkles,
+  Trash2,
   Utensils,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,13 +32,15 @@ import QuespotPageLayout, {
 } from "@/layouts/QuespotPageLayout";
 import { useInfiniteMissions } from "@/hooks/queries/useInfiniteMissions";
 import { useRecommendedMissions } from "@/hooks/queries/useRecommendedMissions";
+import { useMissionAttempts } from "@/hooks/queries/useMissionAttempts";
+import { useQuitMissionAttempt } from "@/hooks/mutation/useQuitMissionAttempt";
 import type {
   MissionCategory,
   MissionItem,
   UserMissionStatus,
 } from "@/types/mission";
+import type { MissionAttempt } from "@/types/missionAttempt";
 import { PATH } from "@/routes/paths";
-import { useMissionAttempts } from "@/hooks/queries/useMissionAttempts";
 import InProgressMissionView from "./InProgressMissionView";
 
 type LatLng = {
@@ -129,6 +134,11 @@ export default function MissionPage() {
 
   const [keyword, setKeyword] = useState(searchKeyword);
   const [activeTab, setActiveTab] = useState<MissionTab>("explore");
+  const [quittingAttemptId, setQuittingAttemptId] = useState<number | null>(
+    null,
+  );
+  const [quitConfirmAttempt, setQuitConfirmAttempt] =
+    useState<MissionAttempt | null>(null);
 
   const {
     data: attemptData,
@@ -137,6 +147,9 @@ export default function MissionPage() {
     error: attemptsError,
     refetch: refetchAttempts,
   } = useMissionAttempts();
+
+  const { mutate: quitMissionAttempt, isPending: isQuittingMission } =
+    useQuitMissionAttempt();
 
   const attempts =
     attemptData?.attempts.filter(
@@ -310,6 +323,39 @@ export default function MissionPage() {
       console.error(error);
       alert("추천 미션을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
     }
+  };
+
+  const handleRequestQuitMissionAttempt = (attempt: MissionAttempt) => {
+    if (isQuittingMission) return;
+
+    setQuitConfirmAttempt(attempt);
+  };
+
+  const handleCloseQuitConfirmModal = () => {
+    if (isQuittingMission) return;
+
+    setQuitConfirmAttempt(null);
+  };
+
+  const handleConfirmQuitMissionAttempt = () => {
+    if (!quitConfirmAttempt || isQuittingMission) return;
+
+    setQuittingAttemptId(quitConfirmAttempt.attemptId);
+
+    quitMissionAttempt(quitConfirmAttempt.attemptId, {
+      onSuccess: () => {
+        void refetchAttempts();
+        void refetch();
+      },
+      onError: (error) => {
+        console.error(error);
+        alert("미션을 포기하지 못했어요. 잠시 후 다시 시도해주세요.");
+      },
+      onSettled: () => {
+        setQuittingAttemptId(null);
+        setQuitConfirmAttempt(null);
+      },
+    });
   };
 
   return (
@@ -517,6 +563,8 @@ export default function MissionPage() {
           isLoading={isAttemptsLoading}
           isError={isAttemptsError}
           error={attemptsError}
+          isQuitting={isQuittingMission}
+          quittingAttemptId={quittingAttemptId}
           onRetry={() => void refetchAttempts()}
           onExplore={() => setActiveTab("explore")}
           onViewDetail={(attempt) =>
@@ -536,9 +584,121 @@ export default function MissionPage() {
               },
             })
           }
+          onQuit={handleRequestQuitMissionAttempt}
         />
       )}
+
+      {quitConfirmAttempt ? (
+        <QuitMissionConfirmModal
+          attempt={quitConfirmAttempt}
+          isSubmitting={isQuittingMission}
+          onCancel={handleCloseQuitConfirmModal}
+          onConfirm={handleConfirmQuitMissionAttempt}
+        />
+      ) : null}
     </QuespotPageLayout>
+  );
+}
+
+type QuitMissionConfirmModalProps = {
+  attempt: MissionAttempt;
+  isSubmitting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+};
+
+function QuitMissionConfirmModal({
+  attempt,
+  isSubmitting,
+  onCancel,
+  onConfirm,
+}: QuitMissionConfirmModalProps) {
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#1C1C3A]/45 px-[24px]"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onCancel();
+        }
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quit-mission-title"
+        className="w-full max-w-[342px] rounded-[26px] bg-white px-[20px] pb-[20px] pt-[16px] text-center shadow-[0_18px_40px_rgba(8,37,95,0.28)]"
+      >
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="grid h-[32px] w-[32px] place-items-center rounded-full bg-[#F4F8FF] text-[#A2A9B2] transition active:scale-[0.95] disabled:opacity-50"
+            aria-label="닫기"
+          >
+            <X size={17} strokeWidth={2.6} />
+          </button>
+        </div>
+
+        <div className="mx-auto mt-[2px] grid h-[64px] w-[64px] place-items-center rounded-[22px] bg-[#FFF1F2] text-[#FF4D67]">
+          <Trash2 size={30} strokeWidth={2.4} />
+        </div>
+
+        <h2
+          id="quit-mission-title"
+          className="m-0 mt-[16px] text-[20px] font-black leading-[28px] text-[#1C1C3A]"
+        >
+          미션을 포기할까요?
+        </h2>
+
+        <p className="m-0 mt-[8px] break-keep text-[13px] font-medium leading-[21px] text-[#6F7B8D]">
+          <strong className="font-black text-[#1C1C3A]">
+            {attempt.missionTitle}
+          </strong>
+          <br />
+          포기하면 진행 중 목록에서 사라져요.
+        </p>
+
+        <div className="mt-[16px] rounded-[16px] bg-[#FFF6F8] px-[14px] py-[12px] text-left">
+          <div className="flex gap-[8px]">
+            <AlertCircle
+              size={16}
+              strokeWidth={2.5}
+              className="mt-[1px] shrink-0 text-[#FF4D67]"
+            />
+
+            <p className="m-0 break-keep text-[12px] font-bold leading-[19px] text-[#FF4D67]">
+              포기한 미션은 다시 시작해야 하며, 현재 인증 진행 상태는
+              초기화될 수 있어요.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-[20px] grid grid-cols-2 gap-[10px]">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="h-[48px] rounded-[16px] border border-[#EAF5FF] bg-white text-[14px] font-black text-[#6F7B8D] transition active:scale-[0.98] disabled:opacity-50"
+          >
+            계속 도전
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className="flex h-[48px] items-center justify-center gap-[6px] rounded-[16px] border border-[#EF4444] bg-[#FF4D67] text-[14px] font-black text-white shadow-[0_8px_18px_rgba(255,77,103,0.24)] transition active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
+          >
+            {isSubmitting ? (
+              <Loader2 size={16} strokeWidth={2.5} className="animate-spin" />
+            ) : null}
+            {isSubmitting ? "포기 중" : "포기하기"}
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 
