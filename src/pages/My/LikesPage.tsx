@@ -58,7 +58,7 @@ export default function LikesPage() {
       <section className="grid gap-3 px-[18px] pb-9 pt-4" aria-busy={activeQuery.isLoading} aria-live="polite">
         {!activeQuery.isLoading && !activeQuery.error ? <p className="px-1 text-[9px] font-bold text-[#8da0b2]">총 <strong className="text-[11px] font-black text-[#65798c]">{totalCount ?? items.length}</strong>개</p> : null}
         {activeQuery.isLoading ? <LoadingState /> : activeQuery.error ? <ErrorState message={getLikesErrorMessage(activeQuery.error)} onRetry={() => void activeQuery.refetch()} /> : items.length === 0 ? <EmptyState tab={activeTab} /> : activeTab === "course"
-          ? (items as LikedCourse[]).map((item) => <CourseCard item={item} key={item.courseId} />)
+          ? (items as LikedCourse[]).map((item) => <CourseCard item={item} key={item.courseId} onOpen={() => navigate(`${PATH.MISSION_COURSE_CREATE}?courseId=${item.courseId}`)} />)
           : (items as LikedMission[]).map((item) => <MissionCard item={item} key={item.missionId} onOpen={() => navigate(PATH.MISSION_DETAIL.replace(":missionId", String(item.missionId)))} />)}
       </section>
     </main>
@@ -82,7 +82,7 @@ function MissionCard({ item, onOpen }: { item: LikedMission; onOpen: () => void 
   );
 }
 
-function CourseCard({ item }: { item: LikedCourse }) {
+function CourseCard({ item, onOpen }: { item: LikedCourse; onOpen: () => void }) {
   const status = courseStatusLabel[item.myStatus] ?? item.myStatus;
   return (
     <article className="overflow-hidden rounded-[20px] border border-[#dbe6f0] bg-white shadow-[0_3px_10px_rgba(41,79,112,0.08)]">
@@ -93,7 +93,7 @@ function CourseCard({ item }: { item: LikedCourse }) {
       <div className="p-[14px]">
         <div className="flex items-start gap-2"><div className="min-w-0 flex-1"><h2 className="truncate text-[14px] font-extrabold">{item.name}</h2><p className="mt-1 flex items-center gap-1 text-[9.5px] text-[#929eac]"><MapPin size={10} className="text-[#f15d67]" />{item.regionCode}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[8px] font-extrabold ${item.myStatus === "COMPLETED" ? "bg-[#e8f8f2] text-[#36aa81]" : item.myStatus === "IN_PROGRESS" ? "bg-[#e8f5ff] text-[#3ba5e8]" : "bg-[#f1f4f7] text-[#82909d]"}`}>{status}</span></div>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-[9px] font-bold text-[#718094]"><span className="flex items-center gap-1"><MapPin size={11} className="text-[#f15d67]" />미션 {item.missionCount}개</span><span className="flex items-center gap-1"><Clock3 size={11} />약 {item.estimatedMinutes}분</span><span className="text-[#35a5ea]">+{item.totalRewardPoint.toLocaleString()}P</span>{item.bonusPoint > 0 ? <span className="text-[#e99a24]">보너스 +{item.bonusPoint.toLocaleString()}P</span> : null}</p>
-        <button className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-[13px] bg-[linear-gradient(135deg,#58b5ef,#319ce3)] text-[11px] font-extrabold text-white shadow-[0_5px_12px_rgba(53,159,228,0.2)]" type="button"><Play size={12} fill="currentColor" />{item.myStatus === "IN_PROGRESS" ? "코스 이어하기" : item.myStatus === "COMPLETED" ? "코스 다시 보기" : "코스 시작하기"}</button>
+        <button className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-[13px] bg-[linear-gradient(135deg,#58b5ef,#319ce3)] text-[11px] font-extrabold text-white shadow-[0_5px_12px_rgba(53,159,228,0.2)]" onClick={onOpen} type="button"><Play size={12} fill="currentColor" />{item.myStatus === "IN_PROGRESS" ? "코스 이어하기" : item.myStatus === "COMPLETED" ? "코스 다시 보기" : "코스 시작하기"}</button>
       </div>
     </article>
   );

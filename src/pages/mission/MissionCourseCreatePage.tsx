@@ -22,6 +22,7 @@ import QuespotPageLayout, {
 import { useCreateMissionCourse } from "@/hooks/mutation/useCreateMissionCourse";
 import { useLikeMissionCourse } from "@/hooks/mutation/useLikeMissionCourse";
 import { useUnlikeMissionCourse } from "@/hooks/mutation/useUnlikeMissionCourse";
+import { useMissionCourseDetail } from "@/hooks/queries/useMissionCourseDetail";
 import type { MissionDetail } from "@/types/mission";
 import type {
   MissionCourseDetail,
@@ -41,6 +42,12 @@ export default function MissionCourseCreatePage() {
 
   const state = location.state as MissionCourseCreateState | null;
 
+  const searchCourseId = Number(searchParams.get("courseId"));
+  const courseId =
+    Number.isFinite(searchCourseId) && searchCourseId > 0
+      ? searchCourseId
+      : null;
+
   const searchMissionId = Number(searchParams.get("missionId"));
   const anchorMissionId =
     state?.missionId ??
@@ -54,12 +61,14 @@ export default function MissionCourseCreatePage() {
   const [createdCourse, setCreatedCourse] =
     useState<MissionCourseDetail | null>(null);
 
-  const [isCourseLiked, setIsCourseLiked] = useState(false);
+  const [isCourseLiked, setIsCourseLiked] = useState(Boolean(courseId));
+
+  const courseDetailQuery = useMissionCourseDetail(courseId);
 
   const {
     mutate: createCourse,
     isPending: isCreatingCourse,
-    error,
+    error: createError,
   } = useCreateMissionCourse();
 
   const { mutate: likeCourse, isPending: isLikingCourse } =
@@ -69,16 +78,17 @@ export default function MissionCourseCreatePage() {
     useUnlikeMissionCourse();
 
   const isCourseLikePending = isLikingCourse || isUnlikingCourse;
+  const activeCourse = createdCourse ?? courseDetailQuery.data ?? null;
 
   const errorMessage = useMemo(() => {
-    if (!error) return "";
+    if (!createError) return "";
 
-    if (error instanceof Error) {
-      return error.message;
+    if (createError instanceof Error) {
+      return createError.message;
     }
 
     return "미션 코스를 생성하지 못했어요.";
-  }, [error]);
+  }, [createError]);
 
   const handleCreateCourse = () => {
     if (!anchorMissionId || isCreatingCourse) return;
@@ -97,7 +107,7 @@ export default function MissionCourseCreatePage() {
   };
 
   const handleToggleCourseLike = () => {
-    if (!createdCourse || isCourseLikePending) return;
+    if (!activeCourse || isCourseLikePending) return;
 
     const nextLiked = !isCourseLiked;
 
@@ -105,7 +115,7 @@ export default function MissionCourseCreatePage() {
 
     const mutation = nextLiked ? likeCourse : unlikeCourse;
 
-    mutation(createdCourse.courseId, {
+    mutation(activeCourse.courseId, {
       onError: (error) => {
         console.error(error);
         setIsCourseLiked(!nextLiked);
@@ -133,11 +143,13 @@ export default function MissionCourseCreatePage() {
 
           <div className="min-w-0">
             <h1 className="m-0 text-[20px] font-black leading-[26px] text-[#1C1C3A]">
-              미션 코스 생성
+              {courseId ? "미션 코스" : "미션 코스 생성"}
             </h1>
 
             <p className="m-0 mt-[3px] text-[12px] font-medium leading-[17px] text-[#A2A9B2]">
-              선택한 미션 기준으로 코스를 만들어요
+              {courseId
+                ? "저장한 코스의 미션 순서와 보상을 확인해요"
+                : "선택한 미션 기준으로 코스를 만들어요"}
             </p>
           </div>
         </div>
@@ -146,7 +158,23 @@ export default function MissionCourseCreatePage() {
       <QuespotDivider />
 
       <QuespotPageContent className="bg-[#F4F8FF] px-[16px] pb-[28px] pt-[20px]">
-        {!anchorMissionId ? (
+        {courseId ? (
+          courseDetailQuery.isLoading ? (
+            <CourseDetailLoading />
+          ) : courseDetailQuery.isError || !courseDetailQuery.data ? (
+            <CourseDetailError
+              onRetry={() => void courseDetailQuery.refetch()}
+            />
+          ) : (
+            <CreatedCourseSection
+              course={courseDetailQuery.data}
+              isCourseLiked={isCourseLiked}
+              isCourseLikePending={isCourseLikePending}
+              onToggleCourseLike={handleToggleCourseLike}
+              onMoveMissionDetail={handleMoveMissionDetail}
+            />
+          )
+        ) : !anchorMissionId ? (
           <EmptyAnchorMission onMoveMissions={() => navigate(PATH.MISSIONS)} />
         ) : (
           <>
@@ -340,9 +368,17 @@ function CreatedCourseSection({
   onToggleCourseLike,
   onMoveMissionDetail,
 }: CreatedCourseSectionProps) {
-  const firstAvailableMission =
+  const nextMission =
+    course.missions.find((mission) => mission.status === "IN_PROGRESS") ??
     course.missions.find((mission) => mission.status === "AVAILABLE") ??
     course.missions[0];
+
+  const courseActionLabel =
+    course.myStatus === "IN_PROGRESS"
+      ? "코스 이어하기"
+      : course.myStatus === "COMPLETED"
+        ? "코스 다시 보기"
+        : "첫 미션 시작하기";
 
   return (
     <>
@@ -449,13 +485,13 @@ function CreatedCourseSection({
         </div>
       </section>
 
-      {firstAvailableMission ? (
+      {nextMission ? (
         <button
           type="button"
-          onClick={() => onMoveMissionDetail(firstAvailableMission.missionId)}
+          onClick={() => onMoveMissionDetail(nextMission.missionId)}
           className="mt-[20px] flex h-[56px] w-full items-center justify-center gap-[8px] rounded-[18px] bg-[#5BB5F8] text-[15px] font-black text-white shadow-[0_8px_18px_rgba(91,181,248,0.28)] transition active:scale-[0.99]"
         >
-          첫 미션 시작하기
+          {courseActionLabel}
         </button>
       ) : null}
     </>
@@ -607,4 +643,42 @@ function getMissionStatusLabel(status: string) {
   };
 
   return labelMap[status] ?? status;
+}
+
+function CourseDetailLoading() {
+  return (
+    <section className="flex flex-1 flex-col items-center justify-center px-[20px] text-center">
+      <Loader2
+        size={32}
+        strokeWidth={2.5}
+        className="animate-spin text-[#5BB5F8]"
+      />
+      <p className="m-0 mt-[12px] text-[13px] font-bold text-[#A2A9B2]">
+        저장한 코스를 불러오는 중이에요
+      </p>
+    </section>
+  );
+}
+
+function CourseDetailError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <section className="flex flex-1 flex-col items-center justify-center px-[20px] text-center">
+      <div className="grid h-[78px] w-[78px] place-items-center rounded-full bg-[#FFF1F2] text-[34px] text-[#E45F6B]">
+        !
+      </div>
+      <h2 className="m-0 mt-[18px] text-[18px] font-black leading-[25px] text-[#1C1C3A]">
+        코스를 불러오지 못했어요
+      </h2>
+      <p className="m-0 mt-[8px] break-keep text-[13px] font-medium leading-[21px] text-[#A2A9B2]">
+        네트워크 상태를 확인한 뒤 다시 시도해주세요.
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-[22px] h-[46px] rounded-full bg-[#5BB5F8] px-[22px] text-[14px] font-black text-white"
+      >
+        다시 불러오기
+      </button>
+    </section>
+  );
 }

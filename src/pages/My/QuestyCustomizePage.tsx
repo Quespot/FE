@@ -57,8 +57,8 @@ const itemQueryKeys = {
 const filters: Array<{ id: FilterKey; label: string; icon: ComponentType<{ size?: number; className?: string }> }> = [
   { id: "all", label: "전체", icon: LayoutGrid },
   { id: "HAT", label: "모자", icon: CircleUserRound },
-  { id: "ACCESSORY", label: "액세서리", icon: Glasses },
   { id: "OUTFIT", label: "의상", icon: Shirt },
+  { id: "ACCESSORY", label: "장식", icon: Glasses },
   { id: "ITEM", label: "소품", icon: ShoppingBag },
   { id: "BACKGROUND", label: "배경", icon: ImageIcon },
 ];
