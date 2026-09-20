@@ -62,7 +62,12 @@ export default function ProfileSetupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const canSubmit = nickname.trim().length >= 2 && Boolean(birthDate) && Boolean(region) && interests.length > 0;
+  const canSubmit =
+    nickname.trim().length >= 2 &&
+    Boolean(birthDate) &&
+    Boolean(region) &&
+    Boolean(gender) &&
+    (isEditingDetails || interests.length > 0);
 
   useEffect(() => {
     if (!isEditingDetails) return;
@@ -73,7 +78,7 @@ export default function ProfileSetupPage() {
         setNickname(profile.nickname);
         setProfileImage(profile.profileImageUrl || questyProfile);
         setBirthDate(profile.birthDate || "");
-        setGender(profile.gender ? genderFromApi[profile.gender] || "" : "선택 안 함");
+        setGender(profile.gender ? genderFromApi[profile.gender] || "" : "");
         setRegion(profile.residenceRegion ? regionFromApi[profile.residenceRegion] || "" : "");
         setCompanion(profile.travelCompanion ? companionFromApi[profile.travelCompanion] || "" : "");
         setInterests(travelStylesToCategoryIds(profile.travelStyles || []));
@@ -96,6 +101,14 @@ export default function ProfileSetupPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!gender) {
+      alert("성별을 선택해주세요.");
+      return;
+    }
+    if (!isEditingDetails && interests.length === 0) {
+      alert("관심 있는 여행 테마를 하나 이상 선택해주세요.");
+      return;
+    }
     if (!canSubmit || isSubmitting) return;
     setError("");
     setIsSubmitting(true);
@@ -104,7 +117,7 @@ export default function ProfileSetupPage() {
       const payload = {
         ...(profileImageObjectKey ? { profileImageObjectKey } : {}),
         nickname: nickname.trim(),
-        gender: gender && gender !== "선택 안 함" ? genderToApi[gender as keyof typeof genderToApi] : null,
+        gender: genderToApi[gender as keyof typeof genderToApi],
         birthDate,
         residenceRegion: regionToApi[region as keyof typeof regionToApi],
         travelCompanion: companion ? companionToApi[companion as keyof typeof companionToApi] : null,
@@ -113,7 +126,7 @@ export default function ProfileSetupPage() {
       await (isEditingDetails ? updateDetailedProfile(payload) : createProfile(payload));
       localStorage.setItem(PROFILE_SETUP_KEY, "true");
       localStorage.setItem("quespot-profile", JSON.stringify({ nickname: nickname.trim(), birthDate, gender, region, companion, interests }));
-      navigate(isEditingDetails ? PATH.MY : PATH.HOME, { replace: true });
+      navigate(isEditingDetails ? PATH.MY : PATH.LOCATION_GUIDE, { replace: true });
     } catch (profileError) {
       setError(profileError instanceof Error ? profileError.message : "프로필을 저장하지 못했습니다.");
     } finally {
@@ -185,7 +198,14 @@ export default function ProfileSetupPage() {
         </section> : null}
 
         {error ? <p className="px-3 text-center text-[10.5px] leading-[1.6] text-[#e46f6f]" role="alert">{error}</p> : <p className="px-3 text-center text-[10.5px] leading-[1.6] text-[#97a2ae]">프로필 정보는 마이페이지에서 언제든 수정할 수 있어요.</p>}
-        <button className="type-body6 flex h-[52px] w-full items-center justify-center rounded-[16px] bg-[linear-gradient(135deg,#63bdf7,#48a8eb)] text-white shadow-[0_8px_20px_rgba(65,165,231,0.24)] transition active:scale-[0.99] disabled:cursor-default disabled:bg-[#c9d8e5] disabled:opacity-100 disabled:shadow-none" disabled={!canSubmit || isSubmitting} type="submit">{isSubmitting ? "저장 중..." : isEditingDetails ? "변경사항 저장" : "Quespot 시작하기"}</button>
+        <button
+          aria-disabled={!canSubmit || isSubmitting}
+          className={`type-body6 flex h-[52px] w-full items-center justify-center rounded-[16px] text-white transition ${canSubmit && !isSubmitting ? "bg-[linear-gradient(135deg,#63bdf7,#48a8eb)] shadow-[0_8px_20px_rgba(65,165,231,0.24)] active:scale-[0.99]" : "cursor-default bg-[#c9d8e5] shadow-none"}`}
+          disabled={isSubmitting}
+          type="submit"
+        >
+          {isSubmitting ? "저장 중..." : isEditingDetails ? "변경사항 저장" : "Quespot 시작하기"}
+        </button>
       </form>
     </main>
   );

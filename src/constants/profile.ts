@@ -48,8 +48,16 @@ export const travelStylesToCategoryIds = (styles: readonly string[]) =>
     return entry ? [entry[0]] : legacyTravelStyleMap[style] ? [legacyTravelStyleMap[style]] : [];
   }));
 
-export const genderToApi = { 여성: "FEMALE", 남성: "MALE" } as const;
-export const genderFromApi: Record<string, string> = { FEMALE: "여성", MALE: "남성" };
+export const genderToApi = {
+  여성: "FAMALE",
+  남성: "MALE",
+  "선택 안 함": "NOT_SELECTED",
+} as const;
+export const genderFromApi: Record<string, string> = {
+  FAMALE: "여성",
+  MALE: "남성",
+  NOT_SELECTED: "선택 안 함",
+};
 
 export const companionToApi = {
   혼자: "SOLO",

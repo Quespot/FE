@@ -12,6 +12,7 @@ import OAuthCallbackPage from "@/pages/Auth/OAuthCallbackPage";
 import SignupPage from "@/pages/Auth/SignupPage";
 import SignupCheckPage from "@/pages/Auth/SignupCheckPage";
 import ProfileSetupPage from "@/pages/Auth/ProfileSetupPage";
+import LocationGuidePage from "@/pages/Auth/LocationGuidePage";
 
 import MissionsPage from "@/pages/mission/MissionPage";
 import MissionDetailPage from "@/pages/mission/MissionDetailPage";
@@ -68,6 +69,10 @@ export const router = createBrowserRouter([
           {
             path: PATH.PROFILE_SETUP,
             element: <ProfileSetupPage />,
+          },
+          {
+            path: PATH.LOCATION_GUIDE,
+            element: <LocationGuidePage />,
           },
 
           // 하단 내비게이션이 필요한 페이지

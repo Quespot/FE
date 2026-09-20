@@ -11,6 +11,8 @@ export const PATH = {
 
   PROFILE_SETUP: "/profile/setup",
 
+  LOCATION_GUIDE: "/profile/location-guide",
+
   PROFILE_DETAILS: "/my/profile-details",
 
   // HomePage
