@@ -49,12 +49,12 @@ export const travelStylesToCategoryIds = (styles: readonly string[]) =>
   }));
 
 export const genderToApi = {
-  여성: "FAMALE",
+  여성: "FEMALE",
   남성: "MALE",
   "선택 안 함": "NOT_SELECTED",
 } as const;
 export const genderFromApi: Record<string, string> = {
-  FAMALE: "여성",
+  FEMALE: "여성",
   MALE: "남성",
   NOT_SELECTED: "선택 안 함",
 };
