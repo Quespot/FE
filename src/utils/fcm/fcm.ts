@@ -24,6 +24,11 @@ export async function requestFcmToken(): Promise<string> {
 
   const registration = await navigator.serviceWorker.register(
     `${import.meta.env.BASE_URL}firebase-messaging-sw.js`,
+    {
+      // PWA의 /sw.js(scope: /)와 같은 등록을 덮어쓰지 않도록
+      // FCM 푸시 전용 scope를 사용한다.
+      scope: `${import.meta.env.BASE_URL}firebase-cloud-messaging-push-scope`,
+    },
   );
 
   const messaging = getMessaging(firebaseApp);
