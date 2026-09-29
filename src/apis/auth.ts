@@ -1,4 +1,5 @@
 import { getAccessToken } from "@/utils/auth";
+import { apiClient } from "@/apis/client";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://api.quespot.site").replace(/\/$/, "");
 const FRONTEND_REDIRECT_URI = import.meta.env.PROD
@@ -119,19 +120,12 @@ const requestLoginMethods = async <T,>(method: "GET" | "POST" | "DELETE", path =
   const accessToken = getAccessToken();
   if (!accessToken) throw new ApiError("로그인이 필요합니다.", 401);
 
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}/api/users/me/login-methods${path}`, {
-      method,
-      credentials: "include",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-  } catch {
-    throw new ApiError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.", 0);
-  }
-
-  const payload = await response.json().catch(() => null) as ApiEnvelope<T> | null;
-  if (!response.ok || !payload?.isSuccess) {
+  const response = await apiClient.request<ApiEnvelope<T>>({
+    url: `/api/users/me/login-methods${path}`,
+    method,
+  });
+  const payload = response.data;
+  if (!payload.isSuccess) {
     throw new ApiError(
       payload?.message || "로그인 수단 요청을 처리하지 못했습니다.",
       response.status,
@@ -156,19 +150,9 @@ export const logout = async (): Promise<void> => {
   const accessToken = getAccessToken();
   if (!accessToken) return;
 
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-  } catch {
-    throw new ApiError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.", 0);
-  }
-
-  const payload = await response.json().catch(() => null) as ApiEnvelope<null> | null;
-  if (!response.ok || !payload?.isSuccess) {
+  const response = await apiClient.post<ApiEnvelope<null>>("/api/auth/logout");
+  const payload = response.data;
+  if (!payload.isSuccess) {
     throw new ApiError(
       payload?.message || "로그아웃을 처리하지 못했습니다.",
       response.status,
@@ -181,19 +165,9 @@ export const withdraw = async (): Promise<void> => {
   const accessToken = getAccessToken();
   if (!accessToken) throw new ApiError("로그인이 필요합니다.", 401);
 
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}/api/auth/withdraw`, {
-      method: "DELETE",
-      credentials: "include",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-  } catch {
-    throw new ApiError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.", 0);
-  }
-
-  const payload = await response.json().catch(() => null) as ApiEnvelope<null> | null;
-  if (!response.ok || !payload?.isSuccess) {
+  const response = await apiClient.delete<ApiEnvelope<null>>("/api/auth/withdraw");
+  const payload = response.data;
+  if (!payload.isSuccess) {
     throw new ApiError(
       payload?.message || "회원탈퇴를 처리하지 못했습니다. 잠시 후 다시 시도해주세요.",
       response.status,

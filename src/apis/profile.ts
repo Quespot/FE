@@ -1,8 +1,6 @@
 import { ApiError } from "@/apis/auth";
+import { apiClient } from "@/apis/client";
 import type { TravelStyle } from "@/constants/profile";
-import { getAccessToken } from "@/utils/auth";
-
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "https://api.quespot.site").replace(/\/$/, "");
 
 interface ApiEnvelope<T> {
   isSuccess: boolean;
@@ -38,26 +36,13 @@ export type BasicProfileUpdate = Pick<ProfilePayload, "nickname" | "travelStyles
 };
 
 async function profileRequest<T>(method: "GET" | "POST" | "PATCH", body?: unknown): Promise<T> {
-  const accessToken = getAccessToken();
-  if (!accessToken) throw new ApiError("로그인이 필요합니다.", 401);
-
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}/api/users/me/profile`, {
-      method,
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-  } catch {
-    throw new ApiError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.", 0);
-  }
-
-  const payload = await response.json().catch(() => null) as ApiEnvelope<T> | null;
-  if (!response.ok || !payload?.isSuccess) {
+  const response = await apiClient.request<ApiEnvelope<T>>({
+    url: "/api/users/me/profile",
+    method,
+    data: body,
+  });
+  const payload = response.data;
+  if (!payload.isSuccess) {
     throw new ApiError(payload?.message || "프로필 요청을 처리하지 못했습니다.", response.status, payload?.code);
   }
   return payload.result;
