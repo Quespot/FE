@@ -1,4 +1,5 @@
-import { getAccessToken } from "@/utils/auth";
+import { PATH } from "@/routes/paths";
+import { clearAuth, getAccessToken } from "@/utils/auth";
 import axios, { AxiosHeaders } from "axios";
 
 const BASE_URL =
@@ -67,9 +68,11 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
-      console.warn(
-        "인증 오류가 발생했습니다. accessToken 만료 또는 권한 문제를 확인해주세요.",
-      );
+      clearAuth();
+
+      if (window.location.pathname !== PATH.LOGIN) {
+        window.location.replace(PATH.LOGIN);
+      }
     }
 
     return Promise.reject(error);
