@@ -41,6 +41,10 @@ export const saveAuth = (accessToken: string, userId: number) => {
   localStorage.setItem(USER_ID_KEY, String(userId));
 };
 
+export const saveAccessToken = (accessToken: string) => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+};
+
 export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
 
 export const beginSocialLogin = (provider: SocialProviderId) =>
