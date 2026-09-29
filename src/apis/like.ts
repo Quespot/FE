@@ -1,9 +1,5 @@
 import { ApiError } from "@/apis/auth";
-import { getAccessToken } from "@/utils/auth";
-
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? "https://api.quespot.site"
-).replace(/\/$/, "");
+import { apiClient } from "@/apis/client";
 
 type ApiEnvelope<T> = {
   isSuccess: boolean;
@@ -19,35 +15,13 @@ async function likeRequest<T>(
     method: "POST" | "DELETE";
   },
 ): Promise<T> {
-  const accessToken = getAccessToken();
+  const response = await apiClient.request<ApiEnvelope<T>>({
+    url: path,
+    method: options.method,
+  });
+  const payload = response.data;
 
-  if (!accessToken) {
-    throw new ApiError("로그인이 필요합니다.", 401);
-  }
-
-  let response: Response;
-
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      method: options.method,
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-      },
-    });
-  } catch {
-    throw new ApiError(
-      "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.",
-      0,
-    );
-  }
-
-  const payload = (await response.json().catch(() => null)) as
-    | ApiEnvelope<T>
-    | null;
-
-  if (!response.ok || !payload?.isSuccess) {
+  if (!payload.isSuccess) {
     throw new ApiError(
       payload?.message || "좋아요 요청을 처리하지 못했습니다.",
       response.status,
