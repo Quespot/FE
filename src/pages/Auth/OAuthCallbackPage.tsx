@@ -66,7 +66,10 @@ export default function OAuthCallbackPage() {
         await connectExistingPush();
         if (!active) return;
 
-        const nextPath = await resolvePostLoginPath(redirectPath || PATH.HOME);
+        const nextPath = await resolvePostLoginPath(
+          result.profileCompleted,
+          redirectPath || PATH.HOME,
+        );
         if (!active) return;
 
         navigate(nextPath, { replace: true });

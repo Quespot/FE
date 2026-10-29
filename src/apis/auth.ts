@@ -43,6 +43,7 @@ export interface SignupResult {
 export interface LoginResult {
   userId: number;
   accessToken: string;
+  profileCompleted: boolean;
 }
 
 export interface VerificationRequestResult {

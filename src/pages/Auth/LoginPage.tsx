@@ -36,9 +36,13 @@ export default function LoginPage() {
       const result = await login(email.trim(), password);
       saveAuth(result.accessToken, result.userId);
       await connectExistingPush();
-      navigate(await resolvePostLoginPath(routeState?.from || PATH.HOME), {
-        replace: true,
-      });
+      navigate(
+        await resolvePostLoginPath(
+          routeState?.signupComplete ? false : result.profileCompleted,
+          routeState?.from || PATH.HOME,
+        ),
+        { replace: true },
+      );
     } catch (loginError) {
       setError(
         loginError instanceof Error
@@ -73,7 +77,7 @@ export default function LoginPage() {
           Quespot
         </h1>
         <p className="type-caption2 m-0 text-[#777b81]">
-          최선으로 떠나는 특별한 여행
+          미션으로 떠나는 특별한 여행
           <br />
           지금 바로 시작해보세요 <span aria-hidden="true">✈️</span>
         </p>

@@ -6,7 +6,20 @@ import { PATH } from "@/routes/paths";
 
 export const PROFILE_CACHE_KEY = "quespot-profile";
 
-export async function resolvePostLoginPath(authenticatedPath: string = PATH.HOME) {
+function clearCachedProfile() {
+  localStorage.removeItem(PROFILE_SETUP_KEY);
+  localStorage.removeItem(PROFILE_CACHE_KEY);
+}
+
+export async function resolvePostLoginPath(
+  profileCompleted: boolean,
+  authenticatedPath: string = PATH.HOME,
+) {
+  if (profileCompleted === false) {
+    clearCachedProfile();
+    return PATH.SIGNUP_CHECK;
+  }
+
   try {
     const profile = await getProfile();
     localStorage.setItem(PROFILE_SETUP_KEY, "true");
@@ -23,8 +36,7 @@ export async function resolvePostLoginPath(authenticatedPath: string = PATH.HOME
   } catch (error) {
     const profileMissing = error instanceof ApiError && (error.status === 404 || error.code?.includes("404"));
     if (!profileMissing) throw error;
-    localStorage.removeItem(PROFILE_SETUP_KEY);
-    localStorage.removeItem(PROFILE_CACHE_KEY);
+    clearCachedProfile();
     return PATH.SIGNUP_CHECK;
   }
 }
