@@ -288,7 +288,7 @@ export default function QuestyCustomizePage() {
     <main className="min-h-dvh bg-[#f3f8fe] text-[#19233b]">
       <header className="sticky top-0 z-[100] flex h-[72px] items-end border-b border-[#e6edf4] bg-white px-[18px] pb-[12px]">
         <button className="grid h-9 w-9 place-items-center rounded-full bg-[#eaf6ff] text-[#4ba9e8]" aria-label="마이페이지로 돌아가기" onClick={() => navigate(-1)} type="button"><ArrowLeft size={18} /></button>
-        <h1 className="ml-3 flex-1 self-center pt-5 text-[16px] font-extrabold">마스코트 꾸미기</h1>
+        <h1 className="ml-3 flex-1 self-center pt-5 text-[16px] font-extrabold">퀘스티 꾸미기</h1>
         <span className="flex h-8 items-center gap-1 rounded-full bg-[#eaf6ff] px-3 text-[10px] font-extrabold text-[#47a8e9]"><Zap size={12} fill="currentColor" strokeWidth={0} />{points === null ? "포인트" : `${points.toLocaleString()}P`}</span>
       </header>
 

@@ -609,7 +609,7 @@ export default function MyPage() {
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5 text-[15px] font-extrabold">
               <Sparkles size={15} className="text-[#f0a53b]" />
-              마스코트 꾸미기
+              퀘스티 꾸미기
             </span>
             <span className="mt-1.5 block text-[10.5px] leading-[1.45] text-[#94a0ae]">
               포인트로 아이템을 구매하고
