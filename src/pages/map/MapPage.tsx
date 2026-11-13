@@ -116,10 +116,10 @@ export default function MapPage() {
   }, [location.state, missionSpots]);
 
   useEffect(() => {
-    if (!selectedSpotId && missionSpots.length) {
-      setSelectedSpotId(missionSpots[0].districtCode);
+    if (!selectedSpotId && nearData?.missionSpots.length) {
+      setSelectedSpotId(nearData?.missionSpots[0].districtCode);
     }
-  }, [missionSpots, selectedSpotId]);
+  }, [nearData, selectedSpotId]);
 
   const selectedSpot = useMemo(() => {
     return (
