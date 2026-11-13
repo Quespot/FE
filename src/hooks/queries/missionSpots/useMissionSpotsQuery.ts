@@ -1,14 +1,20 @@
 // 행정구역 미션 스팟 조회
 
 import { getMissionSpots } from "@/apis/missionSpot";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 
-// demo버전은 regionCode를 11(서울)로 고정합니다.
-export const useMissionSpotsQuery = (regionCode = "11") =>
-  useQuery({
-    queryKey: ["missionSpots", "region", regionCode],
-    queryFn: () => getMissionSpots(regionCode),
-    staleTime: Infinity, // 무한
-    gcTime: Infinity, // 무한
-    // 지역코드를 11로 고정되어 있고 미션 데이터 변경 가능성이 낮아 캐시를 계속 유지합니다.
+const REGION_CODES = ["11", "28", "41"];
+export const useMissionSpotsQuery = () =>
+  useQueries({
+    queries: REGION_CODES.map((regionCode) => ({
+      queryKey: ["missionSpots", "region", regionCode],
+      queryFn: () => getMissionSpots(regionCode),
+      staleTime: 1000 * 60 * 30, // 30분
+      gcTime: 1000 * 60 * 60, // 60분
+    })),
+    combine: (results) => ({
+      data: results.flatMap((result) => result.data ?? []),
+      isLoading: results.some((result) => result.isLoading),
+      isError: results.some((result) => result.isError),
+    }),
   });
