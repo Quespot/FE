@@ -111,8 +111,7 @@ async function missionSpotRequest<T>(
 
 // 행정구역 미션 스팟 조회
 // GET /api/mission-spots
-// demo버전은 regionCode를 11(서울)로 고정합니다.
-export const getMissionSpots = (regionCode = "11") =>
+export const getMissionSpots = (regionCode: string) =>
   missionSpotRequest<RegionMissionSpots>("/api/mission-spots", {
     regionCode,
   });
