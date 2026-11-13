@@ -62,6 +62,13 @@ export default function MapPage() {
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
   const { data, isLoading, isError } = useMissionSpotsQuery();
+  const missionSpots = useMemo(
+    () => data?.flatMap((region) => region.missionSpots) ?? [],
+    [data],
+  );
+  const selectedRegion = data?.find((region) =>
+    region.missionSpots.some((spot) => spot.districtCode === selectedSpotId),
+  );
   const {
     data: listData,
     isLoading: isListLoading,
@@ -74,7 +81,9 @@ export default function MapPage() {
   } = useDistrictMissionsQuery(selectedSpotId);
   const missions = useMemo(() => {
     const items = listData?.pages.flatMap((page) => page.missions) ?? [];
-    return Array.from(new globalThis.Map(items.map((item) => [item.missionId, item])).values());
+    return Array.from(
+      new globalThis.Map(items.map((item) => [item.missionId, item])).values(),
+    );
   }, [listData]);
   const {
     data: nearData,
@@ -94,7 +103,7 @@ export default function MapPage() {
 
     if (!state?.selectedSpotId) return;
 
-    const hasSelectedSpot = data?.missionSpots.some(
+    const hasSelectedSpot = missionSpots.some(
       (spot) => spot.districtCode === state.selectedSpotId,
     );
 
@@ -104,22 +113,22 @@ export default function MapPage() {
     setIsMissionSheetOpen(Boolean(state.openPlaceList));
 
     window.history.replaceState({}, document.title);
-  }, [location.state, data]);
+  }, [location.state, missionSpots]);
 
   useEffect(() => {
-    if (!selectedSpotId && data?.missionSpots.length) {
-      setSelectedSpotId(data.missionSpots[0].districtCode);
+    if (!selectedSpotId && nearData?.missionSpots.length) {
+      setSelectedSpotId(nearData?.missionSpots[0].districtCode);
     }
-  }, [data, selectedSpotId]);
+  }, [nearData, selectedSpotId]);
 
   const selectedSpot = useMemo(() => {
     return (
-      data?.missionSpots.find((spot) => spot.districtCode === selectedSpotId) ??
+      missionSpots.find((spot) => spot.districtCode === selectedSpotId) ??
       nearData?.missionSpots.find(
         (spot) => spot.districtCode === selectedSpotId,
       )
     );
-  }, [selectedSpotId, data, nearData]);
+  }, [selectedSpotId, missionSpots, nearData]);
 
   const handleSelectSpot = (spotId: string) => {
     setSelectedSpotId(spotId);
@@ -179,7 +188,6 @@ export default function MapPage() {
     }
   };
 
-  console.log(data);
   return (
     <QuespotPageLayout className="bg-[#F4F8FF]">
       <Header />
@@ -223,7 +231,7 @@ export default function MapPage() {
                 {selectedSpot && (
                   <MapCameraController selectedSpot={selectedSpot} />
                 )}
-                {data?.missionSpots.map((spot) => {
+                {missionSpots.map((spot) => {
                   const nearSpot = nearData?.missionSpots.find(
                     (nearSpot) => nearSpot.districtCode === spot.districtCode,
                   );
@@ -284,16 +292,16 @@ export default function MapPage() {
               ) : (
                 <>
                   <strong className="block text-[14px] font-black leading-[18px] text-[#1C1C3A]">
-                    {data?.regionName} 미션
+                    {selectedRegion?.regionName} 미션
                   </strong>
 
                   <p className="m-0 mt-[4px] text-[14px] font-black leading-[18px]">
                     <span className="text-[#5BB5F8]">
-                      {data?.totalSpotCount}개 스팟
+                      {selectedRegion?.totalSpotCount}개 스팟
                     </span>
                     <span className="mx-[4px] text-[#A2A9B2]">·</span>
                     <span className="text-[#00C950]">
-                      {data?.completedMissionCount}완료
+                      {selectedRegion?.completedMissionCount}완료
                     </span>
                   </p>
                 </>
@@ -753,7 +761,11 @@ function MissionListBottomSheet({
             </p>
           )}
           {hasNextPage && !isError && (
-            <div ref={loadMoreRef} className="h-px shrink-0" aria-hidden="true" />
+            <div
+              ref={loadMoreRef}
+              className="h-px shrink-0"
+              aria-hidden="true"
+            />
           )}
         </div>
       </section>
